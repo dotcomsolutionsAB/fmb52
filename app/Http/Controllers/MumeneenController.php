@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\ItsModel;
@@ -32,7 +33,15 @@ class MumeneenController extends Controller
             'password' => 'required|string',
             'jamiat_id' => 'required|integer',
             'family_id' => 'required|string|max:10',
-            'its' => 'required|unique:users,its|max:8',
+            'its' => [
+                'required',
+                'string',
+                'max:8',
+                Rule::unique('users')->where(function ($query) use ($request) {
+                    return $query->where('jamiat_id', $request->jamiat_id)
+                                 ->where('role', 'mumeneen');
+                })
+            ],
             'hof_its' => 'required|string|max:8',
             'its_family_id' => 'nullable|string|max:10',
             'mobile' => ['required', 'string', 'min:12', 'max:20', 'unique:users,mobile'],
@@ -47,6 +56,7 @@ class MumeneenController extends Controller
             'status' => 'required|in:active,inactive',
             'username' => 'required|string',
         ]);
+        
 
         $register_user = User::create([
             'name' => $request->input('name'),
