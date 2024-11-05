@@ -396,7 +396,7 @@ class MumeneenController extends Controller
                         'jamiat_id' => 1,
                         'family_id' => $family['family_id'],
                         'title' => $title,
-                        'its' => $member['its'],
+                        'its' => substr($member['its'], 0, 8),
                         'hof_its' => $member['hof_id'],
                         'its_family_id' => $member['family_its_id'],
                         'mumeneen_type' => $member['type'],
@@ -407,7 +407,7 @@ class MumeneenController extends Controller
                         'sub_sector' => $family['sub_sector'],
                         'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
                         'status' => $family['status'],
-                        'username' => strtolower(str_replace(' ', '', $member['its'])),
+                        'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
                         'role' => 'mumeneen', // Save role as "mumeneen"
                         'building_id' => $buildingId // Save the building ID
                     ]
