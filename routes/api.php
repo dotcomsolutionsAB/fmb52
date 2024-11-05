@@ -12,9 +12,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\JamiatController;
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
-
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
-
 Route::post('/login/{id?}', [AuthController::class, 'login']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
