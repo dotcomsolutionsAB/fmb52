@@ -384,7 +384,7 @@ class MumeneenController extends Controller
             // Step 2b: Loop through each family member and save in User model
             foreach ($family['members'] as $member) {
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
-                $title = (strtolower($member['title']) === 'shaikh' || strtolower($member['title']) === 'mulla') ? strtolower($member['title']) : null;
+                $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
 
 
                 User::updateOrCreate(
