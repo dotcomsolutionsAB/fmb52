@@ -383,6 +383,8 @@ class MumeneenController extends Controller
 
             // Step 2b: Loop through each family member and save in User model
             foreach ($family['members'] as $member) {
+                $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
+
                 User::updateOrCreate(
                     ['its' => $member['its']], // Unique identifier
                     [
@@ -396,7 +398,7 @@ class MumeneenController extends Controller
                         'hof_its' => $member['hof_id'],
                         'its_family_id' => $member['family_its_id'],
                         'mobile' => $member['mobile'],
-                        'gender' => $member['gender'],
+                        'gender' => $gender,
                         'folio_no' => $family['folio_no'],
                         'sector' => $family['sector'],
                         'sub_sector' => $family['sub_sector'],
