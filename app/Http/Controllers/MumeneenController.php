@@ -23,7 +23,7 @@ use Hash;
 
 class MumeneenController extends Controller
 {
-    //
+    
     //register user
     public function register_users(Request $request)
     {
@@ -336,6 +336,10 @@ class MumeneenController extends Controller
         return $register_its
             ? response()->json(['message' => 'Its registered successfully!', 'data' => $register_its], 201)
             : response()->json(['message' => 'Failed to register Its!'], 400);
+    }
+
+    public function migrate(){
+        return 'Working';
     }
 
     // view
