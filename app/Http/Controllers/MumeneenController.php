@@ -400,7 +400,7 @@ class MumeneenController extends Controller
                         'hof_its' => $member['hof_id'],
                         'its_family_id' => $member['family_its_id'],
                         'mumeneen_type' => $member['type'],
-                        'mobile' => $member['mobile'],
+                        'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
                         'gender' => $gender,
                         'folio_no' => $family['folio_no'],
                         'sector' => $family['sector'],
