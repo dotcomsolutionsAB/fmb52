@@ -425,7 +425,7 @@ class MumeneenController extends Controller
                         'jamiat_id' => 1,
                         'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
                         'paid_amount' => 0,  // Assuming a default value if not provided
-                        'due_amount' => $hubEntry['hub'] ?? 0,
+                        'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
                         'log_user' => 'system_migration' // Log user as system or admin
                     ]
                 );
