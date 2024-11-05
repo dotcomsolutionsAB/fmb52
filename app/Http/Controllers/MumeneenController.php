@@ -16,7 +16,6 @@ use App\Models\FcmModel;
 use App\Models\HubModel;
 use App\Models\ZabihatModel;
 
-
 use Illuminate\Support\Facades\DB;
 use League\Csv\Reader;
 
@@ -371,7 +370,7 @@ class MumeneenController extends Controller
                         'title' => $member['title'],
                         'its' => $member['its'],
                         'hof_its' => $member['hof_id'],
-                        'family_its_id' => $member['family_its_id'],
+                        'its_family_id' => $member['family_its_id'],
                         'mobile' => $member['mobile'],
                         'address' => $address['address_1'] ?? null,
                         'building' => $address['address_2'] ?? null,
