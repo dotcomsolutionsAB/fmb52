@@ -394,7 +394,7 @@ class MumeneenController extends Controller
                         'title' => $member['title'],
                         'its' => $member['its'],
                         'hof_its' => $member['hof_id'],
-                        'family_its_id' => $member['family_its_id'],
+                        'its_family_id' => $member['family_its_id'],
                         'mobile' => $member['mobile'],
                         'gender' => $member['gender'],
                         'folio_no' => $family['folio_no'],
