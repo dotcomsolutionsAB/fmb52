@@ -384,6 +384,8 @@ class MumeneenController extends Controller
             // Step 2b: Loop through each family member and save in User model
             foreach ($family['members'] as $member) {
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
+                $title = (strtolower($member['title']) === 'shaikh' || strtolower($member['title']) === 'mulla') ? strtolower($member['title']) : null;
+
 
                 User::updateOrCreate(
                     ['its' => $member['its']], // Unique identifier
@@ -393,7 +395,7 @@ class MumeneenController extends Controller
                         'password' => "default_password", // Set a default password or generate one
                         'jamiat_id' => 1,
                         'family_id' => $family['family_id'],
-                        'title' => $member['title'],
+                        'title' => $title,
                         'its' => $member['its'],
                         'hof_its' => $member['hof_id'],
                         'its_family_id' => $member['family_its_id'],
