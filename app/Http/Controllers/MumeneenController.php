@@ -388,7 +388,7 @@ class MumeneenController extends Controller
                     [
                         'name' => $member['name'],
                         'email' => $member['email'],
-                        'password' => bcrypt('default_password'), // Set a default password or generate one
+                        'password' => "default_password", // Set a default password or generate one
                         'jamiat_id' => 1,
                         'family_id' => $family['family_id'],
                         'title' => $member['title'],
