@@ -338,9 +338,98 @@ class MumeneenController extends Controller
             : response()->json(['message' => 'Failed to register Its!'], 400);
     }
 
-    public function migrate(){
-        return 'Working';
+
+    public function migrate()
+    {
+        // Step 1: Fetch data from the API
+        $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
+        $response = Http::get($url);
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Failed to fetch data from the API'], 500);
+        }
+
+        $families = $response->json();
+
+        // Step 2: Process and Save Data
+        foreach ($families as $family) {
+            // Step 2a: Loop through each family member and save in User model
+            foreach ($family['members'] as $member) {
+                $address = $family['address'] ?? [];
+                $buildingId = null;
+
+                // Save user details
+                $user = User::updateOrCreate(
+                    ['its' => $member['its']], // Unique identifier
+                    [
+                        'name' => $member['name'],
+                        'email' => $member['email'],
+                        'password' => bcrypt('default_password'), // Set a default password or generate one
+                        'jamiat_id' => 1,
+                        'family_id' => $family['family_id'],
+                        'title' => $member['title'],
+                        'its' => $member['its'],
+                        'hof_its' => $member['hof_id'],
+                        'family_its_id' => $member['family_its_id'],
+                        'mobile' => $member['mobile'],
+                        'address' => $address['address_1'] ?? null,
+                        'building' => $address['address_2'] ?? null,
+                        'flat_no' => $address['flat'] ?? null,
+                        'lattitude' => $address['latitude'] ?? null,
+                        'longitude' => $address['longitude'] ?? null,
+                        'gender' => $member['gender'],
+                        'date_of_birth' => $member['dob'],
+                        'folio_no' => $family['folio_no'],
+                        'sector' => $family['sector'],
+                        'sub_sector' => $family['sub_sector'],
+                        'thali_status' => $family['is_taking_thali'],
+                        'status' => $family['status'],
+                        'username' => strtolower(str_replace(' ', '', $member['name'])),
+                    ]
+                );
+
+                // Step 2b: Save or update building data if present
+                if (!empty($address)) {
+                    $building = BuildingModel::updateOrCreate(
+                        ['name' => $address['address_2']],
+                        [
+                            'jamiat_id' => 1,
+                            'name' => $address['address_2'],
+                            'address_lime_1' => $address['address_1'] ?? null,
+                            'address_lime_2' => $address['address_2'] ?? null,
+                            'city' => $address['city'] ?? null,
+                            'pincode' => $address['pincode'] ?? null,
+                            'state' => null, // Add state if available in data
+                            'lattitude' => $address['latitude'] ?? null,
+                            'longtitude' => $address['longitude'] ?? null,
+                            'landmark' => null, // Set landmark if available
+                        ]
+                    );
+                    $buildingId = $building->id;
+                }
+            }
+
+            // Step 2c: Save or update hub data for each year
+            foreach ($family['hub_array'] as $hubEntry) {
+                HubModel::updateOrCreate(
+                    [
+                        'family_id' => $family['family_id'],
+                        'year' => $hubEntry['year']
+                    ],
+                    [
+                        'jamiat_id' => 1,
+                        'hub_amount' => $hubEntry['hub'],
+                        'paid_amount' => 0,  // Assuming a default value if not provided
+                        'due_amount' => $hubEntry['hub'] ?? 0,
+                        'log_user' => 'system_migration' // Log user as system or admin
+                    ]
+                );
+            }
+        }
+
+        return response()->json(['message' => 'Data migration completed successfully']);
     }
+
 
     // view
     public function all_its()
