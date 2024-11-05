@@ -338,9 +338,14 @@ class MumeneenController extends Controller
             : response()->json(['message' => 'Failed to register Its!'], 400);
     }
 
-
     public function migrate()
     {
+
+        // Step 1: Truncate existing data for 'mumeneen' users, buildings, and hubs with jamiat_id = 1
+        User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
+        BuildingModel::where('jamiat_id', 1)->delete();
+        HubModel::where('jamiat_id', 1)->delete();
+        
         // Step 1: Fetch data from the API
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
         $response = Http::get($url);
@@ -353,13 +358,32 @@ class MumeneenController extends Controller
 
         // Step 2: Process and Save Data
         foreach ($families as $family) {
-            // Step 2a: Loop through each family member and save in User model
-            foreach ($family['members'] as $member) {
-                $address = $family['address'] ?? [];
-                $buildingId = null;
+            $buildingId = null;
+            $address = $family['address'] ?? [];
 
-                // Save user details
-                $user = User::updateOrCreate(
+            // Step 2a: Save or update building data if present
+            if (!empty($address)) {
+                $building = BuildingModel::updateOrCreate(
+                    ['name' => $address['address_2']],
+                    [
+                        'jamiat_id' => 1,
+                        'name' => $address['address_2'],
+                        'address_lime_1' => $address['address_1'] ?? null,
+                        'address_lime_2' => $address['address_2'] ?? null,
+                        'city' => $address['city'] ?? null,
+                        'pincode' => $address['pincode'] ?? null,
+                        'state' => null, // Add state if available in data
+                        'lattitude' => $address['latitude'] ?? null,
+                        'longtitude' => $address['longitude'] ?? null,
+                        'landmark' => null, // Set landmark if available
+                    ]
+                );
+                $buildingId = $building->id;
+            }
+
+            // Step 2b: Loop through each family member and save in User model
+            foreach ($family['members'] as $member) {
+                User::updateOrCreate(
                     ['its' => $member['its']], // Unique identifier
                     [
                         'name' => $member['name'],
@@ -367,10 +391,10 @@ class MumeneenController extends Controller
                         'password' => bcrypt('default_password'), // Set a default password or generate one
                         'jamiat_id' => 1,
                         'family_id' => $family['family_id'],
-                        'title' => null,
+                        'title' => $member['title'],
                         'its' => $member['its'],
                         'hof_its' => $member['hof_id'],
-                        'its_family_id' => $member['family_its_id'],
+                        'family_its_id' => $member['family_its_id'],
                         'mobile' => $member['mobile'],
                         'gender' => $member['gender'],
                         'folio_no' => $family['folio_no'],
@@ -378,29 +402,11 @@ class MumeneenController extends Controller
                         'sub_sector' => $family['sub_sector'],
                         'thali_status' => $family['is_taking_thali'],
                         'status' => $family['status'],
-                        'username' => strtolower(str_replace(' ', '', $member['name'])),
+                        'username' => strtolower(str_replace(' ', '', $member['its'])),
+                        'role' => 'mumeneen', // Save role as "mumeneen"
+                        'building_id' => $buildingId // Save the building ID
                     ]
                 );
-
-                // Step 2b: Save or update building data if present
-                if (!empty($address)) {
-                    $building = BuildingModel::updateOrCreate(
-                        ['name' => $address['address_2']],
-                        [
-                            'jamiat_id' => 1,
-                            'name' => $address['address_2'],
-                            'address_lime_1' => $address['address_1'] ?? null,
-                            'address_lime_2' => $address['address_2'] ?? null,
-                            'city' => $address['city'] ?? null,
-                            'pincode' => $address['pincode'] ?? null,
-                            'state' => null, // Add state if available in data
-                            'lattitude' => $address['latitude'] ?? null,
-                            'longtitude' => $address['longitude'] ?? null,
-                            'landmark' => null, // Set landmark if available
-                        ]
-                    );
-                    $buildingId = $building->id;
-                }
             }
 
             // Step 2c: Save or update hub data for each year
@@ -423,6 +429,7 @@ class MumeneenController extends Controller
 
         return response()->json(['message' => 'Data migration completed successfully']);
     }
+
 
 
     // view
