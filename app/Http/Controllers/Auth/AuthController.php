@@ -19,7 +19,7 @@ class AuthController extends Controller
 
         $username = $request->input('username');
 
-        $get_user = User::select('id')
+        $get_user = User::select('mobile')
                         ->where('username', $username)
                         ->first();
 
