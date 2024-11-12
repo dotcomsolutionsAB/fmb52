@@ -17,6 +17,7 @@ use App\Models\HubModel;
 use App\Models\ZabihatModel;
 use Auth;
 
+
 use Illuminate\Support\Facades\DB;
 use League\Csv\Reader;
 
@@ -100,6 +101,48 @@ class MumeneenController extends Controller
             ? response()->json(['User Fetched Successfully!', 'data' => $get_all_users], 200)
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
+    
+    public function usersWithHubData()
+{
+    $jamiat_id = Auth::user()->jamiat_id;
+
+    // Fetch all users belonging to the Jamiat
+    $get_all_users = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
+        ->where('jamiat_id', $jamiat_id)
+        ->get();
+
+    if (isset($get_all_users) && $get_all_users->isNotEmpty()) {
+        // Collect all family IDs from the fetched users
+        $family_ids = $get_all_users->pluck('family_id')->toArray();
+
+        // Fetch hub data with jamiat_id check for the collected family IDs
+        $hub_data = HubModel::select('family_id', 'hub_amount', 'paid_amount', 'due_amount')
+            ->whereIn('family_id', $family_ids)
+            ->where('jamiat_id', $jamiat_id) // Adding the jamiat_id check
+            ->get();
+
+        // Map hub data to users, adding "NA" values for FM users
+        $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data) {
+            if ($user->mumeneen_type === 'FM') {
+                $user->hub_amount = 'NA';
+                $user->paid_amount = 'NA';
+                $user->due_amount = 'NA';
+            } else {
+                // Find hub record for the user's family_id
+                $hub_record = $hub_data->firstWhere('family_id', $user->family_id);
+                $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+                $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+                $user->due_amount = $hub_record->due_amount ?? 'NA';
+            }
+            return $user;
+        });
+
+        return response()->json(['User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
+    }
+
+    return response()->json(['Sorry, failed to fetch records!'], 404);
+}
+
 
     // dashboard
     public function get_user($id)

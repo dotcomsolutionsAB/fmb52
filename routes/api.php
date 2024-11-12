@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // user
     Route::get('/user', [MumeneenController::class, 'users']);
+    Route::get('/get_all_user', [MumeneenController::class, 'usersWithHubData']);
     Route::post('/update_user/{id}', [MumeneenController::class, 'update_record']);
     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
     Route::post('/split', [MumeneenController::class, 'split_family']);
