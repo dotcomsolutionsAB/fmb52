@@ -113,7 +113,7 @@ class AuthController extends Controller
 
                     // Generate a sanctrum token
                     $generated_token = $user->createToken('API TOKEN')->plainTextToken;
-
+                   
                     return response()->json([
                         'success' => true,
                         'data' => [
@@ -121,6 +121,7 @@ class AuthController extends Controller
                             'name' => $user->name,
                             'role' => $user->role,
                             'id' => $user->id,
+                            'jamiat_id' => $user->jamiat_id,
                         ],
                         'message' => 'User logged in successfully!',
                     ], 200);
