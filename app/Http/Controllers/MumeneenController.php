@@ -15,6 +15,7 @@ use App\Models\MenuModel;
 use App\Models\FcmModel;
 use App\Models\HubModel;
 use App\Models\ZabihatModel;
+use Auth;
 
 use Illuminate\Support\Facades\DB;
 use League\Csv\Reader;
@@ -90,8 +91,11 @@ class MumeneenController extends Controller
     // view
     public function users()
     {
-        $get_all_users = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')->get();
-
+        $jamiat_id = Auth::user()->jamiat_id;
+        $get_all_users = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
+        ->where('jamiat_id', $jamiat_id)
+        ->get();
+    
         return isset($get_all_users) && $get_all_users->isNotEmpty()
             ? response()->json(['User Fetched Successfully!', 'data' => $get_all_users], 200)
             : response()->json(['Sorry, failed to fetched records!'], 404);
