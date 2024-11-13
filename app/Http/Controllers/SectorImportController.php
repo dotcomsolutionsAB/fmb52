@@ -62,7 +62,7 @@ class SectorImportController extends Controller
             DB::connection()->disableQueryLog();
 
             // Insert batch into sector table
-            Sector::insert($data);
+            SectorModel::insert($data);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error inserting batch: ' . $e->getMessage()], 500);
         }

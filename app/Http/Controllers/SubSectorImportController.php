@@ -64,7 +64,7 @@ class SubSectorImportController extends Controller
             DB::connection()->disableQueryLog();
 
             // Insert batch into sub_sector table
-            SubSector::insert($data);
+            SubSectorModel::insert($data);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error inserting batch: ' . $e->getMessage()], 500);
         }
