@@ -15,9 +15,9 @@ class YearModel extends Model
         'year', 'jamiat_id', 'is_current',
     ];
 
-    // Define the relationship with the Hub model
-    public function get_year()
+    // Define a hasMany relationship with the Hub model
+    public function hubs()
     {
-        return $this->belongsTo(HubModel::class, 'year', 'year'); 
+        return $this->hasMany(HubModel::class, 'year', 'year');
     }
 }
