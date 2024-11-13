@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('t_its_data', function (Blueprint $table) {
             $table->id();
             $table->integer('jamiat_id');
+            $table->integer('its');
             $table->integer('hof_its');
             $table->integer('its_family_id');
             $table->string('name');
             $table->string('email');
             $table->string('mobile');
+            $table->string('whatsapp_mobile');
             $table->string('title');
             $table->enum('mumeneen_type', ['HOF', 'FM']);
             $table->enum('gender', ['male', 'female']);
@@ -27,6 +29,8 @@ return new class extends Migration
             $table->string('sub_sector');
             // as it don't support `length`, it can store upto `65,535 characters for TEXT type in MySQL`
             $table->text('name_arabic');
+            $table->text('address');
+
             $table->timestamps();
         });
     }

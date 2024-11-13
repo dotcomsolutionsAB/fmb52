@@ -250,6 +250,7 @@ class CSVImportController extends Controller
         foreach ($itsRecords as $its) {
             $batchData[] = [
                 'jamiat_id' => 1,
+                'its'=>$its['ITS_ID'],
                 'hof_its' => $its['HOF_ID'],
                 'its_family_id' => $its['Family_ID'],
                 'name' => $its['Full_Name'],
@@ -262,6 +263,8 @@ class CSVImportController extends Controller
                 'sector' => $its['Sector'],
                 'sub_sector' => $its['Sub_Sector'],
                 'name_arabic' => $its['Full_Name_Arabic'],
+                'address' => $its['Address'],
+                'whatsapp_mobile' =>$its['WhatsApp_No']
             ];
     
             // Insert in batches of 100 records
