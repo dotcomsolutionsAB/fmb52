@@ -10,6 +10,8 @@ use App\Http\Controllers\CSVImportController;
 use App\Http\Controllers\MenuCardController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\JamiatController;
+use App\Http\Controllers\SectorImportController;
+use App\Http\Controllers\SubSectorImportController;
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
@@ -211,7 +213,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/update_super_admin_counter/{id}', [JamiatController::class, 'update_super_admin_counter']);
     Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_super_admin_counter']);
 
-    Route::get('/import_its', [CSVImportController::class, 'importIts']);    
+    Route::get('/import_its', [CSVImportController::class, 'importIts']);  
+    Route::get('/import_sectors', [SectorImportController::class, 'importSectorData']);  
+    Route::get('/import_sub_sectors', [SubSectorImportController::class, 'importSubSectorData']);  
 });
 // Route::get('/import_users', [CSVImportController::class, 'importUser']);
 
