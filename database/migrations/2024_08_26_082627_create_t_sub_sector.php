@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('t_sub_sector', function (Blueprint $table) {
             $table->id();
             $table->integer('jamiat_id');
-            $table->integer('sector');
+            $table->string('sector',100);
             $table->string('name', 100);
             // as it don't support `length`, it can store upto `65,535 characters for TEXT type in MySQL`
             $table->text('notes')->nullable();
