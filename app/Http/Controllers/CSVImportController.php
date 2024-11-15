@@ -386,7 +386,7 @@ class CSVImportController extends Controller
         $paymentNo = "P_'$counter'_'$formattedDate'";
         $counter++;
 
-       
+        $formattedDate = date('Y-m-d', strtotime($record['date']));
         $date = $formattedDate ?: null;
        
 
