@@ -387,7 +387,7 @@ class CSVImportController extends Controller
         $counter++;
 
         $formattedDate = date('Y-m-d', strtotime($record['date']));
-        $date = $formattedDate ?: null;
+        $date =  $this->validateAndFormatDate($record['date']);
        
 
         // Prepare payment data
@@ -472,5 +472,13 @@ class CSVImportController extends Controller
             $formattedDate = date('Y-m-d', strtotime($date));
             return $formattedDate ?: null; // Return null if the date is invalid
         }
+        private function validateAndFormatDate($date)
+{
+    $timestamp = strtotime($date);
+    if ($timestamp === false || $date === '-0001-11-30') {
+        return null; // Return null if the date is invalid
+    }
+    return date('Y-m-d', $timestamp); // Format and return valid date
+}
     }
   
