@@ -8,6 +8,9 @@ use League\Csv\Reader;
 use League\Csv\Statement;
 // use App\Models\User;
 use App\Models\ItsModel;
+use App\Models\PaymentsModel;
+use App\Models\ReceiptsModel;
+
 // use DB;
 
 class CSVImportController extends Controller
@@ -294,5 +297,143 @@ class CSVImportController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error inserting batch: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function importDataFromUrl()
+    {
+        // URLs of the CSV files
+        $receiptCsvUrl = public_path('storage/Payments.csv'); // Replace with actual URL
+        $paymentCsvUrl = public_path('storage/Receipts.csv'); // Replace with actual URL
+
+        // Process Receipt CSV
+        $this->processReceiptCSV($receiptCsvUrl);
+
+        // Process Payment CSV
+        $this->processPaymentCSV($paymentCsvUrl);
+
+        return response()->json(['message' => 'Data import from URLs completed successfully.'], 200);
+    }
+
+    private function processReceiptCSV($url)
+    {
+        // Clear existing data in the receipt table
+        ReceiptsModel::truncate();
+
+        // Fetch the CSV content from the URL
+        $csvContent = file_get_contents($url);
+
+        if ($csvContent === false) {
+            throw new \Exception("Failed to fetch the CSV content from the URL: $url");
+        }
+
+        // Read and parse the CSV
+        $csv = Reader::createFromString($csvContent);
+        $csv->setHeaderOffset(0);
+
+        // Get records and initialize batch variables
+        $receiptRecords = $csv->getRecords();
+        $batchSize = 100;
+        $batchData = [];
+
+        foreach ($receiptRecords as $record) {
+            $batchData[] = [
+                'jamiat_id' => 1,
+                'family_id' => $record['family_id'],
+                'receipt_no' => $record['rno'],
+                'date' => $record['date'],
+                'its' => $record['its'],
+                'folio_no' => $record['folio'],
+                'name' => $record['name'],
+                'sector' => $record['sector'],
+                'sub_sector' => $record['sub_sector'],
+                'amount' => $record['amount'],
+                'mode' => $this->mapTypeToMode($record['type']),
+                'year' => $record['year'],
+                'comments' => $record['comments'],
+                'status' => $record['status'],
+                'cancellation_reason' => $record['reason'],
+                'collected_by' => $record['log_user'],
+                'log_user' => $record['log_user'],
+                'attachment' => null,
+                'payment_id' => null, // This will be linked later
+            ];
+
+            if (count($batchData) >= $batchSize) {
+                $this->insertBatch(ReceiptsModel::class, $batchData);
+                $batchData = [];
+            }
+        }
+
+        if (count($batchData) > 0) {
+            $this->insertBatch(ReceiptsModel::class, $batchData);
+        }
+    }
+
+    private function processPaymentCSV($url)
+    {
+        // Clear existing data in the payment table
+        PaymentsModel::truncate();
+
+        // Fetch the CSV content from the URL
+        $csvContent = file_get_contents($url);
+
+        if ($csvContent === false) {
+            throw new \Exception("Failed to fetch the CSV content from the URL: $url");
+        }
+
+        // Read and parse the CSV
+        $csv = Reader::createFromString($csvContent);
+        $csv->setHeaderOffset(0);
+
+        // Get records and initialize batch variables
+        $paymentRecords = $csv->getRecords();
+        $batchSize = 100;
+        $batchData = [];
+
+        foreach ($paymentRecords as $record) {
+            $batchData[] = [
+                'family_id' => $record['family_id'],
+                'folio_no' => $record['folio'],
+                'name' => $record['name'],
+                'its' => $record['its'],
+                'sector' => $record['sector'],
+                'sub_sector' => $record['sub_sector'],
+                'year' => $record['year'],
+                'mode' => strtolower($record['mode']),
+                'date' => $record['date'],
+                'bank_name' => $record['bank_name'],
+                'cheque_no' => $record['cheque_num'],
+                'cheque_date' => $record['date'], // Adjust date as needed
+                'ifsc_code' => $record['ifsc'],
+                'amount' => $record['amount'],
+                'comments' => $record['comments'],
+                'status' => 'pending', // Adjust status if necessary
+                'cancellation_reason' => null,
+                'log_user' => $record['log_user'],
+                'attachment' => null,
+            ];
+
+            if (count($batchData) >= $batchSize) {
+                $this->insertBatch(PaymentsModel::class, $batchData);
+                $batchData = [];
+            }
+        }
+
+        if (count($batchData) > 0) {
+            $this->insertBatch(PaymentsModel::class, $batchData);
+        }
+    }
+
+    
+
+    private function mapTypeToMode($type)
+    {
+        $modes = [
+            'Cheque' => 'cheque',
+            'Cash' => 'cash',
+            'NEFT' => 'neft',
+            'UPI' => 'upi',
+        ];
+        return $modes[$type] ?? 'cash'; // Default to 'cash' if not found
     }
 }
