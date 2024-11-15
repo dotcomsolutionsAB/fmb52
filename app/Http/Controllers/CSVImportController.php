@@ -373,6 +373,7 @@ class CSVImportController extends Controller
     // Read and parse the CSV
     $csv = Reader::createFromString($csvContent);
     $csv->setHeaderOffset(0);
+    $counter=0;
 
     // Get records and initialize batch variables
     $paymentRecords = $csv->getRecords();
@@ -382,7 +383,8 @@ class CSVImportController extends Controller
     foreach ($paymentRecords as $record) {
         // Format payment_no as "P_counter_(date)"
         $formattedDate = $this->formatDate($record['date']);
-        $paymentNo = "P_counter_($formattedDate)";
+        $paymentNo = "P_'$counter'_'$formattedDate'";
+        $counter++;
 
        
         $date = $formattedDate ?: null;
