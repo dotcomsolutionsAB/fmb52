@@ -336,7 +336,7 @@ class CSVImportController extends Controller
                     'name' => $record['name'],
                     'sector' => $record['sector'],
                     'sub_sector' => $record['sub_sector'],
-                    'amount' => $record['amount'],
+                    'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
                     'mode' => $this->mapTypeToMode($record['type']),
                     'year' => $record['year'],
                     'comments' => $record['comments'],
@@ -360,58 +360,70 @@ class CSVImportController extends Controller
         }
     
         private function processPaymentCSV($url)
-        {
-            // Clear existing data in the payment table
-            PaymentsModel::truncate();
-    
-            // Fetch the CSV content from the URL
-            $csvContent = file_get_contents($url);
-            if ($csvContent === false) {
-                throw new \Exception("Failed to fetch the CSV content from the URL: $url");
-            }
-    
-            // Read and parse the CSV
-            $csv = Reader::createFromString($csvContent);
-            $csv->setHeaderOffset(0);
-    
-            // Get records and initialize batch variables
-            $paymentRecords = $csv->getRecords();
-            $batchSize = 100;
-            $batchData = [];
-    
-            foreach ($paymentRecords as $record) {
-                $batchData[] = [
-                    'family_id' => $record['family_id'],
-                    'folio_no' => $record['folio'],
-                    'name' => $record['name'],
-                    'its' => $record['its'],
-                    'sector' => $record['sector'],
-                    'sub_sector' => $record['sub_sector'],
-                    'year' => $record['year'],
-                    'mode' => strtolower($record['mode']),
-                    'date' => $this->formatDate($record['date']),
-                    'bank_name' => $record['bank_name'],
-                    'cheque_no' => $record['cheque_num'],
-                    'cheque_date' => $this->formatDate($record['date']), // Adjust date as needed
-                    'ifsc_code' => $record['ifsc'],
-                    'amount' => $record['amount'],
-                    'comments' => $record['comments'],
-                    'status' => 'pending', // Adjust status if necessary
-                    'cancellation_reason' => null,
-                    'log_user' => $record['log_user'],
-                    'attachment' => null,
-                ];
-    
-                if (count($batchData) >= $batchSize) {
-                    $this->insertBatch(PaymentsModel::class, $batchData);
-                    $batchData = [];
-                }
-            }
-    
-            if (count($batchData) > 0) {
-                $this->insertBatch(PaymentsModel::class, $batchData);
+{
+    // Clear existing data in the payment table
+    PaymentsModel::truncate();
+
+    // Fetch the CSV content from the URL
+    $csvContent = file_get_contents($url);
+    if ($csvContent === false) {
+        throw new \Exception("Failed to fetch the CSV content from the URL: $url");
+    }
+
+    // Read and parse the CSV
+    $csv = Reader::createFromString($csvContent);
+    $csv->setHeaderOffset(0);
+
+    // Get records and initialize batch variables
+    $paymentRecords = $csv->getRecords();
+    $batchSize = 100;
+    $batchData = [];
+
+    foreach ($paymentRecords as $record) {
+        // Format payment_no as "P_counter_(date)"
+        $formattedDate = date('Y-m-d', strtotime($record['date']));
+        $paymentNo = "P_counter_($formattedDate)";
+
+        // Prepare payment data
+        $newPaymentData = [
+            'family_id' => $record['family_id'],
+            'folio_no' => $record['folio'],
+            'name' => $record['name'],
+            'its' => $record['its'],
+            'sector' => $record['sector'],
+            'sub_sector' => $record['sub_sector'],
+            'year' => $record['year'],
+            'mode' => strtolower($record['mode']),
+            'date' => $this->formatDate($record['date']),
+            'bank_name' => $record['bank_name'],
+            'cheque_no' => $record['cheque_num'],
+            'cheque_date' => $this->formatDate($record['date']),
+            'ifsc_code' => $record['ifsc'],
+            'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
+            'comments' => $record['comments'],
+            'status' => 'pending',
+            'cancellation_reason' => null,
+            'log_user' => $record['log_user'],
+            'attachment' => null,
+            'payment_no' => $paymentNo, // Set the payment_no
+        ];
+
+        // Create the new payment
+        $newPayment = PaymentsModel::create($newPaymentData);
+        $newPaymentId = $newPayment->id;
+
+        // Update receipts linked to this payment
+        $receiptNumbers = json_decode($record['against_rno'], true);
+        if (is_array($receiptNumbers)) {
+            foreach ($receiptNumbers as $receiptNumber) {
+                ReceiptsModel::where('receipt_no', $receiptNumber)
+                    ->update(['payment_id' => $newPaymentId]);
             }
         }
+    }
+}
+
+
     
         private function insertBatch($model, $data)
         {
