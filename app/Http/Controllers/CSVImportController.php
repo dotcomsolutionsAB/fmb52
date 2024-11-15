@@ -360,68 +360,84 @@ class CSVImportController extends Controller
         }
     
         private function processPaymentCSV($url)
-{
-    // Clear existing data in the payment table
-    PaymentsModel::truncate();
-
-    // Fetch the CSV content from the URL
-    $csvContent = file_get_contents($url);
-    if ($csvContent === false) {
-        throw new \Exception("Failed to fetch the CSV content from the URL: $url");
-    }
-
-    // Read and parse the CSV
-    $csv = Reader::createFromString($csvContent);
-    $csv->setHeaderOffset(0);
-
-    // Get records and initialize batch variables
-    $paymentRecords = $csv->getRecords();
-    $batchSize = 100;
-    $batchData = [];
-
-    foreach ($paymentRecords as $record) {
-        // Format payment_no as "P_counter_(date)"
-        $formattedDate = date('Y-m-d', strtotime($record['date']));
-        $paymentNo = "P_counter_($formattedDate)";
-
-        // Prepare payment data
-        $newPaymentData = [
-            'family_id' => $record['family_id'],
-            'folio_no' => $record['folio'],
-            'name' => $record['name'],
-            'its' => $record['its'],
-            'sector' => $record['sector'],
-            'sub_sector' => $record['sub_sector'],
-            'year' => $record['year'],
-            'mode' => strtolower($record['mode']),
-            'date' => $this->formatDate($record['date']),
-            'bank_name' => $record['bank_name'],
-            'cheque_no' => $record['cheque_num'],
-            'cheque_date' => $this->formatDate($record['date']),
-            'ifsc_code' => $record['ifsc'],
-            'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
-            'comments' => $record['comments'],
-            'status' => 'pending',
-            'cancellation_reason' => null,
-            'log_user' => $record['log_user'],
-            'attachment' => null,
-            'payment_no' => $paymentNo, // Set the payment_no
-        ];
-
-        // Create the new payment
-        $newPayment = PaymentsModel::create($newPaymentData);
-        $newPaymentId = $newPayment->id;
-
-        // Update receipts linked to this payment
-        $receiptNumbers = json_decode($record['against_rno'], true);
-        if (is_array($receiptNumbers)) {
-            foreach ($receiptNumbers as $receiptNumber) {
-                ReceiptsModel::where('receipt_no', $receiptNumber)
-                    ->update(['payment_id' => $newPaymentId]);
+        {
+            // Clear existing data in the payment table
+            PaymentsModel::truncate();
+        
+            // Fetch the CSV content from the URL
+            $csvContent = file_get_contents($url);
+            if ($csvContent === false) {
+                throw new \Exception("Failed to fetch the CSV content from the URL: $url");
+            }
+        
+            // Read and parse the CSV
+            $csv = Reader::createFromString($csvContent);
+            $csv->setHeaderOffset(0);
+            $counter=0;
+        
+            // Get records and initialize batch variables
+            $paymentRecords = $csv->getRecords();
+            $batchSize = 100;
+            $batchData = [];
+        
+            foreach ($paymentRecords as $record) {
+                // Format payment_no as "P_counter_(date)"
+                $formattedDate = $this->formatDate($record['date']);
+                $paymentNo = "P_'$counter'_'$formattedDate'";
+                $counter++;
+                // Check if dates are valid, otherwise set to NULL
+                $date = $formattedDate ?: null;
+                $chequeDate = $this->formatDate($record['cheque_date']) ?: null;
+        
+                // Prepare payment data
+                $newPaymentData = [
+                    'jamiat_id' => 1,
+                    'family_id' => $record['family_id'],
+                    'folio_no' => $record['folio'],
+                    'name' => $record['name'],
+                    'its' => $record['its'],
+                    'sector' => $record['sector'],
+                    'sub_sector' => $record['sub_sector'],
+                    'year' => $record['year'],
+                    'mode' => strtolower($record['mode']),
+                    'date' => $date,
+                    'bank_name' => $record['bank_name'] ?: null,
+                    'cheque_no' => $record['cheque_num'] ?: null,
+                    'cheque_date' => $chequeDate,
+                    'ifsc_code' => $record['ifsc'] ?: null,
+                    'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
+                    'comments' => $record['comments'] ?: null,
+                    'status' => 'pending',
+                    'cancellation_reason' => null,
+                    'log_user' => $record['log_user'],
+                    'attachment' => null,
+                    'payment_no' => $paymentNo,
+                ];
+        
+                // Create the new payment
+                $newPayment = PaymentsModel::create($newPaymentData);
+                $newPaymentId = $newPayment->id;
+        
+                // Update receipts linked to this payment
+                $receiptNumbers = json_decode($record['against_rno'], true);
+                if (is_array($receiptNumbers)) {
+                    foreach ($receiptNumbers as $receiptNumber) {
+                        // Fetch the receipt and update with payment details
+                        ReceiptsModel::where('receipt_no', $receiptNumber)
+                            ->update([
+                                'payment_id' => $newPaymentId,
+                                'bank_name' => $record['bank_name'] ?: null,
+                                'cheque_no' => $record['cheque_num'] ?: null,
+                                'cheque_date' => $chequeDate,
+                                'ifsc_code' => $record['ifsc'] ?: null,
+                                'transaction_id' => $record['transaction_id'] ?: null,
+                                'transaction_date' => $this->formatDate($record['transaction_date']) ?: null,
+                            ]);
+                    }
+                }
             }
         }
-    }
-}
+        
 
 
     
