@@ -47,7 +47,7 @@ class MumeneenController extends Controller
             ],
             'hof_its' => 'required|string|max:8',
             'its_family_id' => 'nullable|string|max:10',
-            'mobile' => ['required', 'string', 'min:12', 'max:20', 'unique:users,mobile'],
+            'mobile' => ['required', 'string', 'min:12', 'max:20'],
             'gender' => 'required|in:male,female',
             'title' => 'nullable|in:Shaikh,Mulla',
             'folio_no' => 'nullable|string|max:20',
