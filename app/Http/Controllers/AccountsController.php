@@ -94,7 +94,7 @@ class AccountsController extends Controller
     public function register_advance_receipt(Request $request)
     {
         $request->validate([
-            'jamiat_id' => 'required|string',
+            'jamiat_id' => 'required|integer',
             'family_id' => 'required|string|max:10',
             'name' => 'required|string|max:100',
             'amount' => 'required|numeric',
@@ -446,7 +446,6 @@ class AccountsController extends Controller
                                   ->where('family_id', $request->input('family_id'))
                                   ->get();
                                   
-
         if (count($get_family_member) < 1) {
             return response()->json(['message' => 'Sorry, failed to get users!'], 400);
         }
@@ -488,6 +487,9 @@ class AccountsController extends Controller
                 'payment_id' => $request->input('payment_id'),
             ]);
 
+            // Unset the fields from the register_receipt before adding to the receipts array
+            unset($register_receipt['id'], $register_receipt['created_at'], $register_receipt['updated_at']);
+
             $receipts [] = $register_receipt;
 
             $remainingAmount -= $amountsForMembers;
@@ -518,7 +520,6 @@ class AccountsController extends Controller
             $advanceReceiptData = $advanceReceiptResponse->getOriginalContent();
         }
 
-        unset($register_receipt['id'], $register_receipt['created_at'], $register_receipt['updated_at']);
 
         return $register_receipt
             ? response()->json(['message' => 'Receipt created successfully!', 'receipts' => $receipts, 'advance_receipt' => $advanceReceiptData ?? null], 201)
