@@ -414,7 +414,7 @@ class AccountsController extends Controller
     // create
     public function register_receipts(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'jamiat_id' => 'required|integer',
             'family_id' => 'required|string|max:10',
             'receipt_no' => 'required|string|max:100',
