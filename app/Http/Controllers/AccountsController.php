@@ -442,23 +442,68 @@ class AccountsController extends Controller
             'payment_id' => 'nullable|integer',
         ]);
 
-        $get_family_member = User::where('family_id', $request->input('family_id'))->count();
+        $get_family_member = User::select('name')
+                                  ->where('family_id', $request->input('family_id'))
+                                  ->get();
+                                  
 
-        $divide_amount_for_each = $request->input('amount') / $get_family_member;
-         
-        $maximum_receivable_amount = $request->input('amount');
+        if (count($get_family_member) < 1) {
+            return response()->json(['message' => 'Sorry, failed to get users!'], 400);
+        }
 
-        if ($divide_amount_for_each > 10000) 
+        $totalAmount = $request->input('amount');
+        $maximumReceivable = 10000;
+        $remainingAmount = $totalAmount;
+
+        $receipts = []; 
+
+        foreach ($get_family_member as $member) {
+            $amountsForMembers = min($remainingAmount, $maximumReceivable);
+
+            $register_receipt = ReceiptsModel::create([
+                'jamiat_id' => $request->input('jamiat_id'),
+                'family_id' => $request->input('family_id'),
+                'receipt_no' => $request->input('receipt_no'),
+                'date' => $request->input('date'),
+                'its' => $request->input('its'),
+                'folio_no' => $request->input('folio_no'),
+                'name' => $member->name,
+                'sector' => $request->input('sector'),
+                'sub_sector' => $request->input('sub_sector'),
+                'amount' => $amountsForMembers,
+                'mode' => $request->input('mode'),
+                'bank_name' => $request->input('bank_name'),
+                'cheque_no' => $request->input('cheque_no'),
+                'cheque_date' => $request->input('cheque_date'),
+                'ifsc_code' => $request->input('ifsc_code'),
+                'transaction_id' => $request->input('transaction_id'),
+                'transaction_date' => $request->input('transaction_date'),
+                'year' => $request->input('year'),
+                'comments' => $request->input('comments'),
+                'status' => $request->input('status'),
+                'cancellation_reason' => $request->input('cancellation_reason'),
+                'collected_by' => $request->input('collected_by'),
+                'log_user' => $request->input('log_user'),
+                'attachment' => $request->input('attachment'),
+                'payment_id' => $request->input('payment_id'),
+            ]);
+
+            $receipts [] = $register_receipt;
+
+            $remainingAmount -= $amountsForMembers;
+
+            if ($remainingAmount <= 0) {
+                break;
+            }
+        }
+
+        if ($remainingAmount > 0) 
         {
-            $maximum_receivable_amount = 10000 * $get_family_member;
-
-            $advanceAmount = $request->input('amount') - $maximum_receivable_amount;
-
             $dataForAdvanceReceipt = [
                 'jamiat_id' => $validatedData['jamiat_id'], 
                 'family_id' => $validatedData['family_id'],
                 'name' => $validatedData['name'],
-                'amount' => $advanceAmount,
+                'amount' => $remainingAmount,
                 'sector' => $validatedData['sector'], 
                 'sub_sector' => $validatedData['sub_sector'], 
             ];
@@ -473,39 +518,10 @@ class AccountsController extends Controller
             $advanceReceiptData = $advanceReceiptResponse->getOriginalContent();
         }
 
-        // $register_receipt = ReceiptsModel::create($request->all());
-        $register_receipt = ReceiptsModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'receipt_no' => $request->input('receipt_no'),
-            'date' => $request->input('date'),
-            'its' => $request->input('its'),
-            'folio_no' => $request->input('folio_no'),
-            'name' => $request->input('name'),
-            'sector' => $request->input('sector'),
-            'sub_sector' => $request->input('sub_sector'),
-            'amount' => $request->input('amount'),
-            'mode' => $request->input('mode'),
-            'bank_name' => $request->input('bank_name'),
-            'cheque_no' => $request->input('cheque_no'),
-            'cheque_date' => $request->input('cheque_date'),
-            'ifsc_code' => $request->input('ifsc_code'),
-            'transaction_id' => $request->input('transaction_id'),
-            'transaction_date' => $request->input('transaction_date'),
-            'year' => $request->input('year'),
-            'comments' => $request->input('comments'),
-            'status' => $request->input('status'),
-            'cancellation_reason' => $request->input('cancellation_reason'),
-            'collected_by' => $request->input('collected_by'),
-            'log_user' => $request->input('log_user'),
-            'attachment' => $request->input('attachment'),
-            'payment_id' => $request->input('payment_id'),
-        ]);
-
         unset($register_receipt['id'], $register_receipt['created_at'], $register_receipt['updated_at']);
 
         return $register_receipt
-            ? response()->json(['message' => 'Receipt created successfully!', 'data' => $register_receipt, 'advance_receipt' => $advanceReceiptData], 201)
+            ? response()->json(['message' => 'Receipt created successfully!', 'receipts' => $receipts, 'advance_receipt' => $advanceReceiptData ?? null], 201)
             : response()->json(['message' => 'Failed to create receipt!'], 400);
     }
 
