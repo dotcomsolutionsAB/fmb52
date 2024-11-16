@@ -291,37 +291,6 @@ class AccountsController extends Controller
             'attachment' => 'nullable|integer',
         ]);
 
-        $get_family_member = User::where('family_id', $request->input('family_id'))->count();
-
-        $divide_amount_for_each = $request->input('amount') / $get_family_member;
-         
-        $maximum_receivable_amount = $request->input('amount');
-
-        if ($divide_amount_for_each > 10000) 
-        {
-            $maximum_receivable_amount = 10000 * $get_family_member;
-
-            $advanceAmount = $request->input('amount') - $maximum_receivable_amount;
-
-            $dataForAdvanceReceipt = [
-                'jamiat_id' => $validatedData['jamiat_id'], 
-                'family_id' => $validatedData['family_id'],
-                'name' => $validatedData['name'],
-                'amount' => $advanceAmount,
-                'sector' => $validatedData['sector'], 
-                'sub_sector' => $validatedData['sub_sector'], 
-            ];
-            $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
-
-           $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
-
-            if ($advanceReceiptResponse->getStatusCode() !== 201) {
-                return response()->json(['message' => 'Failed to create Advance Receipt!'], 400);
-            }
-
-            $advanceReceiptData = $advanceReceiptResponse->getOriginalContent();
-        }
-
         $register_payment = PaymentsModel::create([
             'payment_no' => $request->input('payment_no'),
             'jamiat_id' => $request->input('jamiat_id'),
@@ -351,7 +320,7 @@ class AccountsController extends Controller
         unset($register_payment['id'], $register_payment['created_at'], $register_payment['updated_at']);
 
         return $register_payment
-            ? response()->json(['message' => 'Payment created successfully!', 'data' => $register_payment, 'advance_receipt' => $advanceReceiptData], 201)
+            ? response()->json(['message' => 'Payment created successfully!', 'data' => $register_payment], 201)
             : response()->json(['message' => 'Failed to create payment!'], 400);
     }
 
@@ -473,6 +442,37 @@ class AccountsController extends Controller
             'payment_id' => 'nullable|integer',
         ]);
 
+        $get_family_member = User::where('family_id', $request->input('family_id'))->count();
+
+        $divide_amount_for_each = $request->input('amount') / $get_family_member;
+         
+        $maximum_receivable_amount = $request->input('amount');
+
+        if ($divide_amount_for_each > 10000) 
+        {
+            $maximum_receivable_amount = 10000 * $get_family_member;
+
+            $advanceAmount = $request->input('amount') - $maximum_receivable_amount;
+
+            $dataForAdvanceReceipt = [
+                'jamiat_id' => $validatedData['jamiat_id'], 
+                'family_id' => $validatedData['family_id'],
+                'name' => $validatedData['name'],
+                'amount' => $advanceAmount,
+                'sector' => $validatedData['sector'], 
+                'sub_sector' => $validatedData['sub_sector'], 
+            ];
+            $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
+
+           $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
+
+            if ($advanceReceiptResponse->getStatusCode() !== 201) {
+                return response()->json(['message' => 'Failed to create Advance Receipt!'], 400);
+            }
+
+            $advanceReceiptData = $advanceReceiptResponse->getOriginalContent();
+        }
+
         // $register_receipt = ReceiptsModel::create($request->all());
         $register_receipt = ReceiptsModel::create([
             'jamiat_id' => $request->input('jamiat_id'),
@@ -505,7 +505,7 @@ class AccountsController extends Controller
         unset($register_receipt['id'], $register_receipt['created_at'], $register_receipt['updated_at']);
 
         return $register_receipt
-            ? response()->json(['message' => 'Receipt created successfully!', 'data' => $register_receipt], 201)
+            ? response()->json(['message' => 'Receipt created successfully!', 'data' => $register_receipt, 'advance_receipt' => $advanceReceiptData], 201)
             : response()->json(['message' => 'Failed to create receipt!'], 400);
     }
 
