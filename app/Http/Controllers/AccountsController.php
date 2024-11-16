@@ -441,7 +441,7 @@ class AccountsController extends Controller
             'attachment' => 'nullable|integer',
             'payment_id' => 'nullable|integer',
         ]);
-
+        
         $get_family_member = User::select('name')
                                   ->where('family_id', $request->input('family_id'))
                                   ->get();
@@ -501,10 +501,14 @@ class AccountsController extends Controller
 
         if ($remainingAmount > 0) 
         {
+            $get_hof_member = User::whereColumn('its', 'hof_its')
+            ->where('family_id', $request->input('family_id'))
+            ->get();
+
             $dataForAdvanceReceipt = [
                 'jamiat_id' => $validatedData['jamiat_id'], 
                 'family_id' => $validatedData['family_id'],
-                'name' => $validatedData['name'],
+                'name' => $get_hof_member->first()->name,
                 'amount' => $remainingAmount,
                 'sector' => $validatedData['sector'], 
                 'sub_sector' => $validatedData['sub_sector'], 
