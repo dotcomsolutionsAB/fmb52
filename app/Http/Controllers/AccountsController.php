@@ -442,7 +442,7 @@ class AccountsController extends Controller
             'payment_id' => 'nullable|integer',
         ]);
         
-        $get_family_member = User::select('name')
+        $get_family_member = User::select('name', 'its')
                                   ->where('family_id', $request->input('family_id'))
                                   ->get();
                                   
@@ -464,7 +464,7 @@ class AccountsController extends Controller
                 'family_id' => $request->input('family_id'),
                 'receipt_no' => $request->input('receipt_no'),
                 'date' => $request->input('date'),
-                'its' => $request->input('its'),
+                'its' => $member->its,
                 'folio_no' => $request->input('folio_no'),
                 'name' => $member->name,
                 'sector' => $request->input('sector'),
