@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('t_advance_receipt', function (Blueprint $table) {
             $table->id();
-            $table->integer('jamiat_id');
+            $table->string('jamiat_id');
             $table->string('family_id', 10);
             $table->string('name', 100);
             $table->float('amount');
-            $table->integer('sector');
-            $table->integer('sub_sector');
+            $table->string('sector');
+            $table->string('sub_sector');
             $table->timestamps();
         });
     }

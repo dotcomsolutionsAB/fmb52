@@ -8,6 +8,7 @@ use App\Models\AdvanceReceiptModel;
 use App\Models\ExpenseModel;
 use App\Models\PaymentsModel;
 use App\Models\ReceiptsModel;
+use App\Models\User;
 
 
 class AccountsController extends Controller
@@ -93,12 +94,12 @@ class AccountsController extends Controller
     public function register_advance_receipt(Request $request)
     {
         $request->validate([
-            'jamiat_id' => 'required|integer',
+            'jamiat_id' => 'required|string',
             'family_id' => 'required|string|max:10',
             'name' => 'required|string|max:100',
             'amount' => 'required|numeric',
-            'sector' => 'required|integer',
-            'sub_sector' => 'required|integer',
+            'sector' => 'required|string',
+            'sub_sector' => 'required|string',
         ]);
 
         $register_advance_receipt = AdvanceReceiptModel::create([
@@ -264,7 +265,7 @@ class AccountsController extends Controller
     // create
     public function register_payments(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'payment_no' => 'required|string|unique:t_payments,payment_no|max:100',
             'jamiat_id' => 'required|string|max:10',
             'family_id' => 'required|string|max:10',
@@ -290,6 +291,37 @@ class AccountsController extends Controller
             'attachment' => 'nullable|integer',
         ]);
 
+        $get_family_member = User::where('family_id', $request->input('family_id'))->count();
+
+        $divide_amount_for_each = $request->input('amount') / $get_family_member;
+         
+        $maximum_receivable_amount = $request->input('amount');
+
+        if ($divide_amount_for_each > 10000) 
+        {
+            $maximum_receivable_amount = 10000 * $get_family_member;
+
+            $advanceAmount = $request->input('amount') - $maximum_receivable_amount;
+
+            $dataForAdvanceReceipt = [
+                'jamiat_id' => $validatedData['jamiat_id'], 
+                'family_id' => $validatedData['family_id'],
+                'name' => $validatedData['name'],
+                'amount' => $advanceAmount,
+                'sector' => $validatedData['sector'], 
+                'sub_sector' => $validatedData['sub_sector'], 
+            ];
+            $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
+
+           $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
+
+            if ($advanceReceiptResponse->getStatusCode() !== 201) {
+                return response()->json(['message' => 'Failed to create Advance Receipt!'], 400);
+            }
+
+            $advanceReceiptData = $advanceReceiptResponse->getOriginalContent();
+        }
+
         $register_payment = PaymentsModel::create([
             'payment_no' => $request->input('payment_no'),
             'jamiat_id' => $request->input('jamiat_id'),
@@ -308,7 +340,7 @@ class AccountsController extends Controller
             'ifsc_code' => $request->input('ifsc_code'),
             'transaction_id' => $request->input('transaction_id'),
             'transaction_date' => $request->input('transaction_date'),
-            'amount' => $request->input('amount'),
+            'amount' => $maximum_receivable_amount,
             'comments' => $request->input('comments'),
             'status' => $request->input('status'),
             'cancellation_reason' => $request->input('cancellation_reason'),
@@ -319,7 +351,7 @@ class AccountsController extends Controller
         unset($register_payment['id'], $register_payment['created_at'], $register_payment['updated_at']);
 
         return $register_payment
-            ? response()->json(['message' => 'Payment created successfully!', 'data' => $register_payment], 201)
+            ? response()->json(['message' => 'Payment created successfully!', 'data' => $register_payment, 'advance_receipt' => $advanceReceiptData], 201)
             : response()->json(['message' => 'Failed to create payment!'], 400);
     }
 
