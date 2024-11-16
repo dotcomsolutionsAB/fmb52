@@ -470,7 +470,7 @@ class AccountsController extends Controller
             'collected_by' => 'nullable|string|max:100',
             'log_user' => 'required|string|max:100',
             'attachment' => 'nullable|integer',
-            'payment_id' => 'required|integer',
+            'payment_id' => 'nullable|integer',
         ]);
 
         // $register_receipt = ReceiptsModel::create($request->all());
