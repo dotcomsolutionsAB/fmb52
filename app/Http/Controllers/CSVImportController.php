@@ -309,55 +309,65 @@ class CSVImportController extends Controller
         {
             // Clear existing data in the receipt table
             ReceiptsModel::truncate();
-    
+        
             // Fetch the CSV content from the URL
             $csvContent = file_get_contents($url);
             if ($csvContent === false) {
                 throw new \Exception("Failed to fetch the CSV content from the URL: $url");
             }
-    
+        
             // Read and parse the CSV
             $csv = Reader::createFromString($csvContent);
             $csv->setHeaderOffset(0);
-    
+        
             // Get records and initialize batch variables
             $receiptRecords = $csv->getRecords();
             $batchSize = 100;
             $batchData = [];
-    
+        
             foreach ($receiptRecords as $record) {
+                // Determine status using the old fields
+                $statusFlag = (int) $record['status']; // 0 = active, 1 = cancelled
+                $paymentStatus = (int) $record['payment_status']; // 0 = pending, 1 = paid
+        
+                // Merge status and payment_status into the new enum status
+                if ($statusFlag === 1) {
+                    $status = 'cancelled'; // If status is 1, set to 'cancelled'
+                } else {
+                    $status = $paymentStatus === 1 ? 'paid' : 'pending'; // Otherwise, use payment_status
+                }
+        
+                // Prepare receipt data
                 $batchData[] = [
-                    'jamiat_id' => 1,
                     'family_id' => $record['family_id'],
                     'receipt_no' => $record['rno'],
                     'date' => $this->formatDate($record['date']),
-                    'its' => $record['its'],
-                    'folio_no' => $record['folio'],
+                    'folio' => $record['folio'],
                     'name' => $record['name'],
+                    'its' => $record['its'],
                     'sector' => $record['sector'],
                     'sub_sector' => $record['sub_sector'],
+                    'type' => $record['type'],
                     'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
-                    'mode' => $this->mapTypeToMode($record['type']),
                     'year' => $record['year'],
                     'comments' => $record['comments'],
-                    'status' => $record['status'],
-                    'cancellation_reason' => $record['reason'],
-                    'collected_by' => $record['log_user'],
+                    'status' => $status,
+                    'cancellation_reason' => $status === 'cancelled' ? $record['reason'] : null,
                     'log_user' => $record['log_user'],
-                    'attachment' => null,
-                    'payment_id' => null, // This will be linked later
+                    'log_date' => $record['log_date'],
                 ];
-    
+        
                 if (count($batchData) >= $batchSize) {
                     $this->insertBatch(ReceiptsModel::class, $batchData);
                     $batchData = [];
                 }
             }
-    
+        
             if (count($batchData) > 0) {
                 $this->insertBatch(ReceiptsModel::class, $batchData);
             }
         }
+        
     
        private function processPaymentCSV($url)
 {
