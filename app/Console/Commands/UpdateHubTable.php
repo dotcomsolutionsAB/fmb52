@@ -18,7 +18,7 @@ class UpdateHubTable extends Command
     {
         try {
             // Fetch all receipts where amount is not null and status is not 'cancelled'
-            $receipts = DB::table('receipts')
+            $receipts = DB::table('t_receipts')
                 ->whereNotNull('amount')
                 ->where('status', '<>', 'cancelled')
                 ->get();
@@ -29,7 +29,7 @@ class UpdateHubTable extends Command
                 $amount = (float) preg_replace('/[^\d.]/', '', $receipt->amount);
 
                 // Fetch or create the corresponding hub record
-                $hub = DB::table('hub')
+                $hub = DB::table('t_hub')
                     ->where('family_id', $familyId)
                     ->where('year', $year)
                     ->first();
@@ -48,7 +48,7 @@ class UpdateHubTable extends Command
                         ]);
                 } else {
                     // Create a new hub record if it does not exist
-                    DB::table('hub')->insert([
+                    DB::table('t_hub')->insert([
                         'jamiat_id' => 1, // Assuming a default jamiat_id
                         'family_id' => $familyId,
                         'year' => $year,
