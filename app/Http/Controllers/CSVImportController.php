@@ -348,6 +348,7 @@ class CSVImportController extends Controller
         
                 // Prepare receipt data
                 $batchData[] = [
+                    'jamiat_id'=>1,
                     'family_id' => $record['family_id'],
                     'receipt_no' => $record['rno'],
                     'date' => $this->formatDate($record['date']),
@@ -488,11 +489,15 @@ class CSVImportController extends Controller
     
         private function formatDate($date)
         {
-            // Convert date to Y-m-d format
-            $formattedDate = date('Y-m-d', strtotime($date));
-            return $formattedDate ?: null; // Return null if the date is invalid
+            // Check if the date is valid using DateTime
+            try {
+                $formattedDate = (new \DateTime($date))->format('Y-m-d');
+                return $formattedDate;
+            } catch (\Exception $e) {
+                return null; // Return null if the date is invalid
+            }
         }
-        private function validateAndFormatDate($date)
+                private function validateAndFormatDate($date)
 {
     $timestamp = strtotime($date);
     if ($timestamp === false || $date === '-0001-11-30') {
