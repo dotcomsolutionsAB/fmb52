@@ -337,24 +337,33 @@ class CSVImportController extends Controller
                     $status = $paymentStatus === 1 ? 'paid' : 'pending'; // Otherwise, use payment_status
                 }
         
+                // Convert type to mode in lowercase
+                $mode = strtolower($record['type']);
+        
+                // Ensure mode is one of the enum values
+                $allowedModes = ['cheque', 'cash', 'neft', 'upi'];
+                if (!in_array($mode, $allowedModes)) {
+                    $mode = 'cash'; // Default to 'cash' if not in the allowed modes
+                }
+        
                 // Prepare receipt data
                 $batchData[] = [
                     'family_id' => $record['family_id'],
                     'receipt_no' => $record['rno'],
                     'date' => $this->formatDate($record['date']),
-                    'folio' => $record['folio'],
+                    'folio_no' => $record['folio'],
                     'name' => $record['name'],
                     'its' => $record['its'],
                     'sector' => $record['sector'],
                     'sub_sector' => $record['sub_sector'],
-                    'type' => $record['type'],
+                    'mode' => $mode, // Updated field
                     'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
                     'year' => $record['year'],
                     'comments' => $record['comments'],
                     'status' => $status,
                     'cancellation_reason' => $status === 'cancelled' ? $record['reason'] : null,
                     'log_user' => $record['log_user'],
-                    'log_date' => $record['log_date'],
+                    'created_at' => $record['log_date'],
                 ];
         
                 if (count($batchData) >= $batchSize) {
@@ -367,6 +376,7 @@ class CSVImportController extends Controller
                 $this->insertBatch(ReceiptsModel::class, $batchData);
             }
         }
+        
         
     
        private function processPaymentCSV($url)
