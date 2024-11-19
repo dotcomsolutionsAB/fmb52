@@ -492,11 +492,18 @@ class CSVImportController extends Controller
             // Check if the date is valid using DateTime
             try {
                 $formattedDate = (new \DateTime($date))->format('Y-m-d');
+                
+                // Check if the formatted date is the problematic '-0001-11-30'
+                if ($formattedDate === '-0001-11-30') {
+                    return '2021-12-12'; // Return '12th Dec 2021' in 'Y-m-d' format
+                }
+                
                 return $formattedDate;
             } catch (\Exception $e) {
-                return null; // Return null if the date is invalid
+                return '2021-12-12'; // Return '12th Dec 2021' if the date is invalid
             }
         }
+        
                 private function validateAndFormatDate($date)
 {
     $timestamp = strtotime($date);
