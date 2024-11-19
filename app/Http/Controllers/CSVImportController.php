@@ -422,7 +422,7 @@ class CSVImportController extends Controller
             'sub_sector' => $record['sub_sector'],
             'year' => $record['year'],
             'mode' => strtolower($record['mode']),
-            'date' => $date,
+            'date' => $this->formatDate($date),
             'bank_name' => isset($record['bank_name']) ? $record['bank_name'] : null,
             'cheque_no' => isset($record['cheque_num']) ? $record['cheque_num'] : null,
             'cheque_date' =>null,
@@ -487,22 +487,25 @@ class CSVImportController extends Controller
             return $modes[$type] ?? 'cash'; // Default to 'cash' if not found
         }
     
-        private function formatDate($date)
-        {
-            // Check if the date is valid using DateTime
-            try {
-                $formattedDate = (new \DateTime($date))->format('Y-m-d');
-                
-                // Check if the formatted date is the problematic '-0001-11-30'
-                if ($formattedDate === '-0001-11-30') {
-                    return '2021-12-12'; // Return '12th Dec 2021' in 'Y-m-d' format
-                }
-                
-                return $formattedDate;
-            } catch (\Exception $e) {
-                return '2021-12-12'; // Return '12th Dec 2021' if the date is invalid
-            }
-        }
+     private function formatDate($date)
+{
+    // Early check for problematic or empty dates
+    if (empty($date) || $date === '-0001-11-30' || $date === '0000-00-00') {
+        return '2021-12-12'; // Default to a valid date
+    }
+
+    // Check if the date is valid using DateTime
+    try {
+        $formattedDate = (new \DateTime($date))->format('Y-m-d');
+        return $formattedDate;
+    } catch (\Exception $e) {
+        // Return a default valid date if parsing fails
+        return '2021-12-12';
+    }
+}
+
+
+
         
                 private function validateAndFormatDate($date)
 {
