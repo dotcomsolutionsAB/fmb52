@@ -39,7 +39,7 @@ class UpdateHubTable extends Command
                     $paidAmount = $hub->paid_amount + $amount;
                     $dueAmount = max(0, $hub->hub_amount - $paidAmount);
 
-                    DB::table('hub')
+                    DB::table('t_hub')
                         ->where('id', $hub->id)
                         ->update([
                             'paid_amount' => $paidAmount,
