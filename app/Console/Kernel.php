@@ -9,6 +9,7 @@ class Kernel extends ConsoleKernel
     // Register the commands for the application
     protected $commands = [
         \App\Console\Commands\UpdateHubTable::class,
+        \App\Console\Commands\MigrateData::class,
     ];
 
     // Define the application's command schedule
