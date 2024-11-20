@@ -518,107 +518,116 @@ class MumeneenController extends Controller
     // }
 
     public function migrate()
-{
-    // Step 1: Truncate existing data for 'mumeneen' users, buildings, and hubs with jamiat_id = 1
-    User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
-    BuildingModel::where('jamiat_id', 1)->delete();
-    HubModel::where('jamiat_id', 1)->delete();
-
-    // Step 2: Fetch data from the API
-    $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
-    $response = Http::get($url);
-
-    if ($response->failed()) {
-        return response()->json(['message' => 'Failed to fetch data from the API'], 500);
-    }
-
-    $families = $response->json();
-
-    // Step 3: Process data in batches to avoid server timeout
-    $batchSize = 100; // Define the batch size
-    $chunks = array_chunk($families, $batchSize);
-
-    foreach ($chunks as $familyBatch) {
-        foreach ($familyBatch as $family) {
-            $buildingId = null;
-            $address = $family['address'] ?? [];
-
-            // Step 3a: Save or update building data if present
-            if (!empty($address)) {
-                $building = BuildingModel::updateOrCreate(
-                    ['name' => $address['address_2']],
-                    [
-                        'jamiat_id' => 1,
-                        'name' => $address['address_2'],
-                        'address_lime_1' => $address['address_1'] ?? null,
-                        'address_lime_2' => $address['address_2'] ?? null,
-                        'city' => $address['city'] ?? null,
-                        'pincode' => $address['pincode'] ?? null,
-                        'state' => null,
-                        'lattitude' => $address['latitude'] ?? null,
-                        'longtitude' => $address['longitude'] ?? null,
-                        'landmark' => null,
-                    ]
-                );
-                $buildingId = $building->id;
+    {
+        // Step 1: Truncate existing data for 'mumeneen' users, buildings, and hubs with jamiat_id = 1
+        User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
+        BuildingModel::where('jamiat_id', 1)->delete();
+        HubModel::where('jamiat_id', 1)->delete();
+    
+        // Step 2: Initialize batch variables
+        $batchSize = 100; // Process 100 records per batch
+        $offset = 0;
+        $hasMoreData = true;
+    
+        while ($hasMoreData) {
+            // Step 3: Fetch a batch of data from the API
+            $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php?limit=' . $batchSize . '&offset=' . $offset;
+            $response = Http::get($url);
+    
+            if ($response->failed()) {
+                return response()->json(['message' => 'Failed to fetch data from the API'], 500);
             }
-
-            // Step 3b: Loop through each family member and save in User model
-            foreach ($family['members'] as $member) {
-                $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
-                $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-
-                User::updateOrCreate(
-                    ['its' => $member['its']], // Unique identifier
-                    [
-                        'name' => $member['name'],
-                        'email' => $member['email'],
-                        'password' => bcrypt('default_password'), // Use hashed default password
-                        'jamiat_id' => 1,
-                        'family_id' => $family['family_id'],
-                        'title' => $title,
-                        'its' => substr($member['its'], 0, 8),
-                        'hof_its' => $member['hof_id'],
-                        'its_family_id' => $member['family_its_id'],
-                        'mumeneen_type' => $member['type'],
-                        'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
-                        'gender' => $gender,
-                        'folio_no' => $family['folio_no'],
-                        'sector' => $family['sector'],
-                        'sub_sector' => $family['sub_sector'],
-                        'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
-                        'status' => $family['status'],
-                        'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
-                        'role' => 'mumeneen',
-                        'building_id' => $buildingId
-                    ]
-                );
+    
+            $families = $response->json()['data']; // Adjust to match your API response structure
+    
+            // If no data is returned, stop processing
+            if (empty($families)) {
+                $hasMoreData = false;
+                break;
             }
-
-            // Step 3c: Save or update hub data for each year
-            foreach ($family['hub_array'] as $hubEntry) {
-                HubModel::updateOrCreate(
-                    [
-                        'family_id' => $family['family_id'],
-                        'year' => $hubEntry['year']
-                    ],
-                    [
-                        'jamiat_id' => 1,
-                        'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                        'paid_amount' => 0,
-                        'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                        'log_user' => 'system_migration'
-                    ]
-                );
+    
+            // Step 4: Process the data batch
+            foreach ($families as $family) {
+                $buildingId = null;
+                $address = $family['address'] ?? [];
+    
+                // Step 4a: Save or update building data if present
+                if (!empty($address)) {
+                    $building = BuildingModel::updateOrCreate(
+                        ['name' => $address['address_2']],
+                        [
+                            'jamiat_id' => 1,
+                            'name' => $address['address_2'],
+                            'address_lime_1' => $address['address_1'] ?? null,
+                            'address_lime_2' => $address['address_2'] ?? null,
+                            'city' => $address['city'] ?? null,
+                            'pincode' => $address['pincode'] ?? null,
+                            'state' => null,
+                            'lattitude' => $address['latitude'] ?? null,
+                            'longtitude' => $address['longitude'] ?? null,
+                            'landmark' => null,
+                        ]
+                    );
+                    $buildingId = $building->id;
+                }
+    
+                // Step 4b: Loop through each family member and save in User model
+                foreach ($family['members'] as $member) {
+                    $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
+                    $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
+    
+                    User::updateOrCreate(
+                        ['its' => $member['its']], // Unique identifier
+                        [
+                            'name' => $member['name'],
+                            'email' => $member['email'],
+                            'password' => bcrypt('default_password'), // Use hashed default password
+                            'jamiat_id' => 1,
+                            'family_id' => $family['family_id'],
+                            'title' => $title,
+                            'its' => substr($member['its'], 0, 8),
+                            'hof_its' => $member['hof_id'],
+                            'its_family_id' => $member['family_its_id'],
+                            'mumeneen_type' => $member['type'],
+                            'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
+                            'gender' => $gender,
+                            'folio_no' => $family['folio_no'],
+                            'sector' => $family['sector'],
+                            'sub_sector' => $family['sub_sector'],
+                            'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
+                            'status' => $family['status'],
+                            'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
+                            'role' => 'mumeneen',
+                            'building_id' => $buildingId
+                        ]
+                    );
+                }
+    
+                // Step 4c: Save or update hub data for each year
+                foreach ($family['hub_array'] as $hubEntry) {
+                    HubModel::updateOrCreate(
+                        [
+                            'family_id' => $family['family_id'],
+                            'year' => $hubEntry['year']
+                        ],
+                        [
+                            'jamiat_id' => 1,
+                            'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                            'paid_amount' => 0,
+                            'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                            'log_user' => 'system_migration'
+                        ]
+                    );
+                }
             }
+    
+            // Increment offset for the next batch
+            $offset += $batchSize;
         }
-
-        // Pause execution for a moment to free up resources
-        usleep(500000); // Sleep for 0.5 seconds (500,000 microseconds)
+    
+        return response()->json(['message' => 'Data migration completed successfully']);
     }
-
-    return response()->json(['message' => 'Data migration completed successfully']);
-}
+    
 
 
 
