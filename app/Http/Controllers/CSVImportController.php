@@ -585,8 +585,22 @@ protected function processBatchFromCsv(array $batchData)
 {
     $totalProcessed = 0;
 
+    // Define the mapping for numeric `thali_status` to ENUM values
+    $thaliStatusMapping = [
+        1 => 'taking',
+        2 => 'not_taking',
+        3 => 'once_a_week',
+        9 => 'joint',
+        0 => 'other_centre'
+    ];
+
     foreach ($batchData as $data) {
         $buildingId = null;
+
+        // Map numeric `thali_status` to ENUM string
+        $thaliStatus = isset($thaliStatusMapping[$data['is_taking_thali']])
+            ? $thaliStatusMapping[$data['is_taking_thali']]
+            : 'other_centre'; // Default to 'other_centre' if value is not mapped
 
         // Save or update building data
         if (!empty($data['address']['address_2'])) {
@@ -599,10 +613,6 @@ protected function processBatchFromCsv(array $batchData)
                     'address_lime_2' => $data['address']['address_2'] ?? null,
                     'city' => $data['address']['city'] ?? null,
                     'pincode' => $data['address']['pincode'] ?? null,
-                    'state' => null,
-                    'lattitude' => $data['address']['latitude'] ?? null,
-                    'longtitude' => $data['address']['longitude'] ?? null,
-                    'landmark' => null,
                 ]
             );
             $buildingId = $building->id;
@@ -623,37 +633,20 @@ protected function processBatchFromCsv(array $batchData)
                 'folio_no' => $data['folio_no'],
                 'sector' => $data['sector'],
                 'sub_sector' => $data['sub_sector'],
-                'thali_status' => $data['is_taking_thali'] ?? null,
+                'thali_status' => $thaliStatus, // Save mapped ENUM value
                 'status' => $data['status'],
                 'username' => strtolower(str_replace(' ', '', substr($data['its'], 0, 8))),
                 'role' => 'mumeneen',
                 'building_id' => $buildingId,
-                'mumeneen_type'=>$data['type'] ?? "FM",
             ]
         );
-
-        // Save hub data
-        if (!empty($data['year'])) {
-            HubModel::updateOrCreate(
-                [
-                    'family_id' => $data['family_id'],
-                    'year' => $data['year']
-                ],
-                [
-                    'jamiat_id' => 1,
-                    'hub_amount' => is_numeric($data['hub']) ? $data['hub'] : 0,
-                    'paid_amount' => 0,
-                    'due_amount' => is_numeric($data['hub']) ? $data['hub'] : 0,
-                    'log_user' => 'system_migration'
-                ]
-            );
-        }
 
         $totalProcessed++;
     }
 
     return $totalProcessed;
 }
+
 
 /**
  * Parse a CSV file into an array of data.
