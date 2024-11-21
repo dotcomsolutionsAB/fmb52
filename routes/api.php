@@ -22,6 +22,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::post('/import_users', [CSVImportController::class, 'importUser']);
+    Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromCsv']);
+
 
     // user
     Route::get('/user', [MumeneenController::class, 'users']);
