@@ -1363,7 +1363,7 @@ class MumeneenController extends Controller
                              ->get();
 
         return isset($get_family_user) && $get_family_user->isNotEmpty()
-            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user], 200)
+            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user, 'count' => count($get_family_user)], 200)
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
 }
