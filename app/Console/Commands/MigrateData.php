@@ -24,34 +24,39 @@ class MigrateData extends Command
         User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
         BuildingModel::where('jamiat_id', 1)->delete();
         HubModel::where('jamiat_id', 1)->delete();
-
+    
         // Step 2: Fetch data from the API
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
         $response = Http::get($url);
-
+    
         if ($response->failed()) {
             $this->error('Failed to fetch data from the API');
             return;
         }
-
-        $families = $response->json();
-
+    
+        $families = $response->json()['data'] ?? []; // Safely fetch the 'data' key
+    
+        if (empty($families)) {
+            $this->error('No data found to migrate.');
+            return;
+        }
+    
         // Step 3: Process data in batches
         $batchSize = 100;
         $chunks = array_chunk($families, $batchSize);
-
+    
         foreach ($chunks as $familyBatch) {
             foreach ($familyBatch as $family) {
                 $buildingId = null;
-                $address = $family['address'] ?? [];
-
+                $address = $family['address'] ?? []; // Safely fetch the address
+    
                 // Step 3a: Save or update building data if present
                 if (!empty($address)) {
                     $building = BuildingModel::updateOrCreate(
-                        ['name' => $address['address_2']],
+                        ['name' => $address['address_2'] ?? 'Unknown'], // Default to 'Unknown' if name is missing
                         [
                             'jamiat_id' => 1,
-                            'name' => $address['address_2'],
+                            'name' => $address['address_2'] ?? null,
                             'address_lime_1' => $address['address_1'] ?? null,
                             'address_lime_2' => $address['address_2'] ?? null,
                             'city' => $address['city'] ?? null,
@@ -64,12 +69,13 @@ class MigrateData extends Command
                     );
                     $buildingId = $building->id;
                 }
-
-                // Step 3b: Loop through each family member and save in User model
-                foreach ($family['members'] as $member) {
+    
+                // Step 3b: Safely handle missing 'members' key
+                $members = $family['members'] ?? []; // Default to an empty array if 'members' is missing
+                foreach ($members as $member) {
                     $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                     $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-
+    
                     User::updateOrCreate(
                         ['its' => $member['its']],
                         [
@@ -96,9 +102,10 @@ class MigrateData extends Command
                         ]
                     );
                 }
-
-                // Step 3c: Save or update hub data for each year
-                foreach ($family['hub_array'] as $hubEntry) {
+    
+                // Step 3c: Safely handle missing 'hub_array' key
+                $hubArray = $family['hub_array'] ?? []; // Default to an empty array if 'hub_array' is missing
+                foreach ($hubArray as $hubEntry) {
                     HubModel::updateOrCreate(
                         [
                             'family_id' => $family['family_id'],
@@ -114,11 +121,12 @@ class MigrateData extends Command
                     );
                 }
             }
-
+    
             // Pause to avoid overloading the server
             usleep(500000); // Sleep for 0.5 seconds
         }
-
+    
         $this->info('Data migration completed successfully.');
     }
 }
+    
