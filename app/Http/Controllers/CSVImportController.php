@@ -522,58 +522,41 @@ class CSVImportController extends Controller
 
 public function migrateFromCsv()
 {
-    // Path to the CSV file
-    $csvPath = public_path('storage/Mumineen_Database.csv');
-
-    // Ensure the file exists
+    $csvPath = public_path('storage/KOLKATA_Mumineen_Database.csv');
     if (!file_exists($csvPath)) {
         return response()->json(['message' => 'CSV file not found.'], 404);
     }
 
-    // Step 1: Truncate existing data
-    User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
-    BuildingModel::where('jamiat_id', 1)->delete();
-    HubModel::where('jamiat_id', 1)->delete();
-
-    // Step 2: Read the CSV file and process the data
+    $batchSize = 500; // Number of rows to process in each batch
     $totalProcessed = 0;
-    $batchSize = 500;
-    $batchData = [];
 
     if (($handle = fopen($csvPath, 'r')) !== false) {
         $headers = fgetcsv($handle, 1000, ','); // Read the CSV headers
+        $batchData = [];
 
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-            $data = array_combine($headers, $row); // Map row to headers
+            $batchData[] = array_combine($headers, $row);
 
-            // Transform the data as needed for insertion
-            $data['address'] = json_decode($data['address'], true) ?? [
-                'flat' => '', 'address_1' => '', 'address_2' => '',
-                'pincode' => '', 'city' => '', 'latitude' => '', 'longitude' => ''
-            ];
-
-            $batchData[] = $data;
-
-            // Process the batch if it reaches the batch size
             if (count($batchData) >= $batchSize) {
                 $totalProcessed += $this->processBatchFromCsv($batchData);
                 $batchData = []; // Clear the batch
             }
         }
 
+        // Process any remaining rows
+        if (!empty($batchData)) {
+            $totalProcessed += $this->processBatchFromCsv($batchData);
+        }
+
         fclose($handle);
     }
 
-    // Process any remaining data
-    if (!empty($batchData)) {
-        $totalProcessed += $this->processBatchFromCsv($batchData);
-    }
-
     return response()->json([
-        'message' => 'Data migration from CSV completed successfully.',
+        'message' => 'CSV processing completed successfully.',
         'total_processed' => $totalProcessed
     ]);
 }
+
 
 /**
  * Process a batch of CSV data and save to the database.

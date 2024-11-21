@@ -343,8 +343,8 @@ class ComposerStaticInit54f54d17752bcd65cf7cbc86bbabda03
         ),
         'Psr\\Http\\Message\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-message/src',
-            1 => __DIR__ . '/..' . '/psr/http-factory/src',
+            0 => __DIR__ . '/..' . '/psr/http-factory/src',
+            1 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
         'Psr\\Http\\Client\\' => 
         array (
@@ -525,6 +525,9 @@ class ComposerStaticInit54f54d17752bcd65cf7cbc86bbabda03
         'App\\Actions\\ElaborateSummary' => __DIR__ . '/..' . '/laravel/pint/app/Actions/ElaborateSummary.php',
         'App\\Actions\\FixCode' => __DIR__ . '/..' . '/laravel/pint/app/Actions/FixCode.php',
         'App\\Commands\\DefaultCommand' => __DIR__ . '/..' . '/laravel/pint/app/Commands/DefaultCommand.php',
+        'App\\Console\\Commands\\MigrateData' => __DIR__ . '/../..' . '/app/Console/Commands/MigrateData.php',
+        'App\\Console\\Commands\\UpdateHubTable' => __DIR__ . '/../..' . '/app/Console/Commands/UpdateHubTable.php',
+        'App\\Console\\Kernel' => __DIR__ . '/../..' . '/app/Console/Kernel.php',
         'App\\Contracts\\PathsRepository' => __DIR__ . '/..' . '/laravel/pint/app/Contracts/PathsRepository.php',
         'App\\Factories\\ConfigurationFactory' => __DIR__ . '/..' . '/laravel/pint/app/Factories/ConfigurationFactory.php',
         'App\\Factories\\ConfigurationResolverFactory' => __DIR__ . '/..' . '/laravel/pint/app/Factories/ConfigurationResolverFactory.php',
@@ -538,6 +541,8 @@ class ComposerStaticInit54f54d17752bcd65cf7cbc86bbabda03
         'App\\Http\\Controllers\\JamiatController' => __DIR__ . '/../..' . '/app/Http/Controllers/JamiatController.php',
         'App\\Http\\Controllers\\MenuCardController' => __DIR__ . '/../..' . '/app/Http/Controllers/MenuCardController.php',
         'App\\Http\\Controllers\\MumeneenController' => __DIR__ . '/../..' . '/app/Http/Controllers/MumeneenController.php',
+        'App\\Http\\Controllers\\SectorImportController' => __DIR__ . '/../..' . '/app/Http/Controllers/SectorImportController.php',
+        'App\\Http\\Controllers\\SubSectorImportController' => __DIR__ . '/../..' . '/app/Http/Controllers/SubSectorImportController.php',
         'App\\Kernel' => __DIR__ . '/..' . '/laravel/pint/app/Kernel.php',
         'App\\Models\\AdvanceReceiptModel' => __DIR__ . '/../..' . '/app/Models/AdvanceReceiptModel.php',
         'App\\Models\\BuildingModel' => __DIR__ . '/../..' . '/app/Models/BuildingModel.php',
