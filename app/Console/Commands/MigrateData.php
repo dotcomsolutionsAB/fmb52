@@ -24,109 +24,127 @@ class MigrateData extends Command
         User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
         BuildingModel::where('jamiat_id', 1)->delete();
         HubModel::where('jamiat_id', 1)->delete();
-    
-        // Step 2: Fetch data from the API
+
+        // Step 2: Fetch data from the API in batches
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
-        $response = Http::get($url);
-    
-        if ($response->failed()) {
-            $this->error('Failed to fetch data from the API');
-            return;
-        }
-    
-        $families = $response->json()['data'] ?? []; // Safely fetch the 'data' key
-    
-        if (empty($families)) {
-            $this->error('No data found to migrate.');
-            return;
-        }
-    
-        // Step 3: Process data in batches
-        $batchSize = 100;
-        $chunks = array_chunk($families, $batchSize);
-    
-        foreach ($chunks as $familyBatch) {
-            foreach ($familyBatch as $family) {
-                $buildingId = null;
-                $address = $family['address'] ?? []; // Safely fetch the address
-    
-                // Step 3a: Save or update building data if present
-                if (!empty($address)) {
-                    $building = BuildingModel::updateOrCreate(
-                        ['name' => $address['address_2'] ?? 'Unknown'], // Default to 'Unknown' if name is missing
-                        [
-                            'jamiat_id' => 1,
-                            'name' => $address['address_2'] ?? null,
-                            'address_lime_1' => $address['address_1'] ?? null,
-                            'address_lime_2' => $address['address_2'] ?? null,
-                            'city' => $address['city'] ?? null,
-                            'pincode' => $address['pincode'] ?? null,
-                            'state' => null,
-                            'lattitude' => $address['latitude'] ?? null,
-                            'longtitude' => $address['longitude'] ?? null,
-                            'landmark' => null,
-                        ]
-                    );
-                    $buildingId = $building->id;
-                }
-    
-                // Step 3b: Safely handle missing 'members' key
-                $members = $family['members'] ?? []; // Default to an empty array if 'members' is missing
-                foreach ($members as $member) {
-                    $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
-                    $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-    
-                    User::updateOrCreate(
-                        ['its' => $member['its']],
-                        [
-                            'name' => $member['name'],
-                            'email' => $member['email'],
-                            'password' => bcrypt('default_password'),
-                            'jamiat_id' => 1,
-                            'family_id' => $family['family_id'],
-                            'title' => $title,
-                            'its' => substr($member['its'], 0, 8),
-                            'hof_its' => $member['hof_id'],
-                            'its_family_id' => $member['family_its_id'],
-                            'mumeneen_type' => $member['type'],
-                            'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
-                            'gender' => $gender,
-                            'folio_no' => $family['folio_no'],
-                            'sector' => $family['sector'],
-                            'sub_sector' => $family['sub_sector'],
-                            'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
-                            'status' => $family['status'],
-                            'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
-                            'role' => 'mumeneen',
-                            'building_id' => $buildingId
-                        ]
-                    );
-                }
-    
-                // Step 3c: Safely handle missing 'hub_array' key
-                $hubArray = $family['hub_array'] ?? []; // Default to an empty array if 'hub_array' is missing
-                foreach ($hubArray as $hubEntry) {
-                    HubModel::updateOrCreate(
-                        [
-                            'family_id' => $family['family_id'],
-                            'year' => $hubEntry['year']
-                        ],
-                        [
-                            'jamiat_id' => 1,
-                            'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                            'paid_amount' => 0,
-                            'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                            'log_user' => 'system_migration'
-                        ]
-                    );
-                }
+        $limit = 500; // Batch size
+        $offset = 0;
+
+        while (true) {
+            $response = Http::get($url, ['limit' => $limit, 'offset' => $offset]);
+
+            if ($response->failed()) {
+                $this->error("Failed to fetch data for offset $offset");
+                break;
             }
-    
-            // Pause to avoid overloading the server
-            usleep(500000); // Sleep for 0.5 seconds
+
+            $families = $response->json()['data'] ?? [];
+
+            if (empty($families)) {
+                $this->info('No more data to process.');
+                break;
+            }
+
+            $entriesProcessed = $this->processBatch($families);
+            $offset += $limit;
+
+            // Log the success message for the current batch
+            $this->info("Batch completed: {$entriesProcessed} entries processed for offset $offset.");
         }
-    
+
         $this->info('Data migration completed successfully.');
     }
+
+    /**
+     * Process a batch of families data and save to the database.
+     *
+     * @param array $families
+     * @return int Total number of entries processed (inserted or updated)
+     */
+    protected function processBatch(array $families)
+    {
+        $totalProcessed = 0;
+
+        foreach ($families as $family) {
+            $buildingId = null;
+            $address = $family['address'] ?? [];
+
+            // Save or update building data if present
+            if (!empty($address)) {
+                $building = BuildingModel::updateOrCreate(
+                    ['name' => $address['address_2'] ?? 'Unknown'],
+                    [
+                        'jamiat_id' => 1,
+                        'name' => $address['address_2'] ?? null,
+                        'address_lime_1' => $address['address_1'] ?? null,
+                        'address_lime_2' => $address['address_2'] ?? null,
+                        'city' => $address['city'] ?? null,
+                        'pincode' => $address['pincode'] ?? null,
+                        'state' => null,
+                        'lattitude' => $address['latitude'] ?? null,
+                        'longtitude' => $address['longitude'] ?? null,
+                        'landmark' => null,
+                    ]
+                );
+                $buildingId = $building->id;
+            }
+
+            // Safely handle members data
+            $members = $family['members'] ?? [];
+            foreach ($members as $member) {
+                $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
+                $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
+
+                User::updateOrCreate(
+                    ['its' => $member['its']],
+                    [
+                        'name' => $member['name'],
+                        'email' => $member['email'],
+                        'password' => bcrypt('default_password'),
+                        'jamiat_id' => 1,
+                        'family_id' => $family['family_id'],
+                        'title' => $title,
+                        'its' => substr($member['its'], 0, 8),
+                        'hof_its' => $member['hof_id'],
+                        'its_family_id' => $member['family_its_id'],
+                        'mumeneen_type' => $member['type'],
+                        'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
+                        'gender' => $gender,
+                        'folio_no' => $family['folio_no'],
+                        'sector' => $family['sector'],
+                        'sub_sector' => $family['sub_sector'],
+                        'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
+                        'status' => $family['status'],
+                        'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
+                        'role' => 'mumeneen',
+                        'building_id' => $buildingId
+                    ]
+                );
+
+                $totalProcessed++;
+            }
+
+            // Safely handle hub array data
+            $hubArray = $family['hub_array'] ?? [];
+            foreach ($hubArray as $hubEntry) {
+                HubModel::updateOrCreate(
+                    [
+                        'family_id' => $family['family_id'],
+                        'year' => $hubEntry['year']
+                    ],
+                    [
+                        'jamiat_id' => 1,
+                        'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                        'paid_amount' => 0,
+                        'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                        'log_user' => 'system_migration'
+                    ]
+                );
+
+                $totalProcessed++;
+            }
+        }
+
+        return $totalProcessed;
+    }
 }
-    
