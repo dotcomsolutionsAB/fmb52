@@ -522,13 +522,12 @@ class CSVImportController extends Controller
 
 public function migrateFromCsv()
 {
-    // Paths to the CSV files
-    $mumeneenCsvPath = public_path('storage/mumineen_database.csv');
-    $hubCsvPath = public_path('storage/hub_database.csv');
+    // Path to the CSV file
+    $csvPath = public_path('storage/Mumineen_Database.csv');
 
-    // Check if both files exist
-    if (!file_exists($mumeneenCsvPath) || !file_exists($hubCsvPath)) {
-        return response()->json(['message' => 'One or both CSV files are missing.'], 404);
+    // Ensure the file exists
+    if (!file_exists($csvPath)) {
+        return response()->json(['message' => 'CSV file not found.'], 404);
     }
 
     // Step 1: Truncate existing data
@@ -536,34 +535,38 @@ public function migrateFromCsv()
     BuildingModel::where('jamiat_id', 1)->delete();
     HubModel::where('jamiat_id', 1)->delete();
 
-    // Step 2: Read and parse the CSV files
-    $mumeneenData = $this->parseCsv($mumeneenCsvPath);
-    $hubData = $this->parseCsv($hubCsvPath);
-
-    // Step 3: Create a lookup table for hub data by family_id
-    $hubLookup = [];
-    foreach ($hubData as $hub) {
-        $hubLookup[$hub['family_id']][] = $hub;
-    }
-
-    // Step 4: Process the mumeneen data
+    // Step 2: Read the CSV file and process the data
     $totalProcessed = 0;
     $batchSize = 500;
     $batchData = [];
 
-    foreach ($mumeneenData as $data) {
-        $batchData[] = $data;
+    if (($handle = fopen($csvPath, 'r')) !== false) {
+        $headers = fgetcsv($handle, 1000, ','); // Read the CSV headers
 
-        // Process the batch if it reaches the batch size
-        if (count($batchData) >= $batchSize) {
-            $totalProcessed += $this->processBatchFromCsv($batchData, $hubLookup);
-            $batchData = []; // Clear the batch
+        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+            $data = array_combine($headers, $row); // Map row to headers
+
+            // Transform the data as needed for insertion
+            $data['address'] = json_decode($data['address'], true) ?? [
+                'flat' => '', 'address_1' => '', 'address_2' => '',
+                'pincode' => '', 'city' => '', 'latitude' => '', 'longitude' => ''
+            ];
+
+            $batchData[] = $data;
+
+            // Process the batch if it reaches the batch size
+            if (count($batchData) >= $batchSize) {
+                $totalProcessed += $this->processBatchFromCsv($batchData);
+                $batchData = []; // Clear the batch
+            }
         }
+
+        fclose($handle);
     }
 
     // Process any remaining data
     if (!empty($batchData)) {
-        $totalProcessed += $this->processBatchFromCsv($batchData, $hubLookup);
+        $totalProcessed += $this->processBatchFromCsv($batchData);
     }
 
     return response()->json([
@@ -576,31 +579,29 @@ public function migrateFromCsv()
  * Process a batch of CSV data and save to the database.
  *
  * @param array $batchData
- * @param array $hubLookup
  * @return int Total number of entries processed (inserted or updated)
  */
-protected function processBatchFromCsv(array $batchData, array $hubLookup)
+protected function processBatchFromCsv(array $batchData)
 {
     $totalProcessed = 0;
 
     foreach ($batchData as $data) {
         $buildingId = null;
-        $address = json_decode($data['address'], true) ?? [];
 
         // Save or update building data
-        if (!empty($address['address_2'])) {
+        if (!empty($data['address']['address_2'])) {
             $building = BuildingModel::updateOrCreate(
-                ['name' => $address['address_2']],
+                ['name' => $data['address']['address_2']],
                 [
                     'jamiat_id' => 1,
-                    'name' => $address['address_2'],
-                    'address_lime_1' => $address['address_1'] ?? null,
-                    'address_lime_2' => $address['address_2'] ?? null,
-                    'city' => $address['city'] ?? null,
-                    'pincode' => $address['pincode'] ?? null,
+                    'name' => $data['address']['address_2'],
+                    'address_lime_1' => $data['address']['address_1'] ?? null,
+                    'address_lime_2' => $data['address']['address_2'] ?? null,
+                    'city' => $data['address']['city'] ?? null,
+                    'pincode' => $data['address']['pincode'] ?? null,
                     'state' => null,
-                    'lattitude' => $address['latitude'] ?? null,
-                    'longtitude' => $address['longitude'] ?? null,
+                    'lattitude' => $data['address']['latitude'] ?? null,
+                    'longtitude' => $data['address']['longitude'] ?? null,
                     'landmark' => null,
                 ]
             );
@@ -630,22 +631,21 @@ protected function processBatchFromCsv(array $batchData, array $hubLookup)
             ]
         );
 
-        // Save hub data for the family
-        if (isset($hubLookup[$data['family_id']])) {
-            foreach ($hubLookup[$data['family_id']] as $hub) {
-                HubModel::updateOrCreate(
-                    [
-                        'family_id' => $data['family_id'],
-                        'year' => $hub['year']
-                    ],
-                    [
-                        'jamiat_id' => 1,
-                        'hub_amount' => $hub['hub_amount'] ?? 0,
-                        'due_amount' => $hub['due_amount'] ?? 0,
-                        'paid_amount' => $hub['paid_amount'] ?? 0,
-                    ]
-                );
-            }
+        // Save hub data
+        if (!empty($data['year'])) {
+            HubModel::updateOrCreate(
+                [
+                    'family_id' => $data['family_id'],
+                    'year' => $data['year']
+                ],
+                [
+                    'jamiat_id' => 1,
+                    'hub_amount' => is_numeric($data['hub']) ? $data['hub'] : 0,
+                    'paid_amount' => 0,
+                    'due_amount' => is_numeric($data['hub']) ? $data['hub'] : 0,
+                    'log_user' => 'system_migration'
+                ]
+            );
         }
 
         $totalProcessed++;
@@ -669,6 +669,7 @@ private function parseCsv($filePath)
     }
     return $data;
 }
+
 
 
 
