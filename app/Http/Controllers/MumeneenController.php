@@ -1241,4 +1241,16 @@ class MumeneenController extends Controller
             ? response()->json(['message' => 'Zabihat record deleted successfully!'], 200)
             : response()->json(['message' => 'Zabihat record not found!'], 404);
     }
+
+    // users by family
+    public function usersByFamily(Request $request)
+    {
+        $get_family_user = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
+                             ->where('family_id', $request->input('family_id'))
+                             ->get();
+
+        return isset($get_family_user) && $get_family_user->isNotEmpty()
+            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user], 200)
+            : response()->json(['Sorry, failed to fetched records!'], 404);
+    }
 }

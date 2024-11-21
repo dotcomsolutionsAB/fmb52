@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/merge', [MumeneenController::class, 'merge_family']);
     Route::delete('/user/{id}', [MumeneenController::class, 'delete_user']);
     Route::get('/user_migrate', [MumeneenController::class, 'migrate']);
+    Route::post('/get_family_user', [MumeneenController::class, 'usersByFamily']);
 
     // its
     Route::post('/its', [MumeneenController::class, 'register_its']);
