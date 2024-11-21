@@ -422,28 +422,73 @@ class MumeneenController extends Controller
 
     public function migrate()
     {
-
-        // Step 1: Truncate existing data for 'mumeneen' users, buildings, and hubs with jamiat_id = 1
+        // Step 1: Truncate existing data
         User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
         BuildingModel::where('jamiat_id', 1)->delete();
         HubModel::where('jamiat_id', 1)->delete();
-        
-        // Step 1: Fetch data from the API
+    
+        // API endpoint and batch configuration
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
-        $response = Http::get($url);
-
-        if ($response->failed()) {
-            return response()->json(['message' => 'Failed to fetch data from the API'], 500);
+        $limit = 500; // Set batch size
+        $offset = 0;
+        $totalProcessed = 0;
+        $batches = []; // Store batch details for response
+    
+        while (true) {
+            // Fetch data from API using limit and offset
+            $response = Http::timeout(300)->get($url, ['limit' => $limit, 'offset' => $offset]);
+    
+            if ($response->failed()) {
+                return response()->json([
+                    'message' => "Failed to fetch data for offset $offset",
+                    'batches' => $batches // Return completed batch details so far
+                ], 500);
+            }
+    
+            $families = $response->json()['data'] ?? [];
+    
+            // If no data is returned, stop the loop
+            if (empty($families)) {
+                break;
+            }
+    
+            // Process the batch and get the count of processed entries
+            $batchProcessed = $this->processBatch($families);
+            $totalProcessed += $batchProcessed;
+    
+            // Add batch details to the response data
+            $batches[] = [
+                'offset' => $offset,
+                'batch_size' => $limit,
+                'entries_processed' => $batchProcessed
+            ];
+    
+            // Increment the offset
+            $offset += $limit;
         }
-
-        $families = $response->json();
-
-        // Step 2: Process and Save Data
+    
+        return response()->json([
+            'message' => "Data migration completed successfully.",
+            'total_processed' => $totalProcessed,
+            'batches' => $batches
+        ]);
+    }
+    
+    /**
+     * Process a batch of families data and save to the database.
+     *
+     * @param array $families
+     * @return int Total number of entries processed (inserted or updated)
+     */
+    protected function processBatch(array $families)
+    {
+        $totalProcessed = 0;
+    
         foreach ($families as $family) {
             $buildingId = null;
             $address = $family['address'] ?? [];
-
-            // Step 2a: Save or update building data if present
+    
+            // Save or update building data
             if (!empty($address)) {
                 $building = BuildingModel::updateOrCreate(
                     ['name' => $address['address_2']],
@@ -454,27 +499,28 @@ class MumeneenController extends Controller
                         'address_lime_2' => $address['address_2'] ?? null,
                         'city' => $address['city'] ?? null,
                         'pincode' => $address['pincode'] ?? null,
-                        'state' => null, // Add state if available in data
+                        'state' => null,
                         'lattitude' => $address['latitude'] ?? null,
                         'longtitude' => $address['longitude'] ?? null,
-                        'landmark' => null, // Set landmark if available
+                        'landmark' => null,
                     ]
                 );
                 $buildingId = $building->id;
+                $totalProcessed++;
             }
-
-            // Step 2b: Loop through each family member and save in User model
-            foreach ($family['members'] as $member) {
+    
+            // Save family members
+            $members = $family['members'] ?? [];
+            foreach ($members as $member) {
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-
-
+    
                 User::updateOrCreate(
-                    ['its' => $member['its']], // Unique identifier
+                    ['its' => $member['its']],
                     [
                         'name' => $member['name'],
                         'email' => $member['email'],
-                        'password' => "default_password", // Set a default password or generate one
+                        'password' => bcrypt('default_password'),
                         'jamiat_id' => 1,
                         'family_id' => $family['family_id'],
                         'title' => $title,
@@ -490,14 +536,16 @@ class MumeneenController extends Controller
                         'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
                         'status' => $family['status'],
                         'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
-                        'role' => 'mumeneen', // Save role as "mumeneen"
-                        'building_id' => $buildingId // Save the building ID
+                        'role' => 'mumeneen',
+                        'building_id' => $buildingId
                     ]
                 );
+                $totalProcessed++;
             }
-
-            // Step 2c: Save or update hub data for each year
-            foreach ($family['hub_array'] as $hubEntry) {
+    
+            // Save hub data
+            $hubArray = $family['hub_array'] ?? [];
+            foreach ($hubArray as $hubEntry) {
                 HubModel::updateOrCreate(
                     [
                         'family_id' => $family['family_id'],
@@ -506,16 +554,18 @@ class MumeneenController extends Controller
                     [
                         'jamiat_id' => 1,
                         'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                        'paid_amount' => 0,  // Assuming a default value if not provided
+                        'paid_amount' => 0,
                         'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                        'log_user' => 'system_migration' // Log user as system or admin
+                        'log_user' => 'system_migration'
                     ]
                 );
+                $totalProcessed++;
             }
         }
-
-        return response()->json(['message' => 'Data migration completed successfully']);
+    
+        return $totalProcessed;
     }
+    
 
     // public function migrate()
     // {
@@ -1363,7 +1413,7 @@ class MumeneenController extends Controller
                              ->get();
 
         return isset($get_family_user) && $get_family_user->isNotEmpty()
-            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user, 'count' => count($get_family_user)], 200)
+            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user], 200)
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
 }
