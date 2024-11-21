@@ -309,55 +309,76 @@ class CSVImportController extends Controller
         {
             // Clear existing data in the receipt table
             ReceiptsModel::truncate();
-    
+        
             // Fetch the CSV content from the URL
             $csvContent = file_get_contents($url);
             if ($csvContent === false) {
                 throw new \Exception("Failed to fetch the CSV content from the URL: $url");
             }
-    
+        
             // Read and parse the CSV
             $csv = Reader::createFromString($csvContent);
             $csv->setHeaderOffset(0);
-    
+        
             // Get records and initialize batch variables
             $receiptRecords = $csv->getRecords();
             $batchSize = 100;
             $batchData = [];
-    
+        
             foreach ($receiptRecords as $record) {
+                // Determine status using the old fields
+                $statusFlag = (int) $record['status']; // 0 = active, 1 = cancelled
+                $paymentStatus = (int) $record['payment_status']; // 0 = pending, 1 = paid
+        
+                // Merge status and payment_status into the new enum status
+                if ($statusFlag === 1) {
+                    $status = 'cancelled'; // If status is 1, set to 'cancelled'
+                } else {
+                    $status = $paymentStatus === 1 ? 'paid' : 'pending'; // Otherwise, use payment_status
+                }
+        
+                // Convert type to mode in lowercase
+                $mode = strtolower($record['type']);
+        
+                // Ensure mode is one of the enum values
+                $allowedModes = ['cheque', 'cash', 'neft', 'upi'];
+                if (!in_array($mode, $allowedModes)) {
+                    $mode = 'cash'; // Default to 'cash' if not in the allowed modes
+                }
+        
+                // Prepare receipt data
                 $batchData[] = [
-                    'jamiat_id' => 1,
+                    'jamiat_id'=>1,
                     'family_id' => $record['family_id'],
                     'receipt_no' => $record['rno'],
                     'date' => $this->formatDate($record['date']),
-                    'its' => $record['its'],
                     'folio_no' => $record['folio'],
                     'name' => $record['name'],
+                    'its' => $record['its'],
                     'sector' => $record['sector'],
                     'sub_sector' => $record['sub_sector'],
+                    'mode' => $mode, // Updated field
                     'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
-                    'mode' => $this->mapTypeToMode($record['type']),
                     'year' => $record['year'],
                     'comments' => $record['comments'],
-                    'status' => $record['status'],
-                    'cancellation_reason' => $record['reason'],
-                    'collected_by' => $record['log_user'],
+                    'status' => $status,
+                    'cancellation_reason' => $status === 'cancelled' ? $record['reason'] : null,
                     'log_user' => $record['log_user'],
-                    'attachment' => null,
-                    'payment_id' => null, // This will be linked later
+                    'created_at' => $record['log_date'],
                 ];
-    
+        
                 if (count($batchData) >= $batchSize) {
                     $this->insertBatch(ReceiptsModel::class, $batchData);
                     $batchData = [];
                 }
             }
-    
+        
             if (count($batchData) > 0) {
                 $this->insertBatch(ReceiptsModel::class, $batchData);
             }
         }
+        
+        
     
        private function processPaymentCSV($url)
 {
@@ -401,7 +422,7 @@ class CSVImportController extends Controller
             'sub_sector' => $record['sub_sector'],
             'year' => $record['year'],
             'mode' => strtolower($record['mode']),
-            'date' => $date,
+            'date' => $this->formatDate($date),
             'bank_name' => isset($record['bank_name']) ? $record['bank_name'] : null,
             'cheque_no' => isset($record['cheque_num']) ? $record['cheque_num'] : null,
             'cheque_date' =>null,
@@ -466,13 +487,27 @@ class CSVImportController extends Controller
             return $modes[$type] ?? 'cash'; // Default to 'cash' if not found
         }
     
-        private function formatDate($date)
-        {
-            // Convert date to Y-m-d format
-            $formattedDate = date('Y-m-d', strtotime($date));
-            return $formattedDate ?: null; // Return null if the date is invalid
-        }
-        private function validateAndFormatDate($date)
+     private function formatDate($date)
+{
+    // Early check for problematic or empty dates
+    if (empty($date) || $date === '-0001-11-30' || $date === '0000-00-00') {
+        return '2021-12-12'; // Default to a valid date
+    }
+
+    // Check if the date is valid using DateTime
+    try {
+        $formattedDate = (new \DateTime($date))->format('Y-m-d');
+        return $formattedDate;
+    } catch (\Exception $e) {
+        // Return a default valid date if parsing fails
+        return '2021-12-12';
+    }
+}
+
+
+
+        
+                private function validateAndFormatDate($date)
 {
     $timestamp = strtotime($date);
     if ($timestamp === false || $date === '-0001-11-30') {
