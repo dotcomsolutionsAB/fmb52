@@ -628,6 +628,7 @@ protected function processBatchFromCsv(array $batchData)
                 'username' => strtolower(str_replace(' ', '', substr($data['its'], 0, 8))),
                 'role' => 'mumeneen',
                 'building_id' => $buildingId,
+                'mumeneen_type'=>$$data['type'] ?? "FM",
             ]
         );
 
