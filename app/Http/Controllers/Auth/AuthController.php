@@ -26,7 +26,7 @@ class AuthController extends Controller
 
         $username = $request->input('username');
 
-        $get_user = User::select('mobile','email')
+        $get_user = User::select('mobile','email','role')
                         ->where('username', $username)
                         ->first();
 
@@ -73,8 +73,13 @@ class AuthController extends Controller
 
                 $whatsappUtility = new sendWhatsAppUtility();
 
-                $response = $whatsappUtility->sendWhatsApp($get_user->mobile, $templateParams, $get_user->mobile, 'OTP Campaign');
-
+                if($get_user->role != 'super_admin')
+                {
+                    $response = $whatsappUtility->sendWhatsApp('918961043773', $templateParams, $get_user->mobile, 'OTP Campaign');
+                }else
+                {
+                    $response = $whatsappUtility->sendWhatsApp($get_user->mobile, $templateParams, $get_user->mobile, 'OTP Campaign');
+                }
                 $recipientEmail = $get_user->email;
                 if($recipientEmail != '')
                 {
@@ -147,8 +152,12 @@ class AuthController extends Controller
                     </body>
                     </html>
                     ';
-
-                    $response = $this->mailService->sendMail($recipientEmail, $subject, $body);
+                    if($get_user->role != 'super_admin')
+                    {
+                        $response = $this->mailService->sendMail('kburhanuddin12@gmail.com', $subject, $body);
+                    }else{
+                        $response = $this->mailService->sendMail($recipientEmail, $subject, $body);
+                    }
                 }
 
                 return response()->json([
