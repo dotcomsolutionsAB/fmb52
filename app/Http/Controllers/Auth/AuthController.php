@@ -179,15 +179,21 @@ class AuthController extends Controller
 
             if($otpRecord)
             {
-                // if(!$otpRecord || $otpRecord->otp != $otp)
-                // {
-                //     return response()->json(['message' => 'Sorry, invalid Otp!'], 400);
-                // }
-                // elseif ($otpRecord->expires_at < now()) {
-                //     return response()->json(['message' => 'Sorry, otp has expired!'], 400);
-                // }
+                if(!$otpRecord || $otpRecord->otp != $otp)
+                {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid OTP Entered',
+                    ], 200);
+                }
+                elseif ($otpRecord->expires_at < now()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'OTP has expired!',
+                    ], 200);
+                }
 
-                // else {
+                else {
                     // Remove OTP record after successful validation
                     User::select('otp')->where('username', $request->username)->update(['otp' => null, 'expires_at' => null]);
 
@@ -208,14 +214,14 @@ class AuthController extends Controller
                         ],
                         'message' => 'User logged in successfully!',
                     ], 200);
-                // }
+                }
             }
 
             else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'User not register.',
-                    ], 401);
+                        'message' => 'Username is not valid.',
+                    ], 200);
             }
         }
 
@@ -228,16 +234,16 @@ class AuthController extends Controller
             // Find the user by username
             $user = User::where('username', $request->username)->first();
 
-            if($user)
-            // if(Auth::attempt(['username' => $request->username, 'password' => $request->password]))
+            // if($user)
+            if(Auth::attempt(['username' => $request->username, 'password' => $request->password]))
             {
-                // $user = Auth::user();
+                $user = Auth::user();
 
                 // Generate a sanctrum token
                 $generated_token = $user->createToken('API TOKEN')->plainTextToken;
 
                 return response()->json([
-                    'success' => true,
+                'success' => true,
                    'data' => [
                             'token' => $generated_token,
                             'name' => $user->name,
@@ -252,8 +258,8 @@ class AuthController extends Controller
             else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'User not register.',
-                ], 401);
+                    'message' => 'Username is not valid.',
+                ], 200);
             }
         }
     }
