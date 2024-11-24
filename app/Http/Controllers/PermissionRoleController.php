@@ -197,11 +197,34 @@ class PermissionRoleController extends Controller
             'permissions' => 'required|array'
         ]);
 
-        $user = User::findOrFail($request->user_id);
-        $user->syncPermissions($request->permissions);
+        // Validate that all permissions exist
+        $permissionsExist = Permission::whereIn('name', $request->permissions)->count();
 
-        return response()->json(['message' => 'Permissions assigned to user successfully', 'user' => $user], 200);
+        if ($permissionsExist !== count($request->permissions)) {
+            return response()->json([
+                'message' => 'One or more permissions do not exist',
+                'missing_permissions' => array_diff($request->permissions, Permission::pluck('name')->toArray())
+            ], 422); // Unprocessable Entity
+        }
+
+        try {
+            $user = User::findOrFail($request->user_id);
+
+            // Assign permissions
+            $user->syncPermissions($request->permissions);
+
+            return response()->json([
+                'message' => 'Permissions assigned to user successfully',
+                'user' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while assigning permissions',
+                'error' => $e->getMessage()
+            ], 500); // Internal Server Error
+        }
     }
+
 
     /**
      * Get all permissions for a user
