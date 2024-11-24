@@ -17,7 +17,7 @@ class MailService
             $mail->Host       = 'smtp.gmail.com'; // Set the SMTP server
             $mail->SMTPAuth   = true; // Enable SMTP authentication
             $mail->Username   = 'support@fmb52.com'; // Your Gmail address
-            $mail->Password   = 'qskypetvdyxcvpb'; // Your Gmail app password
+            $mail->Password   = 'qskypetvdyxcvpbi'; // Your Gmail app password
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // Encryption type
             $mail->Port       = 587; // TCP port to connect to
 
