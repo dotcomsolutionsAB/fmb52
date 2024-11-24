@@ -176,42 +176,40 @@ class AuthController extends Controller
     // user `login`
     public function login(Request $request, $otp = null)
     {
-        if($otp)
-        {
+        if ($otp) {
             $request->validate([
                 'username' => ['required', 'string'],
             ]);
-            
-            $otpRecord = User::select('otp', 'expires_at')
-            ->where('username', $request->username)
-            ->first();
 
-            if($otpRecord)
-            {
-                if(!$otpRecord || $otpRecord->otp != $otp)
-                {
+            $otpRecord = User::select('otp', 'expires_at')
+                ->where('username', $request->username)
+                ->first();
+
+            if ($otpRecord) {
+                if (!$otpRecord || $otpRecord->otp != $otp) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Invalid OTP Entered',
                     ], 200);
-                }
-                elseif ($otpRecord->expires_at < now()) {
+                } elseif ($otpRecord->expires_at < now()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'OTP has expired!',
                     ], 200);
-                }
-
-                else {
+                } else {
                     // Remove OTP record after successful validation
-                    User::select('otp')->where('username', $request->username)->update(['otp' => null, 'expires_at' => null]);
+                    User::where('username', $request->username)
+                        ->update(['otp' => null, 'expires_at' => null]);
 
-                    // Retrieve the use
+                    // Retrieve the user
                     $user = User::where('username', $request->username)->first();
 
-                    // Generate a sanctrum token
+                    // Generate a Sanctum token
                     $generated_token = $user->createToken('API TOKEN')->plainTextToken;
-                   
+
+                    // Retrieve user permissions
+                    $permissions = $user->getAllPermissions()->pluck('name');
+
                     return response()->json([
                         'success' => true,
                         'data' => [
@@ -220,21 +218,18 @@ class AuthController extends Controller
                             'role' => $user->role,
                             'id' => $user->id,
                             'jamiat_id' => $user->jamiat_id,
+                            'permissions' => $permissions, // Add permissions here
                         ],
                         'message' => 'User logged in successfully!',
                     ], 200);
                 }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Username is not valid.',
+                ], 200);
             }
-
-            else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Username is not valid.',
-                    ], 200);
-            }
-        }
-
-        else {
+        } else {
             $request->validate([
                 'username' => ['required', 'string'],
                 'password' => 'required',
@@ -243,35 +238,36 @@ class AuthController extends Controller
             // Find the user by username
             $user = User::where('username', $request->username)->first();
 
-            // if($user)
-            if(Auth::attempt(['username' => $request->username, 'password' => $request->password]))
-            {
+            if (Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
                 $user = Auth::user();
 
-                // Generate a sanctrum token
+                // Generate a Sanctum token
                 $generated_token = $user->createToken('API TOKEN')->plainTextToken;
 
+                // Retrieve user permissions
+                $permissions = $user->getAllPermissions()->pluck('name');
+
                 return response()->json([
-                'success' => true,
-                   'data' => [
-                            'token' => $generated_token,
-                            'name' => $user->name,
-                            'role' => $user->role,
-                            'id' => $user->id,
-                            'jamiat_id' => $user->jamiat_id,
-                        ],
+                    'success' => true,
+                    'data' => [
+                        'token' => $generated_token,
+                        'name' => $user->name,
+                        'role' => $user->role,
+                        'id' => $user->id,
+                        'jamiat_id' => $user->jamiat_id,
+                        'permissions' => $permissions, // Add permissions here
+                    ],
                     'message' => 'User logged in successfully!',
                 ], 200);
-            }
-
-            else {
+            } else {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Username is not valid.',
+                    'message' => 'Invalid username or password.',
                 ], 200);
             }
         }
     }
+
 
     // user `logout`
     public function logout(Request $request)
