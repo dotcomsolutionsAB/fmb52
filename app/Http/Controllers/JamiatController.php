@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\JamiatModel;
+use App\Models\User;
 use App\Models\JamiatSettingsModel;
 use App\Models\SuperAdminReceiptsModel;
 use App\Models\SuperAdminCounterModel;
