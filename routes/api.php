@@ -12,6 +12,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\JamiatController;
 use App\Http\Controllers\SectorImportController;
 use App\Http\Controllers\SubSectorImportController;
+use App\Http\Controllers\PermissionRoleController;
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
@@ -27,6 +28,30 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Register New Jamaat
     Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
     Route::post('/verify_email', [JamiatController::class, 'verify_email']);
+
+    Route::prefix('permissions')->group(function () {
+        Route::post('/create', [PermissionRoleController::class, 'createPermission']);
+        Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
+        Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
+        Route::delete('/delete-bulk', [PermissionRoleController::class, 'deleteBulkPermissions']);
+    });
+
+    Route::prefix('roles')->group(function () {
+        Route::post('/create', [PermissionRoleController::class, 'createRole']);
+        Route::post('/add-permissions', [PermissionRoleController::class, 'addPermissionsToRole']);
+        Route::put('/edit', [PermissionRoleController::class, 'editRole']);
+        Route::delete('/delete', [PermissionRoleController::class, 'deleteRole']);
+    });
+
+    Route::prefix('users')->group(function () {
+        Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
+        Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
+    });
+
+    Route::prefix('roles')->group(function () {
+        Route::get('/{roleName}/permissions', [PermissionRoleController::class, 'getRolePermissions']);
+    });
+
 
     // user
     Route::get('/user', [MumeneenController::class, 'users']);
