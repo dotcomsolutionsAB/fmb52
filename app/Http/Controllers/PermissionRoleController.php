@@ -156,10 +156,12 @@ class PermissionRoleController extends Controller
     public function deleteRole(Request $request)
     {
         $request->validate(['name' => 'required|string']);
-        
+
         try {
             // Find the role by name
             $role = Role::where('name', $request->name)->first();
+
+            die($role);
 
             // If the role does not exist, return a 404 error
             if (!$role) {
