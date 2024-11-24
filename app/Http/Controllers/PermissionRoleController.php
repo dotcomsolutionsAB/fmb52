@@ -33,6 +33,15 @@ class PermissionRoleController extends Controller
     }
 
     /**
+     * Get all permissions
+     */
+    public function getAllPermissions()
+    {
+        $permissions = Permission::all();
+        return response()->json(['permissions' => $permissions], 200);
+    }
+
+    /**
      * Delete a single permission
      */
     public function deletePermission(Request $request)

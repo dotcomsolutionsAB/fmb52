@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('permissions')->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createPermission']);
         Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
+        Route::get('/all', [PermissionRoleController::class, 'getAllPermissions']);
         Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
         Route::delete('/delete-bulk', [PermissionRoleController::class, 'deleteBulkPermissions']);
     });
