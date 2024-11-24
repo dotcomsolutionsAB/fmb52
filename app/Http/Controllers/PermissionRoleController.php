@@ -156,15 +156,29 @@ class PermissionRoleController extends Controller
     public function deleteRole(Request $request)
     {
         $request->validate(['name' => 'required|string']);
-        $role = Role::where('name', $request->name)->first();
+        
+        try {
+            // Find the role by name
+            $role = Role::where('name', $request->name)->first();
 
-        if (!$role) {
-            return response()->json(['message' => 'Role not found'], 404);
+            // If the role does not exist, return a 404 error
+            if (!$role) {
+                return response()->json(['message' => 'Role not found'], 404);
+            }
+
+            // Detach all permissions associated with the role
+            $role->permissions()->detach();
+
+            // Delete the role
+            $role->delete();
+
+            return response()->json(['message' => 'Role deleted successfully'], 200);
+        } catch (\Exception $e) {
+            // Catch any unexpected errors and log them
+            return response()->json(['message' => 'Failed to delete role', 'error' => $e->getMessage()], 500);
         }
-
-        $role->delete();
-        return response()->json(['message' => 'Role deleted successfully'], 200);
     }
+
 
     /**
      * Assign permissions to a user (model)
