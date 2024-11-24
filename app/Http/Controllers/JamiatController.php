@@ -10,50 +10,81 @@ use App\Models\SuperAdminCounterModel;
 
 class JamiatController extends Controller
 {
-    //
     // create
-    public function register_jamiat(Request $request)
+    public function register_jamaat(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:150',
             'mobile' => 'required|string|max:20',
             'email' => 'required|string|email|max:150|unique:t_jamiat,email',
-            'package' => 'required|integer',
-            'billing_address' => 'nullable|string',
-            'billing_contact' => 'nullable|string|max:150',
-            'billing_email' => 'nullable|string|email|max:150',
-            'billing_phone' => 'nullable|string|max:20',
-            'last_payment_date' => 'nullable|date',
-            'last_payment_amount' => 'nullable|numeric',
-            'payment_due_date' => 'nullable|date',
-            'validity' => 'required|date',
-            'notes' => 'nullable|string',
-            'logs' => 'nullable|string',
         ]);
 
-        $jamiat = JamiatModel::create([
-            'name' => $request->input('name'),
-            'mobile' => $request->input('mobile'),
-            'email' => $request->input('email'),
-            'package' => $request->input('package'),
-            'billing_address' => $request->input('billing_address'),
-            'billing_contact' => $request->input('billing_contact'),
-            'billing_email' => $request->input('billing_email'),
-            'billing_phone' => $request->input('billing_phone'),
-            'last_payment_date' => $request->input('last_payment_date'),
-            'last_payment_amount' => $request->input('last_payment_amount'),
-            'payment_due_date' => $request->input('payment_due_date'),
-            'validity' => $request->input('validity'),
-            'notes' => $request->input('notes'),
-            'logs' => $request->input('logs')
-        ]);
+        try {
+            // Create Jamiat with only required fields
+            $jamiat = JamiatModel::create([
+                'name' => $request->input('name'),
+                'mobile' => $request->input('mobile'),
+                'email' => $request->input('email'),
+                'package' => 'trial',
+                'validity' => now()->addDays(30)->format('Y-m-d'), // 30 days from current date
+                'billing_address' => null,
+                'billing_contact' => null,
+                'billing_email' => null,
+                'billing_phone' => null,
+                'last_payment_date' => null,
+                'last_payment_amount' => null,
+                'payment_due_date' => null,
+                'notes' => null,
+                'logs' => null,
+            ]);
 
-        unset($jamiat['id'], $jamiat['created_at'], $jamiat['updated_at']);
+            if ($jamiat) {
+                // Create a new user associated with the created Jamiat
+                $register_user = User::create([
+                    'name' => $request->input('name'),
+                    'email' => strtolower($request->input('email')),
+                    'password' => bcrypt('fmb52#'), // Default password
+                    'jamiat_id' => $jamiat->id, // Link to the created Jamiat
+                    'family_id' => null,
+                    'its' => null,
+                    'hof_its' => null,
+                    'its_family_id' => null,
+                    'mobile' => $request->input('mobile'),
+                    'title' => null,
+                    'gender' => null,
+                    'age' => null,
+                    'building' => null,
+                    'folio_no' => null,
+                    'sector' => null,
+                    'sub_sector' => null,
+                    'role' => 'jamiat_admin', // Role assigned
+                    'status' => 'active', // Status assigned
+                    'username' => strtolower($request->input('email')), // Username is the email
+                ]);
 
-        return $jamiat
-            ? response()->json(['message' => 'Jamiat created successfully!', 'data' => $jamiat], 201)
-            : response()->json(['message' => 'Failed to create Jamiat!'], 400);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Jamaat registered successfully!',
+                    'data' => [
+                        'jamiat' => $jamiat,
+                        'user' => $register_user,
+                    ],
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to create user for the Jamiat!',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Some error occurred!',
+                'error' => $e->getMessage(), // Optional: Include the exception message for debugging
+            ], 200);
+        }
     }
+
 
     // view
     public function view_jamiats()

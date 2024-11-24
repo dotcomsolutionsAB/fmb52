@@ -24,6 +24,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/import_users', [CSVImportController::class, 'importUser']);
     Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromCsv']);
 
+    // Register New Jamaat
+    Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
 
     // user
     Route::get('/user', [MumeneenController::class, 'users']);
@@ -193,7 +195,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/feedback_responses/{id}', [FeedbackController::class, 'delete_feedback_response']);
 
     // jamiat
-    Route::post('/jamiat', [JamiatController::class, 'register_jamiat']);
     Route::get('/jamiat', [JamiatController::class, 'view_jamiats']);
     Route::post('/update_jamiat/{id}', [JamiatController::class, 'update_jamiat']);
     Route::delete('/jamiat/{id}', [JamiatController::class, 'delete_jamiat']);
