@@ -7,9 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Utils\sendWhatsAppUtility;
 use App\Models\User;
+use App\Services\MailService;
 
 class AuthController extends Controller
 {
+    protected $mailService;
+
+    public function __construct(MailService $mailService)
+    {
+        $this->mailService = $mailService;
+    }
     // genearate otp and send to `whatsapp`
     public function generate_otp(Request $request)
     {
@@ -67,6 +74,82 @@ class AuthController extends Controller
                 $whatsappUtility = new sendWhatsAppUtility();
 
                 $response = $whatsappUtility->sendWhatsApp($get_user->mobile, $templateParams, $get_user->mobile, 'OTP Campaign');
+
+                $recipientEmail = $get_user->email;
+                if($recipientEmail != '')
+                {
+                    $subject = "Your Login OTP Code";
+                    $body = '<!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                line-height: 1.6;
+                                color: #333333;
+                                margin: 0;
+                                padding: 0;
+                                background-color: #f7f7f7;
+                            }
+                            .email-container {
+                                max-width: 600px;
+                                margin: 20px auto;
+                                background-color: #ffffff;
+                                padding: 20px;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            }
+                            .header {
+                                text-align: center;
+                                margin-bottom: 20px;
+                            }
+                            .header h1 {
+                                font-size: 24px;
+                                color: #4CAF50;
+                            }
+                            .otp-code {
+                                display: inline-block;
+                                padding: 10px 20px;
+                                background-color: #4CAF50;
+                                color: #ffffff;
+                                font-size: 20px;
+                                border-radius: 4px;
+                                margin: 20px 0;
+                                text-align: center;
+                                font-weight: bold;
+                            }
+                            .content {
+                                font-size: 16px;
+                            }
+                            .footer {
+                                margin-top: 20px;
+                                text-align: center;
+                                font-size: 14px;
+                                color: #777777;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="email-container">
+                            <div class="header">
+                                <h1>Your OTP Code</h1>
+                            </div>
+                            <div class="content">
+                                <p>Your One-Time Password (OTP) for logging in is:</p>
+                                <p class="otp-code">'.$six_digit_otp.'</p>
+                                <p>Please use this OTP to complete your login. This code is valid for 10 minutes.</p>
+                                <p>If you did not request this OTP, please contact our support team immediately.</p>
+                            </div>
+                            <div class="footer">
+                                <p>Thank you,<br>FMB 52 Team</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    ';
+
+                    $response = $this->mailService->sendMail($recipientEmail, $subject, $body);
+                }
 
                 return response()->json([
                     'message' => 'Otp send successfully!',
