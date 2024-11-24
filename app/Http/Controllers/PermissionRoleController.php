@@ -20,7 +20,7 @@ class PermissionRoleController extends Controller
             return response()->json(['message' => 'Permission already exists'], 409); // Conflict response
         }
 
-        $permission = Permission::create(['name' => $request->name]);
+        $permission = Permission::create(['name' => $request->name, 'guard_name' => 'sanctum']);
         return response()->json(['message' => 'Permission created successfully', 'permission' => $permission], 201);
     }
 
@@ -97,7 +97,7 @@ class PermissionRoleController extends Controller
             return response()->json(['message' => 'Role already exists'], 409); // Conflict response
         }
 
-        $role = Role::create(['name' => $request->name]);
+        $role = Role::create(['name' => $request->name, 'guard_name' => 'sanctum']);
         return response()->json(['message' => 'Role created successfully', 'role' => $role], 201);
     }
 
@@ -200,23 +200,18 @@ class PermissionRoleController extends Controller
         try {
             $user = User::findOrFail($request->user_id);
 
-            // Validate that all permissions exist with the correct guard
-            $permissionsExist = Permission::where('guard_name', 'sanctum')
-                ->whereIn('name', $request->permissions)
-                ->count();
-
-            if ($permissionsExist !== count($request->permissions)) {
-                return response()->json([
-                    'message' => 'One or more permissions do not exist for the sanctum guard',
-                    'missing_permissions' => array_diff($request->permissions, Permission::where('guard_name', 'sanctum')->pluck('name')->toArray())
-                ], 422); // Unprocessable Entity
-            }
-
-            // Assign permissions explicitly for the sanctum guard
+            // Ensure permissions are for the same guard
             $permissions = Permission::where('guard_name', 'sanctum')
                 ->whereIn('name', $request->permissions)
                 ->get();
 
+            if ($permissions->isEmpty()) {
+                return response()->json([
+                    'message' => 'No matching permissions found for the sanctum guard',
+                ], 422);
+            }
+
+            // Assign permissions to the user
             $user->syncPermissions($permissions);
 
             return response()->json([
@@ -227,9 +222,10 @@ class PermissionRoleController extends Controller
             return response()->json([
                 'message' => 'An error occurred while assigning permissions',
                 'error' => $e->getMessage()
-            ], 500); // Internal Server Error
+            ], 500);
         }
     }
+
 
 
 

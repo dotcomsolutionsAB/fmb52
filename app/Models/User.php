@@ -14,6 +14,9 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
+    // Specify the guard for Spatie
+    protected $guard_name = 'sanctum';
+
     /**
      * The attributes that are mass assignable.
      *
