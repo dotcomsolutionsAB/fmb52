@@ -26,6 +26,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Register New Jamaat
     Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
+    Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
     // user
     Route::get('/user', [MumeneenController::class, 'users']);
