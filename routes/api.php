@@ -42,7 +42,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/add-permissions', [PermissionRoleController::class, 'addPermissionsToRole']);
         Route::get('/all', [PermissionRoleController::class, 'getAllRoles']);
         Route::put('/edit', [PermissionRoleController::class, 'editRole']);
-        Route::delete('/delete', [PermissionRoleController::class, 'deleteRole']);
+        Route::post('/delete', [PermissionRoleController::class, 'deleteRole']);
     });
 
     Route::prefix('users')->group(function () {
