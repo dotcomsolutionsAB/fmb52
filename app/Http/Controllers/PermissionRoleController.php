@@ -161,8 +161,6 @@ class PermissionRoleController extends Controller
             // Find the role by name
             $role = Role::where('name', $request->name)->first();
 
-            die($role);
-
             // If the role does not exist, return a 404 error
             if (!$role) {
                 return response()->json(['message' => 'Role not found'], 404);
