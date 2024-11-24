@@ -197,21 +197,27 @@ class PermissionRoleController extends Controller
             'permissions' => 'required|array'
         ]);
 
-        // Validate that all permissions exist
-        $permissionsExist = Permission::whereIn('name', $request->permissions)->count();
-
-        if ($permissionsExist !== count($request->permissions)) {
-            return response()->json([
-                'message' => 'One or more permissions do not exist',
-                'missing_permissions' => array_diff($request->permissions, Permission::pluck('name')->toArray())
-            ], 422); // Unprocessable Entity
-        }
-
         try {
             $user = User::findOrFail($request->user_id);
 
-            // Assign permissions
-            $user->syncPermissions($request->permissions);
+            // Validate that all permissions exist with the correct guard
+            $permissionsExist = Permission::where('guard_name', 'sanctum')
+                ->whereIn('name', $request->permissions)
+                ->count();
+
+            if ($permissionsExist !== count($request->permissions)) {
+                return response()->json([
+                    'message' => 'One or more permissions do not exist for the sanctum guard',
+                    'missing_permissions' => array_diff($request->permissions, Permission::where('guard_name', 'sanctum')->pluck('name')->toArray())
+                ], 422); // Unprocessable Entity
+            }
+
+            // Assign permissions explicitly for the sanctum guard
+            $permissions = Permission::where('guard_name', 'sanctum')
+                ->whereIn('name', $request->permissions)
+                ->get();
+
+            $user->syncPermissions($permissions);
 
             return response()->json([
                 'message' => 'Permissions assigned to user successfully',
@@ -224,6 +230,7 @@ class PermissionRoleController extends Controller
             ], 500); // Internal Server Error
         }
     }
+
 
 
     /**
