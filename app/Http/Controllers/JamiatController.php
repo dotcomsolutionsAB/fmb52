@@ -25,7 +25,7 @@ class JamiatController extends Controller
                 'name' => $request->input('name'),
                 'mobile' => $request->input('mobile'),
                 'email' => $request->input('email'),
-                'package' => 'trial',
+                'package' => 0,
                 'validity' => now()->addDays(30)->format('Y-m-d'), // 30 days from current date
                 'billing_address' => null,
                 'billing_contact' => null,
