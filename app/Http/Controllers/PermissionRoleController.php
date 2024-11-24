@@ -15,8 +15,13 @@ class PermissionRoleController extends Controller
     public function createPermission(Request $request)
     {
         $request->validate(['name' => 'required|string|unique:permissions,name']);
+
+        if (Permission::where('name', $request->name)->exists()) {
+            return response()->json(['message' => 'Permission already exists'], 409); // Conflict response
+        }
+
         $permission = Permission::create(['name' => $request->name]);
-        return response()->json(['message' => 'Permission created successfully', 'permission' => $permission]);
+        return response()->json(['message' => 'Permission created successfully', 'permission' => $permission], 201);
     }
 
     /**
@@ -25,11 +30,24 @@ class PermissionRoleController extends Controller
     public function createBulkPermissions(Request $request)
     {
         $request->validate(['permissions' => 'required|array']);
+
         $createdPermissions = [];
+        $existingPermissions = [];
+
         foreach ($request->permissions as $permissionName) {
-            $createdPermissions[] = Permission::firstOrCreate(['name' => $permissionName]);
+            $permission = Permission::firstOrCreate(['name' => $permissionName]);
+            if ($permission->wasRecentlyCreated) {
+                $createdPermissions[] = $permission;
+            } else {
+                $existingPermissions[] = $permissionName;
+            }
         }
-        return response()->json(['message' => 'Bulk permissions created successfully', 'permissions' => $createdPermissions]);
+
+        return response()->json([
+            'message' => 'Bulk permissions processed successfully',
+            'created_permissions' => $createdPermissions,
+            'existing_permissions' => $existingPermissions
+        ]);
     }
 
     /**
@@ -47,8 +65,14 @@ class PermissionRoleController extends Controller
     public function deletePermission(Request $request)
     {
         $request->validate(['name' => 'required|string']);
-        Permission::where('name', $request->name)->delete();
-        return response()->json(['message' => 'Permission deleted successfully']);
+        $permission = Permission::where('name', $request->name)->first();
+
+        if (!$permission) {
+            return response()->json(['message' => 'Permission not found'], 404); // Not found response
+        }
+
+        $permission->delete();
+        return response()->json(['message' => 'Permission deleted successfully'], 200);
     }
 
     /**
@@ -57,8 +81,9 @@ class PermissionRoleController extends Controller
     public function deleteBulkPermissions(Request $request)
     {
         $request->validate(['permissions' => 'required|array']);
-        Permission::whereIn('name', $request->permissions)->delete();
-        return response()->json(['message' => 'Bulk permissions deleted successfully']);
+        $deletedPermissions = Permission::whereIn('name', $request->permissions)->delete();
+
+        return response()->json(['message' => "$deletedPermissions permissions deleted successfully"], 200);
     }
 
     /**
@@ -67,8 +92,13 @@ class PermissionRoleController extends Controller
     public function createRole(Request $request)
     {
         $request->validate(['name' => 'required|string|unique:roles,name']);
+
+        if (Role::where('name', $request->name)->exists()) {
+            return response()->json(['message' => 'Role already exists'], 409); // Conflict response
+        }
+
         $role = Role::create(['name' => $request->name]);
-        return response()->json(['message' => 'Role created successfully', 'role' => $role]);
+        return response()->json(['message' => 'Role created successfully', 'role' => $role], 201);
     }
 
     /**
@@ -80,7 +110,6 @@ class PermissionRoleController extends Controller
         return response()->json(['roles' => $roles], 200);
     }
 
-
     /**
      * Add single or bulk permissions to a role
      */
@@ -90,9 +119,14 @@ class PermissionRoleController extends Controller
             'role' => 'required|string',
             'permissions' => 'required|array'
         ]);
-        $role = Role::findByName($request->role);
+
+        $role = Role::where('name', $request->role)->first();
+        if (!$role) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
+
         $role->syncPermissions($request->permissions);
-        return response()->json(['message' => 'Permissions added to role successfully', 'role' => $role]);
+        return response()->json(['message' => 'Permissions added to role successfully', 'role' => $role], 200);
     }
 
     /**
@@ -104,10 +138,16 @@ class PermissionRoleController extends Controller
             'old_name' => 'required|string',
             'new_name' => 'required|string|unique:roles,name'
         ]);
-        $role = Role::findByName($request->old_name);
+
+        $role = Role::where('name', $request->old_name)->first();
+        if (!$role) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
+
         $role->name = $request->new_name;
         $role->save();
-        return response()->json(['message' => 'Role name updated successfully', 'role' => $role]);
+
+        return response()->json(['message' => 'Role name updated successfully', 'role' => $role], 200);
     }
 
     /**
@@ -116,8 +156,14 @@ class PermissionRoleController extends Controller
     public function deleteRole(Request $request)
     {
         $request->validate(['name' => 'required|string']);
-        Role::where('name', $request->name)->delete();
-        return response()->json(['message' => 'Role deleted successfully']);
+        $role = Role::where('name', $request->name)->first();
+
+        if (!$role) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
+
+        $role->delete();
+        return response()->json(['message' => 'Role deleted successfully'], 200);
     }
 
     /**
@@ -129,9 +175,11 @@ class PermissionRoleController extends Controller
             'user_id' => 'required|integer|exists:users,id',
             'permissions' => 'required|array'
         ]);
+
         $user = User::findOrFail($request->user_id);
         $user->syncPermissions($request->permissions);
-        return response()->json(['message' => 'Permissions assigned to user successfully', 'user' => $user]);
+
+        return response()->json(['message' => 'Permissions assigned to user successfully', 'user' => $user], 200);
     }
 
     /**
@@ -141,7 +189,8 @@ class PermissionRoleController extends Controller
     {
         $user = User::findOrFail($userId);
         $permissions = $user->getAllPermissions();
-        return response()->json(['user' => $user, 'permissions' => $permissions]);
+
+        return response()->json(['user' => $user, 'permissions' => $permissions], 200);
     }
 
     /**
@@ -149,8 +198,14 @@ class PermissionRoleController extends Controller
      */
     public function getRolePermissions($roleName)
     {
-        $role = Role::findByName($roleName);
+        $role = Role::where('name', $roleName)->first();
+
+        if (!$role) {
+            return response()->json(['message' => 'Role not found'], 404);
+        }
+
         $permissions = $role->permissions;
-        return response()->json(['role' => $role, 'permissions' => $permissions]);
+
+        return response()->json(['role' => $role, 'permissions' => $permissions], 200);
     }
 }
