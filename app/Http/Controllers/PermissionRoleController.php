@@ -72,6 +72,16 @@ class PermissionRoleController extends Controller
     }
 
     /**
+     * Get all roles
+     */
+    public function getAllRoles()
+    {
+        $roles = Role::all();
+        return response()->json(['roles' => $roles], 200);
+    }
+
+
+    /**
      * Add single or bulk permissions to a role
      */
     public function addPermissionsToRole(Request $request)
