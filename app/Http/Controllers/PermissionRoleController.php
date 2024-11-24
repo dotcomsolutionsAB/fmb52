@@ -167,7 +167,14 @@ class PermissionRoleController extends Controller
             }
 
             // Detach all permissions associated with the role
-            $role->permissions()->detach();
+            if ($role->permissions()->exists()) {
+                $role->permissions()->detach();
+            }
+
+            // Detach the role from all users
+            if ($role->users()->exists()) {
+                $role->users()->detach();
+            }
 
             // Delete the role
             $role->delete();
