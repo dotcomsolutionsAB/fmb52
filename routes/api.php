@@ -18,16 +18,16 @@ Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
 Route::post('/login/{id?}', [AuthController::class, 'login']);
 
+// Register New Jamaat
+Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
+Route::post('/verify_email', [JamiatController::class, 'verify_email']);
+
 Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::post('/import_users', [CSVImportController::class, 'importUser']);
     Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromCsv']);
-
-    // Register New Jamaat
-    Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
-    Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
     Route::prefix('permissions')->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createPermission']);
