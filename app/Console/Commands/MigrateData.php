@@ -95,6 +95,15 @@ class MigrateData extends Command
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
 
+
+                $thaliStatusMap = [
+                    1 => 'taking',
+                    2 => 'not_taking',
+                    3 => 'once_a_week',
+                    9 => 'joint',
+                    0 => 'other_centre',
+                ];  
+                $thaliStatusString = $thaliStatusMap[$family['is_taking_thali']] ?? 'not_taking'; // Default is 'not_taking'
                 User::updateOrCreate(
                     ['its' => $member['its']],
                     [
@@ -113,7 +122,7 @@ class MigrateData extends Command
                         'folio_no' => $family['folio_no'],
                         'sector' => $family['sector'],
                         'sub_sector' => $family['sub_sector'],
-                        'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
+                        'thali_status' =>$thaliStatusString,// Default is 'not_taking'
                         'status' => $family['status'],
                         'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
                         'role' => 'mumeneen',
