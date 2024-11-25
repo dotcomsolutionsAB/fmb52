@@ -18,52 +18,52 @@ class DashboardController extends Controller
         $sector = $request->input('sector', '%'); // Default: all sectors
         $subSector = $request->input('sub_sector', '%'); // Default: all sub-sectors
 
-        // Query to fetch year-wise data (Distinct family count from t_users + sum hub amount from t_hub table)
-        $yearWiseData = DB::table('t_users')
-            ->join('t_hub', 't_users.family_id', '=', 't_hub.family_id')
+        // Query to fetch year-wise data (Distinct family count from users + sum hub amount from t_hub table)
+        $yearWiseData = DB::table('users')
+            ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
             ->select(
                 't_hub.year',
-                DB::raw('COUNT(DISTINCT t_users.family_id) as total_houses'), // Count distinct family IDs
+                DB::raw('COUNT(DISTINCT users.family_id) as total_houses'), // Count distinct family IDs
                 DB::raw('SUM(t_hub.hub_amount) as total_hub_amount') // Sum hub_amount from hub table
             )
-            ->where('t_users.jamiat_id', $jamiatId)
+            ->where('users.jamiat_id', $jamiatId)
             ->where('t_hub.year', 'LIKE', $year)
-            ->where('t_users.sector', 'LIKE', $sector)
-            ->where('t_users.sub_sector', 'LIKE', $subSector)
+            ->where('users.sector', 'LIKE', $sector)
+            ->where('users.sub_sector', 'LIKE', $subSector)
             ->groupBy('t_hub.year')
             ->get();
 
         // Query to fetch sector-wise data
-        $sectorWiseData = DB::table('t_users')
-            ->join('t_hub', 't_users.family_id', '=', 't_hub.family_id')
+        $sectorWiseData = DB::table('users')
+            ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
             ->select(
                 't_hub.year',
-                't_users.sector',
-                DB::raw('COUNT(DISTINCT t_users.family_id) as total_houses'),
+                'users.sector',
+                DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
                 DB::raw('SUM(t_hub.hub_amount) as total_hub_amount')
             )
-            ->where('t_users.jamiat_id', $jamiatId)
+            ->where('users.jamiat_id', $jamiatId)
             ->where('t_hub.year', 'LIKE', $year)
-            ->where('t_users.sector', 'LIKE', $sector)
-            ->where('t_users.sub_sector', 'LIKE', $subSector)
-            ->groupBy('t_hub.year', 't_users.sector')
+            ->where('users.sector', 'LIKE', $sector)
+            ->where('users.sub_sector', 'LIKE', $subSector)
+            ->groupBy('t_hub.year', 'users.sector')
             ->get();
 
         // Query to fetch sector-subsector-wise data
-        $sectorSubSectorWiseData = DB::table('t_users')
-            ->join('t_hub', 't_users.family_id', '=', 't_hub.family_id')
+        $sectorSubSectorWiseData = DB::table('users')
+            ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
             ->select(
                 't_hub.year',
-                't_users.sector',
-                't_users.sub_sector',
-                DB::raw('COUNT(DISTINCT t_users.family_id) as total_houses'),
+                'users.sector',
+                'users.sub_sector',
+                DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
                 DB::raw('SUM(t_hub.hub_amount) as total_hub_amount')
             )
-            ->where('t_users.jamiat_id', $jamiatId)
+            ->where('users.jamiat_id', $jamiatId)
             ->where('t_hub.year', 'LIKE', $year)
-            ->where('t_users.sector', 'LIKE', $sector)
-            ->where('t_users.sub_sector', 'LIKE', $subSector)
-            ->groupBy('t_hub.year', 't_users.sector', 't_users.sub_sector')
+            ->where('users.sector', 'LIKE', $sector)
+            ->where('users.sub_sector', 'LIKE', $subSector)
+            ->groupBy('t_hub.year', 'users.sector', 'users.sub_sector')
             ->get();
 
         // Query to fetch payment breakdown (t_receipts table for payment details)
@@ -83,7 +83,7 @@ class DashboardController extends Controller
             ->get();
 
         // Count users taking thaali
-        $thaaliUsersCount = DB::table('t_users')
+        $thaaliUsersCount = DB::table('users')
             ->where('jamiat_id', $jamiatId)
             ->where('thaali_status', 'active')
             ->where('sector', 'LIKE', $sector)
