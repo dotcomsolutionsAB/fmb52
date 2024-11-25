@@ -23,7 +23,7 @@ class JamiatController extends Controller
     public function verify_email(Request $request)
     {
         $recipientEmail = $request->input('email');
-        $code = $request->input('code');
+        $code = rand(100000, 999999); // Generates a random 6-digit number
 
         $subject = 'Verify Your Email Address';
         $body = '<!DOCTYPE html>
@@ -95,7 +95,7 @@ class JamiatController extends Controller
 
         $response = $this->mailService->sendMail($recipientEmail, $subject, $body);
 
-        return response()->json(['message' => $response]);
+        return response()->json(['message' => $response, 'code' => $code]);
     }
 
     // create
