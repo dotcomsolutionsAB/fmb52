@@ -35,6 +35,7 @@ return new class extends Migration
             $table->string('username')->unique()->after('password');
             $table->enum('thali_status', ['taking', 'not_taking', 'once_a_week', 'joint'])->after('username')->nullable();
             $table->longText('joint_with')->after('thali_status')->nullable();
+            $table->longText('photo_id')->after('joint_with')->nullable();
         });
     }
 

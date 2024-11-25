@@ -15,6 +15,7 @@ use App\Models\MenuModel;
 use App\Models\FcmModel;
 use App\Models\HubModel;
 use App\Models\ZabihatModel;
+use App\Http\Controllers\UploadController;
 
 use Auth;
 
@@ -31,35 +32,56 @@ class MumeneenController extends Controller
     public function register_users(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|unique:users,email',
-            'password' => 'required|string',
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'required|string|max:10',
-            'its' => [
-                'required',
-                'string',
-                'max:8',
-                Rule::unique('users')->where(function ($query) use ($request) {
-                    return $query->where('jamiat_id', $request->jamiat_id)
-                                 ->where('role', 'mumeneen');
-                })
-            ],
-            'hof_its' => 'required|string|max:8',
-            'its_family_id' => 'nullable|string|max:10',
-            'mobile' => ['required', 'string', 'min:12', 'max:20'],
-            'gender' => 'required|in:male,female',
-            'title' => 'nullable|in:Shaikh,Mulla',
-            'folio_no' => 'nullable|string|max:20',
-            'sector' => 'nullable|string|max:100',
-            'sub_sector' => 'nullable|string|max:100',
-            'building' => 'nullable|integer',
-            'age' => 'nullable|integer',
-            'role' => 'required|in:superadmin,jamiat_admin,mumeneen',
-            'status' => 'required|in:active,inactive',
-            'username' => 'required|string',
+            // 'name' => 'required|string',
+            // 'email' => 'required|unique:users,email',
+            // 'password' => 'required|string',
+            // 'jamiat_id' => 'required|integer',
+            // 'family_id' => 'required|string|max:10',
+            // 'its' => [
+            //     'required',
+            //     'string',
+            //     'max:8',
+            //     Rule::unique('users')->where(function ($query) use ($request) {
+            //         return $query->where('jamiat_id', $request->jamiat_id)
+            //                      ->where('role', 'mumeneen');
+            //     })
+            // ],
+            // 'hof_its' => 'required|string|max:8',
+            // 'its_family_id' => 'nullable|string|max:10',
+            // 'mobile' => ['required', 'string', 'min:12', 'max:20'],
+            // 'gender' => 'required|in:male,female',
+            // 'title' => 'nullable|in:Shaikh,Mulla',
+            // 'folio_no' => 'nullable|string|max:20',
+            // 'sector' => 'nullable|string|max:100',
+            // 'sub_sector' => 'nullable|string|max:100',
+            // 'building' => 'nullable|integer',
+            // 'age' => 'nullable|integer',
+            // 'role' => 'required|in:superadmin,jamiat_admin,mumeneen',
+            // 'status' => 'required|in:active,inactive',
+            // 'username' => 'required|string',
+            'files' => 'nullable|file|mimes:jpeg,png,jpg',
         ]);
         
+        $uploadedIds = [];
+
+        if ($request->input('files')) {
+            $uploadController = new UploadController();
+
+            $response = $uploadController->upload(new Request([
+                'files' => $request->file('files'),
+                'file_name' => $request->file('its'),
+                'type' => 'Users',
+                'jamiat_id' => $request->file('jamiat_id'),
+                'family_id' => $request->file('family_id')
+            ]));
+
+            $uploadedIds = $response->getData()->upload_ids ?? [];
+        }
+
+        else{
+            $uploadedIds = 1;
+        }
+        dd($uploadedIds);
 
         $register_user = User::create([
             'name' => $request->input('name'),
@@ -81,6 +103,7 @@ class MumeneenController extends Controller
             'role' => $request->input('role'),
             'status' => $request->input('status'),
             'username' => $request->input('username'),
+            'photo_id' => $request->input('photo_id'),
         ]);
 
         unset($register_user['id'], $register_user['created_at'], $register_user['updated_at']);
