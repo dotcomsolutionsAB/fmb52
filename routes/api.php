@@ -14,6 +14,7 @@ use App\Http\Controllers\SectorImportController;
 use App\Http\Controllers\SubSectorImportController;
 use App\Http\Controllers\PermissionRoleController;
 use App\Http\Controllers\UploadController;
+use App\Http\Controllers\DashboardController;
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
@@ -56,6 +57,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
 
+    // Daashboard
+    Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
+    
+    
+    
     // user
     Route::get('/user', [MumeneenController::class, 'users']);
     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
