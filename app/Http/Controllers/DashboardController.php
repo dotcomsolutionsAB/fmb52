@@ -72,14 +72,14 @@ class DashboardController extends Controller
                 'year',
                 'sector',
                 'sub_sector',
-                'type', // Payment type: Cash, Cheque, NEFT, etc.
+                'mode', // Payment type: Cash, Cheque, NEFT, etc.
                 DB::raw('SUM(amount) as total_amount')
             )
             ->where('jamiat_id', $jamiatId)
             ->where('year', 'LIKE', $year)
             ->where('sector', 'LIKE', $sector)
             ->where('sub_sector', 'LIKE', $subSector)
-            ->groupBy('year', 'sector', 'sub_sector', 'type')
+            ->groupBy('year', 'sector', 'sub_sector', 'mode')
             ->get();
 
         // Count users taking thaali
