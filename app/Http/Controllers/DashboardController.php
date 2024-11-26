@@ -28,16 +28,18 @@ class DashboardController extends Controller
             ->selectRaw("'All' as year, 'All' as sector, 'All' as sub_sector")
             ->selectRaw("COUNT(DISTINCT family_id) as total_houses")
             ->selectRaw("SUM(CASE WHEN hub_amount = 0 THEN 1 ELSE 0 END) as hub_not_set")
-            ->selectRaw("SUM(CASE WHEN hub_due > 0 THEN 1 ELSE 0 END) as hub_due_count")
+            ->selectRaw("SUM(CASE WHEN due_amount > 0 THEN 1 ELSE 0 END) as due_count")
             ->selectRaw("SUM(hub_amount) as total_hub_amount")
-            ->selectRaw("SUM(hub_paid) as total_hub_received")
-            ->selectRaw("SUM(hub_due) as total_hub_due")
+            ->selectRaw("SUM(paid_amount) as total_paid_amount")
+            ->selectRaw("SUM(due_amount) as total_due_amount")
             ->where('jamiat_id', $jamiatId)
+            ->where('year', 'LIKE', $yearFilter)
             ->first();
 
         $paymentBreakdown = DB::table('t_receipts')
             ->select('mode', DB::raw('SUM(amount) as total_amount'))
             ->where('jamiat_id', $jamiatId)
+            ->where('year', 'LIKE', $yearFilter)
             ->groupBy('mode')
             ->get()
             ->mapWithKeys(function ($item) {
@@ -56,10 +58,10 @@ class DashboardController extends Controller
             'sub_sector' => $consolidatedData->sub_sector,
             'total_houses' => $consolidatedData->total_houses,
             'hub_not_set' => $consolidatedData->hub_not_set,
-            'hub_due' => $consolidatedData->hub_due_count,
+            'hub_due' => $consolidatedData->due_count,
             'total_hub_amount' => $consolidatedData->total_hub_amount,
-            'total_hub_received' => $consolidatedData->total_hub_received,
-            'total_hub_due' => $consolidatedData->total_hub_due,
+            'total_paid_amount' => $consolidatedData->total_paid_amount,
+            'total_due_amount' => $consolidatedData->total_due_amount,
             'thaali_taking' => $thaaliTakingCount,
         ];
 
@@ -67,52 +69,56 @@ class DashboardController extends Controller
         $response = array_merge($response, $paymentBreakdown->toArray());
 
         // Add filtered data if requested
-        if ($year !== 'all' || $sector !== 'all' || $subSector !== 'all') {
-            $response['filtered_data'] = [
-                'year_wise_data' => DB::table('users')
-                    ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
-                    ->select(
-                        't_hub.year',
-                        DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
-                        DB::raw('SUM(t_hub.hub_amount) as total_hub_amount')
-                    )
-                    ->where('users.jamiat_id', $jamiatId)
-                    ->where('t_hub.year', 'LIKE', $yearFilter)
-                    ->where('users.sector', 'LIKE', $sectorFilter)
-                    ->where('users.sub_sector', 'LIKE', $subSectorFilter)
-                    ->groupBy('t_hub.year')
-                    ->get(),
-                'sector_wise_data' => DB::table('users')
-                    ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
-                    ->select(
-                        't_hub.year',
-                        'users.sector',
-                        DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
-                        DB::raw('SUM(t_hub.hub_amount) as total_hub_amount')
-                    )
-                    ->where('users.jamiat_id', $jamiatId)
-                    ->where('t_hub.year', 'LIKE', $yearFilter)
-                    ->where('users.sector', 'LIKE', $sectorFilter)
-                    ->where('users.sub_sector', 'LIKE', $subSectorFilter)
-                    ->groupBy('t_hub.year', 'users.sector')
-                    ->get(),
-                'sector_sub_sector_wise_data' => DB::table('users')
-                    ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
-                    ->select(
-                        't_hub.year',
-                        'users.sector',
-                        'users.sub_sector',
-                        DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
-                        DB::raw('SUM(t_hub.hub_amount) as total_hub_amount')
-                    )
-                    ->where('users.jamiat_id', $jamiatId)
-                    ->where('t_hub.year', 'LIKE', $yearFilter)
-                    ->where('users.sector', 'LIKE', $sectorFilter)
-                    ->where('users.sub_sector', 'LIKE', $subSectorFilter)
-                    ->groupBy('t_hub.year', 'users.sector', 'users.sub_sector')
-                    ->get(),
-            ];
-        }
+        $response['filtered_data'] = [
+            'year_wise_data' => DB::table('users')
+                ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
+                ->select(
+                    't_hub.year',
+                    DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
+                    DB::raw('SUM(hub_amount) as total_hub_amount'),
+                    DB::raw('SUM(paid_amount) as total_paid_amount'),
+                    DB::raw('SUM(due_amount) as total_due_amount')
+                )
+                ->where('users.jamiat_id', $jamiatId)
+                ->where('t_hub.year', 'LIKE', $yearFilter)
+                ->where('users.sector', 'LIKE', $sectorFilter)
+                ->where('users.sub_sector', 'LIKE', $subSectorFilter)
+                ->groupBy('t_hub.year')
+                ->get(),
+            'sector_wise_data' => DB::table('users')
+                ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
+                ->select(
+                    't_hub.year',
+                    'users.sector',
+                    DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
+                    DB::raw('SUM(hub_amount) as total_hub_amount'),
+                    DB::raw('SUM(paid_amount) as total_paid_amount'),
+                    DB::raw('SUM(due_amount) as total_due_amount')
+                )
+                ->where('users.jamiat_id', $jamiatId)
+                ->where('t_hub.year', 'LIKE', $yearFilter)
+                ->where('users.sector', 'LIKE', $sectorFilter)
+                ->where('users.sub_sector', 'LIKE', $subSectorFilter)
+                ->groupBy('t_hub.year', 'users.sector')
+                ->get(),
+            'sector_sub_sector_wise_data' => DB::table('users')
+                ->join('t_hub', 'users.family_id', '=', 't_hub.family_id')
+                ->select(
+                    't_hub.year',
+                    'users.sector',
+                    'users.sub_sector',
+                    DB::raw('COUNT(DISTINCT users.family_id) as total_houses'),
+                    DB::raw('SUM(hub_amount) as total_hub_amount'),
+                    DB::raw('SUM(paid_amount) as total_paid_amount'),
+                    DB::raw('SUM(due_amount) as total_due_amount')
+                )
+                ->where('users.jamiat_id', $jamiatId)
+                ->where('t_hub.year', 'LIKE', $yearFilter)
+                ->where('users.sector', 'LIKE', $sectorFilter)
+                ->where('users.sub_sector', 'LIKE', $subSectorFilter)
+                ->groupBy('t_hub.year', 'users.sector', 'users.sub_sector')
+                ->get(),
+        ];
 
         // Return JSON response
         return response()->json($response);
