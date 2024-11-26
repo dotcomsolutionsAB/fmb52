@@ -1,15 +1,8 @@
 <?php
 
-use Spatie\Permission\Models\Permission as SpatiePermission;
+namespace App\Models;
 
-class Permission extends SpatiePermission
+class Permission
 {
-    // Relationship with roles
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, 'role_has_permissions');
-    }
+    // Class contents
 }
-
-
-?>
