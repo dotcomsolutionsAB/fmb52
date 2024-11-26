@@ -46,10 +46,12 @@ class DashboardController extends Controller
                 return [$item->mode . '_amount' => $item->total_amount];
             });
 
-        $thaaliTakingCount = DB::table('users')
+            $thaaliTakingCount = DB::table('users')
             ->where('jamiat_id', $jamiatId)
             ->where('thali_status', 'taking')
-            ->count();
+            ->distinct('family_id') // Ensures only distinct family_id is considered
+            ->count('family_id'); // Counts the distinct family_id
+        
 
         // Consolidated response format
         $response = [
