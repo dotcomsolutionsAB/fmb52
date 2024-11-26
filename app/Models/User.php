@@ -48,4 +48,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // Define the relationship to the UploadModel
+    public function photo()
+    {
+        return $this->belongsTo(UploadModel::class, 'photo_id', 'id');
+    }
 }
