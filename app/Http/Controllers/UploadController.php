@@ -253,6 +253,7 @@ class UploadController extends Controller
             }
 
             unset($uploadedRecords['id'], $uploadedRecords['created_at'], $uploadedRecords['updated_at']);
+            
             return response()->json([
                 'message' => 'Files processed successfully.',
                 'uploaded' => $uploadedRecords,
