@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\UploadModel;
+use App\Models\User;
 use Auth;
 
 class UploadController extends Controller
@@ -173,15 +174,13 @@ class UploadController extends Controller
             $role = Auth::user()->role;
 
             // Validate inputs based on the user's role
-            if ($role == 'superadmin') 
-            {
+            if ($role == 'superadmin') {
                 $request->validate([
                     'jamiat_id' => 'required|numeric',
                 ]);
 
                 $jamiat_id = $request->input('jamiat_id');
-            } else 
-            {
+            } else {
                 $jamiat_id = Auth::user()->jamiat_id;
             }
 
@@ -194,18 +193,15 @@ class UploadController extends Controller
             // Define the directory path for fetching files
             $fetchImagePath = storage_path("app/public/uploads/$jamiat_id/{$request->input('type')}");
 
-            // dd($fetchImagePath);
-
             // Check if the directory exists
-            if (!file_exists($fetchImagePath)) 
-            {
+            if (!file_exists($fetchImagePath)) {
                 return response()->json(['message' => 'Directory does not exist.'], 404);
             }
 
             // Fetch files from the directory
             $files = scandir($fetchImagePath);
-
             $uploadedRecords = [];
+            $skippedFiles = [];
 
             foreach ($files as $file) {
                 if ($file === '.' || $file === '..') {
@@ -214,8 +210,7 @@ class UploadController extends Controller
 
                 $filePath = "$fetchImagePath/$file";
 
-                if (is_file($filePath)) 
-                {
+                if (is_file($filePath)) {
                     try {
                         // Extract file details
                         $fileSize = filesize($filePath);
@@ -223,10 +218,17 @@ class UploadController extends Controller
                         $fileName = pathinfo($file, PATHINFO_FILENAME);
                         $publicUrl = asset("storage/uploads/$jamiat_id/{$request->input('type')}/$file");
 
-                        // print_r($fileSize);
-                        // print_r($fileExt);
-                        // print_r($fileName);
-                        // print_r($publicUrl);
+                        // Check if the file already exists in the database
+                        $existingRecord = UploadModel::where('jamiat_id', $jamiat_id)
+                            ->where('file_name', $fileName)
+                            ->where('file_ext', $fileExt)
+                            ->where('file_url', $publicUrl)
+                            ->first();
+
+                        if ($existingRecord) {
+                            $skippedFiles[] = $fileName; // Track skipped files
+                            continue; // Skip processing this file
+                        }
 
                         // Store file details in the database
                         $record = UploadModel::create([
@@ -238,25 +240,24 @@ class UploadController extends Controller
                             'file_size' => $fileSize,
                         ]);
 
-                        // dd($record);
-
                         $uploadedRecords[] = $record;
-                    } 
-                    catch (\Exception $e) 
-                    {
+                    } catch (\Exception $e) {
                         // Log the error and skip the problematic file
                         \Log::error("Failed to process file: {$filePath}. Error: {$e->getMessage()}");
                     }
                 }
             }
 
-            if (empty($uploadedRecords)) {
+            if (empty($uploadedRecords) && empty($skippedFiles)) {
                 return response()->json(['message' => 'No valid files found or processed.'], 404);
             }
 
             return response()->json([
-                'message' => 'Files fetched and stored successfully.',
-                'data' => $uploadedRecords,
+                'message' => 'Files processed successfully.',
+                'uploaded' => $uploadedRecords,
+                'uploaded_count' => count($uploadedRecords),
+                'skipped' => $skippedFiles,
+                'skipped_count' => count($skippedFiles)
             ], 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Handle validation errors
@@ -266,6 +267,28 @@ class UploadController extends Controller
             \Log::error("An error occurred: {$e->getMessage()}");
             return response()->json(['message' => 'An unexpected error occurred. Please try again later.'], 500);
         }
+    }
+
+    // store photoid
+    public function store_photo(Request $request)
+    {
+        $role = Auth::user()->role;
+
+        // Validate inputs based on the user's role
+        if ($role == 'superadmin') {
+            $request->validate([
+                'jamiat_id' => 'required|numeric',
+            ]);
+
+            $jamiat_id = $request->input('jamiat_id');
+        } else {
+            $jamiat_id = Auth::user()->jamiat_id;
+        }
+
+        $get_its = User::select('its')->get();
+        // $get_photo_ids
+        dd($get_its->its);
+
     }
 
 }
