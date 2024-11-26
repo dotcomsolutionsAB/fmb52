@@ -15,8 +15,9 @@ use App\Http\Controllers\SubSectorImportController;
 use App\Http\Controllers\PermissionRoleController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\DashboardController;
-use Spatie\Permission\Middleware\PermissionMiddleware;
-use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middlewares\PermissionMiddleware;
+use Spatie\Permission\Middlewares\RoleMiddleware;
+use Spatie\Permission\Middlewares\RoleOrPermissionMiddleware;
 
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
@@ -67,7 +68,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // user
     //Route::get('/user', [MumeneenController::class, 'users']);
-    Route::middleware(['auth:sanctum', 'permission:mumeneen.view'])->group(function () {
+    Route::middleware(['auth:sanctum', 'permission:mumin.view'])->group(function () {
         Route::get('/user', [MumeneenController::class, 'users']);
     });
     

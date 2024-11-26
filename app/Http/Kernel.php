@@ -14,13 +14,10 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middleware = [
-        // Laravel default middleware
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
-        \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-
-        // Add custom middleware as needed
+        \App\Http\Middleware\TrustProxies::class, // Laravel default for proxy headers
     ];
 
     /**
@@ -35,10 +32,11 @@ class Kernel extends HttpKernel
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\VerifyCsrfToken::class, // CSRF Protection
         ],
 
         'api' => [
-            'throttle:api',
+            'throttle:api', // API rate limiting
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
@@ -51,24 +49,29 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        // Laravel default middleware
+        // Authentication Middleware
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+        'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
+
+        // Authorization Middleware
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+
+        // Route Middleware
+        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+
+        // Sanctum Middleware
+        'auth:sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
 
         // Spatie Permission Middleware
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
-
-        // Sanctum Middleware
-        'auth:sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
     ];
 }
