@@ -272,23 +272,74 @@ class UploadController extends Controller
     // store photoid
     public function store_photo(Request $request)
     {
-        $role = Auth::user()->role;
+        try {
+            $role = Auth::user()->role;
 
-        // Validate inputs based on the user's role
-        if ($role == 'superadmin') {
-            $request->validate([
-                'jamiat_id' => 'required|numeric',
-            ]);
+            // Validate inputs based on the user's role
+            if ($role == 'superadmin') {
+                $request->validate([
+                    'jamiat_id' => 'required|numeric',
+                ]);
 
-            $jamiat_id = $request->input('jamiat_id');
-        } else {
-            $jamiat_id = Auth::user()->jamiat_id;
+                $jamiat_id = $request->input('jamiat_id');
+            } else {
+                $jamiat_id = Auth::user()->jamiat_id;
+            }
+
+            // Fetch all users' ITS and IDs
+            $get_its = User::select('id', 'its')->get();
+
+            // Get the placeholder upload ID
+            $get_placeholder = UploadModel::select('id')
+                ->where('file_name', 'placeholder')
+                ->first();
+
+            if (!$get_placeholder) {
+                return response()->json([
+                    'message' => 'Placeholder image not found in uploads table.',
+                ], 404);
+            }
+
+            foreach ($get_its as $user) {
+                try {
+                    // Check if the ITS matches a file in the uploads table
+                    $upload = UploadModel::select('id')
+                        ->where('file_name', $user->its)
+                        ->where('jamiat_id', $jamiat_id)
+                        ->first();
+
+                    if ($upload) {
+                        // Update photo_id with the matched upload ID
+                        User::where('id', $user->id)
+                            ->update(['photo_id' => $upload->id]);
+                    } else {
+                        // Update photo_id with the placeholder ID
+                        User::where('id', $user->id)
+                            ->update(['photo_id' => $get_placeholder->id]);
+                    }
+                } catch (\Exception $e) {
+                    // Log the error for individual user and continue processing
+                    \Log::error("Error updating photo_id for user ID {$user->id}. Error: {$e->getMessage()}");
+                }
+            }
+
+            return response()->json([
+                'message' => 'Photo IDs updated successfully where matching uploads exist.',
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            return response()->json([
+                'message' => 'Validation error.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            // Handle general exceptions
+            \Log::error("An unexpected error occurred: {$e->getMessage()}");
+            return response()->json([
+                'message' => 'An unexpected error occurred. Please try again later.',
+            ], 500);
         }
-
-        $get_its = User::select('its')->get();
-        // $get_photo_ids
-        dd($get_its->its);
-
     }
+
 
 }
