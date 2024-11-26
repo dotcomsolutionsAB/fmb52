@@ -117,12 +117,40 @@ class MumeneenController extends Controller
     public function users()
     {
         $jamiat_id = Auth::user()->jamiat_id;
-        $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
+        $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username', 'photo_id')
+        ->with(['photo:id,file_url'])
         ->where('jamiat_id', $jamiat_id)
         ->get();
+
+        // Transform the users to include `file_url` in the main array
+        $transformed_users = $get_all_users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'jamiat_id' => $user->jamiat_id,
+                'family_id' => $user->family_id,
+                'mobile' => $user->mobile,
+                'its' => $user->its,
+                'hof_its' => $user->hof_its,
+                'its_family_id' => $user->its_family_id,
+                'folio_no' => $user->folio_no,
+                'mumeneen_type' => $user->mumeneen_type,
+                'title' => $user->title,
+                'gender' => $user->gender,
+                'age' => $user->age,
+                'building' => $user->building,
+                'sector' => $user->sector,
+                'sub_sector' => $user->sub_sector,
+                'status' => $user->status,
+                'role' => $user->role,
+                'username' => $user->username,
+                'file_url' => $user->photo ? $user->photo->file_url : null, // Add `file_url` from the photo relationship
+            ];
+        });
     
-        return isset($get_all_users) && $get_all_users->isNotEmpty()
-            ? response()->json(['User Fetched Successfully!', 'data' => $get_all_users], 200)
+        return isset($transformed_users) && $transformed_users->isNotEmpty()
+            ? response()->json(['User Fetched Successfully!', 'data' => $transformed_users], 200)
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
     
@@ -144,7 +172,8 @@ class MumeneenController extends Controller
         
 
         // Fetch all users belonging to the Jamiat
-        $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
+        $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username', 'photo_id')
+            ->with(['photo:id,file_url'])
             ->where('jamiat_id', $jamiat_id)
             ->get();
 

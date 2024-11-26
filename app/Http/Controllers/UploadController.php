@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\UploadModel;
+use App\Models\User;
+use Auth;
 
 class UploadController extends Controller
 {
@@ -92,12 +94,26 @@ class UploadController extends Controller
 
     public function upload(Request $request)
     {
+        $role = Auth::user()->role;
+
+        if($role == 'superadmin')
+        {
+            $request->validate([
+                'jamiat_id' => 'required|numeric',
+            ]);
+
+            $jamiat_id = $request->file('jamiat_id');
+        }
+
+        else {
+            $jamiat_id = Auth::user()->jamiat_id;
+        }
+
         $request->validate([
             'files' => 'required|array|max:50', // Validate 'files' as an array with a maximum of 50 items
             'files.*' => 'file|mimes:jpeg,png,jpg,pdf|max:2048', // Validate each file
             'file_name' => 'required|string',
             'type' => 'required|string',
-            'jamiat_id' => 'required|string',
             'family_id' => 'required|string',
         ]);
 
@@ -116,7 +132,7 @@ class UploadController extends Controller
             $userFileName = "{$request->input('file_name')}_{$index}." . $file->getClientOriginalExtension();
 
             // Directory path for storing the files
-            $directoryPath = "uploads/{$request->input('type')}";
+            $directoryPath = "uploads/$jamiat_id/{$request->input('type')}";
             $fullPath = storage_path("app/public/{$directoryPath}");
 
             // Create the directory if it doesn't exist
@@ -134,6 +150,7 @@ class UploadController extends Controller
             $upload = UploadModel::create([
                 'jamiat_id' => $request->input('jamiat_id'),
                 'family_id' => $request->input('family_id'),
+                'file_name' => $request->input('file_name'),
                 'file_ext' => $file->getClientOriginalExtension(),
                 'file_url' => $publicUrl,
                 'file_size' => $file->getSize(),
@@ -149,5 +166,180 @@ class UploadController extends Controller
             'upload_ids' => $uploadedIds,
         ], 201);
     }
+
+    // fetch and store records `uploads`
+    public function fetch_uploads(Request $request)
+    {
+        try {
+            $role = Auth::user()->role;
+
+            // Validate inputs based on the user's role
+            if ($role == 'superadmin') {
+                $request->validate([
+                    'jamiat_id' => 'required|numeric',
+                ]);
+
+                $jamiat_id = $request->input('jamiat_id');
+            } else {
+                $jamiat_id = Auth::user()->jamiat_id;
+            }
+
+            // Validate the rest of the inputs
+            $request->validate([
+                'type' => 'required|string',
+                'family_id' => 'nullable|numeric',
+            ]);
+
+            // Define the directory path for fetching files
+            $fetchImagePath = storage_path("app/public/uploads/$jamiat_id/{$request->input('type')}");
+
+            // Check if the directory exists
+            if (!file_exists($fetchImagePath)) {
+                return response()->json(['message' => 'Directory does not exist.'], 404);
+            }
+
+            // Fetch files from the directory
+            $files = scandir($fetchImagePath);
+            $uploadedRecords = [];
+            $skippedFiles = [];
+
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue; // Skip system files
+                }
+
+                $filePath = "$fetchImagePath/$file";
+
+                if (is_file($filePath)) {
+                    try {
+                        // Extract file details
+                        $fileSize = filesize($filePath);
+                        $fileExt = pathinfo($file, PATHINFO_EXTENSION);
+                        $fileName = pathinfo($file, PATHINFO_FILENAME);
+                        $publicUrl = asset("storage/uploads/$jamiat_id/{$request->input('type')}/$file");
+
+                        // Check if the file already exists in the database
+                        $existingRecord = UploadModel::where('jamiat_id', $jamiat_id)
+                            ->where('file_name', $fileName)
+                            ->where('file_ext', $fileExt)
+                            ->where('file_url', $publicUrl)
+                            ->first();
+
+                        if ($existingRecord) {
+                            $skippedFiles[] = $fileName; // Track skipped files
+                            continue; // Skip processing this file
+                        }
+
+                        // Store file details in the database
+                        $record = UploadModel::create([
+                            'jamiat_id' => $jamiat_id,
+                            'family_id' => $request->input('family_id'),
+                            'file_name' => $fileName,
+                            'file_ext' => $fileExt,
+                            'file_url' => $publicUrl,
+                            'file_size' => $fileSize,
+                        ]);
+
+                        $uploadedRecords[] = $record;
+                    } catch (\Exception $e) {
+                        // Log the error and skip the problematic file
+                        \Log::error("Failed to process file: {$filePath}. Error: {$e->getMessage()}");
+                    }
+                }
+            }
+
+            if (empty($uploadedRecords) && empty($skippedFiles)) {
+                return response()->json(['message' => 'No valid files found or processed.'], 404);
+            }
+
+            return response()->json([
+                'message' => 'Files processed successfully.',
+                'uploaded' => $uploadedRecords,
+                'uploaded_count' => count($uploadedRecords),
+                'skipped' => $skippedFiles,
+                'skipped_count' => count($skippedFiles)
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            return response()->json(['message' => 'Validation error.', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Handle general exceptions
+            \Log::error("An error occurred: {$e->getMessage()}");
+            return response()->json(['message' => 'An unexpected error occurred. Please try again later.'], 500);
+        }
+    }
+
+    // store photoid
+    public function store_photo(Request $request)
+    {
+        try {
+            $role = Auth::user()->role;
+
+            // Validate inputs based on the user's role
+            if ($role == 'superadmin') {
+                $request->validate([
+                    'jamiat_id' => 'required|numeric',
+                ]);
+
+                $jamiat_id = $request->input('jamiat_id');
+            } else {
+                $jamiat_id = Auth::user()->jamiat_id;
+            }
+
+            // Fetch all users' ITS and IDs
+            $get_its = User::select('id', 'its')->get();
+
+            // Get the placeholder upload ID
+            $get_placeholder = UploadModel::select('id')
+                ->where('file_name', 'placeholder')
+                ->first();
+
+            if (!$get_placeholder) {
+                return response()->json([
+                    'message' => 'Placeholder image not found in uploads table.',
+                ], 404);
+            }
+
+            foreach ($get_its as $user) {
+                try {
+                    // Check if the ITS matches a file in the uploads table
+                    $upload = UploadModel::select('id')
+                        ->where('file_name', $user->its)
+                        ->where('jamiat_id', $jamiat_id)
+                        ->first();
+
+                    if ($upload) {
+                        // Update photo_id with the matched upload ID
+                        User::where('id', $user->id)
+                            ->update(['photo_id' => $upload->id]);
+                    } else {
+                        // Update photo_id with the placeholder ID
+                        User::where('id', $user->id)
+                            ->update(['photo_id' => $get_placeholder->id]);
+                    }
+                } catch (\Exception $e) {
+                    // Log the error for individual user and continue processing
+                    \Log::error("Error updating photo_id for user ID {$user->id}. Error: {$e->getMessage()}");
+                }
+            }
+
+            return response()->json([
+                'message' => 'Photo IDs updated successfully where matching uploads exist.',
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            return response()->json([
+                'message' => 'Validation error.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            // Handle general exceptions
+            \Log::error("An unexpected error occurred: {$e->getMessage()}");
+            return response()->json([
+                'message' => 'An unexpected error occurred. Please try again later.',
+            ], 500);
+        }
+    }
+
 
 }
