@@ -68,7 +68,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // user
     //Route::get('/user', [MumeneenController::class, 'users']);
-    Route::middleware(['auth:sanctum', 'permission:mumin.view'])->group(function () {
+    Route::middleware(['auth', 'permission:mumin.view'])->group(function () {
         Route::get('/user', [MumeneenController::class, 'users']);
     });
     
