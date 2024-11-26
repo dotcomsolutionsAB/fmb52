@@ -259,6 +259,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // upload
     Route::post('/upload', [UploadController::class, 'upload']);
+
+    Route::post('/get_files', [UploadController::class, 'fetch_uploads']);
 });
 // Route::get('/import_users', [CSVImportController::class, 'importUser']);
 

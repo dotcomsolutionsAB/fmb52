@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\UploadModel;
+use Auth;
 
 class UploadController extends Controller
 {
@@ -92,12 +93,26 @@ class UploadController extends Controller
 
     public function upload(Request $request)
     {
+        $role = Auth::user()->role;
+
+        if($role == 'superadmin')
+        {
+            $request->validate([
+                'jamiat_id' => 'required|numeric',
+            ]);
+
+            $jamiat_id = $request->file('jamiat_id');
+        }
+
+        else {
+            $jamiat_id = Auth::user()->jamiat_id;
+        }
+
         $request->validate([
             'files' => 'required|array|max:50', // Validate 'files' as an array with a maximum of 50 items
             'files.*' => 'file|mimes:jpeg,png,jpg,pdf|max:2048', // Validate each file
             'file_name' => 'required|string',
             'type' => 'required|string',
-            'jamiat_id' => 'required|string',
             'family_id' => 'required|string',
         ]);
 
@@ -116,7 +131,7 @@ class UploadController extends Controller
             $userFileName = "{$request->input('file_name')}_{$index}." . $file->getClientOriginalExtension();
 
             // Directory path for storing the files
-            $directoryPath = "uploads/{$request->input('type')}";
+            $directoryPath = "uploads/$jamiat_id/{$request->input('type')}";
             $fullPath = storage_path("app/public/{$directoryPath}");
 
             // Create the directory if it doesn't exist
@@ -134,6 +149,7 @@ class UploadController extends Controller
             $upload = UploadModel::create([
                 'jamiat_id' => $request->input('jamiat_id'),
                 'family_id' => $request->input('family_id'),
+                'file_name' => $request->input('file_name'),
                 'file_ext' => $file->getClientOriginalExtension(),
                 'file_url' => $publicUrl,
                 'file_size' => $file->getSize(),
@@ -148,6 +164,108 @@ class UploadController extends Controller
             'message' => 'Files uploaded successfully',
             'upload_ids' => $uploadedIds,
         ], 201);
+    }
+
+    // fetch and store records `uploads`
+    public function fetch_uploads(Request $request)
+    {
+        try {
+            $role = Auth::user()->role;
+
+            // Validate inputs based on the user's role
+            if ($role == 'superadmin') 
+            {
+                $request->validate([
+                    'jamiat_id' => 'required|numeric',
+                ]);
+
+                $jamiat_id = $request->input('jamiat_id');
+            } else 
+            {
+                $jamiat_id = Auth::user()->jamiat_id;
+            }
+
+            // Validate the rest of the inputs
+            $request->validate([
+                'type' => 'required|string',
+                'family_id' => 'nullable|numeric',
+            ]);
+
+            // Define the directory path for fetching files
+            $fetchImagePath = storage_path("app/public/uploads/$jamiat_id/{$request->input('type')}");
+
+            // dd($fetchImagePath);
+
+            // Check if the directory exists
+            if (!file_exists($fetchImagePath)) 
+            {
+                return response()->json(['message' => 'Directory does not exist.'], 404);
+            }
+
+            // Fetch files from the directory
+            $files = scandir($fetchImagePath);
+
+            $uploadedRecords = [];
+
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue; // Skip system files
+                }
+
+                $filePath = "$fetchImagePath/$file";
+
+                if (is_file($filePath)) 
+                {
+                    try {
+                        // Extract file details
+                        $fileSize = filesize($filePath);
+                        $fileExt = pathinfo($file, PATHINFO_EXTENSION);
+                        $fileName = pathinfo($file, PATHINFO_FILENAME);
+                        $publicUrl = asset("storage/uploads/$jamiat_id/{$request->input('type')}/$file");
+
+                        // print_r($fileSize);
+                        // print_r($fileExt);
+                        // print_r($fileName);
+                        // print_r($publicUrl);
+
+                        // Store file details in the database
+                        $record = UploadModel::create([
+                            'jamiat_id' => $jamiat_id,
+                            'family_id' => $request->input('family_id'),
+                            'file_name' => $fileName,
+                            'file_ext' => $fileExt,
+                            'file_url' => $publicUrl,
+                            'file_size' => $fileSize,
+                        ]);
+
+                        // dd($record);
+
+                        $uploadedRecords[] = $record;
+                    } 
+                    catch (\Exception $e) 
+                    {
+                        // Log the error and skip the problematic file
+                        \Log::error("Failed to process file: {$filePath}. Error: {$e->getMessage()}");
+                    }
+                }
+            }
+
+            if (empty($uploadedRecords)) {
+                return response()->json(['message' => 'No valid files found or processed.'], 404);
+            }
+
+            return response()->json([
+                'message' => 'Files fetched and stored successfully.',
+                'data' => $uploadedRecords,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            return response()->json(['message' => 'Validation error.', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            // Handle general exceptions
+            \Log::error("An error occurred: {$e->getMessage()}");
+            return response()->json(['message' => 'An unexpected error occurred. Please try again later.'], 500);
+        }
     }
 
 }
