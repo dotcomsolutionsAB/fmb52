@@ -3,6 +3,13 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+
 
 class Kernel extends HttpKernel
 {
@@ -36,6 +43,8 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            
             'throttle:api', // API rate limiting
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
@@ -53,6 +62,8 @@ class Kernel extends HttpKernel
        
         // Sanctum Middleware
         'auth:sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        'auth' => \App\Http\Middleware\Authenticate::class,
+
 
         // Spatie Permission Middleware
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
