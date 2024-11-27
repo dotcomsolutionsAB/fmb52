@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
-class Permission
+use Spatie\Permission\Models\Permission as SpatiePermission;
+
+class Permission extends SpatiePermission
 {
-    // Class contents
+    // You can add custom logic here if needed
 }
