@@ -274,3 +274,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // Route::get('/import_users', [CSVImportController::class, 'importUser']);
 
 // Route::get('/import_users', [CSVImportController::class, 'importUser']);
+
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->group(function () {
+    Route::get('/secure_dashboard', [DashboardController::class, 'index']);
+    Route::get('/user', [MumeneenController::class, 'users']);
+});
