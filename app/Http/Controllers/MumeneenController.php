@@ -27,6 +27,11 @@ use Hash;
 
 class MumeneenController extends Controller
 {
+    public function __construct()
+{
+    $this->middleware(['auth', 'permission:mumin.view'])->only(['users', 'usersWithHubData']);
+}
+
     
     //register user
     public function register_users(Request $request)
