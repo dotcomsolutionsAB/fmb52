@@ -41,7 +41,7 @@ class MumeneenController extends Controller
 {
     public function __construct()
 {
-    $this->middleware(['auth', 'permission:mumin.view'])->only(['users', 'usersWithHubData']);
+    $this->middleware(['auth', 'permission:mumin.view'])->only([ 'usersWithHubData']);
 }
 
     
