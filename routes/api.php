@@ -17,6 +17,15 @@ use App\Http\Controllers\UploadController;
 use App\Http\Controllers\DashboardController;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserControllerWithRoleController;
+use App\Http\Controllers\UserControllerWithoutRoleController;
+
+use App\Http\Controllers\TestMiddlewareController;
+
+Route::get('/test-middleware', [TestMiddlewareController::class, 'test']);
+
 
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
