@@ -18,6 +18,12 @@ use App\Http\Controllers\DashboardController;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Spatie\Permission\Middlewares\RoleMiddleware;
 use Spatie\Permission\Middlewares\RoleOrPermissionMiddleware;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserControllerWithRoleController;
+use App\Http\Controllers\UserControllerWithoutRoleController;
+use App\Http\Controllers\UserControllerWithRoleController;
+use App\Http\Controllers\
+
 
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
