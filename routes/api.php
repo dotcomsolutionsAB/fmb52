@@ -282,7 +282,285 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // Route::get('/import_users', [CSVImportController::class, 'importUser']);
 
+// permissions
+// Mumeneen Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.create'])->group(function () {
+    Route::post('/register', [MumeneenController::class, 'register_users']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.edit'])->group(function () {
+    Route::post('/update_user/{id}', [MumeneenController::class, 'update_record']);
+});
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->group(function () {
-    Route::get('/secure_dashboard', [DashboardController::class, 'index']);
-    Route::get('/user', [MumeneenController::class, 'users']);
+    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view_global'])->group(function () {
+    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.delete'])->group(function () {
+    Route::delete('/user/{id}', [MumeneenController::class, 'delete_user']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.export'])->group(function () {
+    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.print'])->group(function () {
+    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+});
+
+// Hub Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.create'])->group(function () {
+    Route::post('/hub', [MumeneenController::class, 'register_hub']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.edit'])->group(function () {
+    Route::post('/update_hub/{id}', [MumeneenController::class, 'update_hub']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.view'])->group(function () {
+    Route::get('/hub', [MumeneenController::class, 'all_hub']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.view_global'])->group(function () {
+    Route::get('/hub', [MumeneenController::class, 'all_hub']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.delete'])->group(function () {
+    Route::delete('/hub/{id}', [MumeneenController::class, 'delete_hub']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.export'])->group(function () {
+    Route::get('/hub', [MumeneenController::class, 'all_hub']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:hub.print'])->group(function () {
+    Route::get('/hub', [MumeneenController::class, 'all_hub']);
+});
+
+// Receipts Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.create'])->group(function () {
+    Route::post('/receipts', [AccountsController::class, 'register_receipts']);
+});
+
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.view'])->group(function () {
+    Route::get('/receipts', [AccountsController::class, 'all_receipts']);
+});
+
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.edit'])->group(function () {
+    Route::post('/update_receipts/{id}', [AccountsController::class, 'update_receipts']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.view_global'])->group(function () {
+    Route::get('/receipts', [AccountsController::class, 'all_receipts']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.delete'])->group(function () {
+    Route::delete('/receipts/{id}', [AccountsController::class, 'delete_receipts']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.export'])->group(function () {
+    Route::get('/receipts', [AccountsController::class, 'all_receipts']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:receipts.print'])->group(function () {
+    Route::get('/receipts', [AccountsController::class, 'all_receipts']);
+});
+
+// Payments Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.create'])->group(function () {
+    Route::post('/payments', [AccountsController::class, 'register_payments']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.edit'])->group(function () {
+    Route::post('/update_payments/{id}', [AccountsController::class, 'update_payments']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.view'])->group(function () {
+    Route::get('/payments', [AccountsController::class, 'all_payments']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.view_global'])->group(function () {
+    Route::get('/payments', [AccountsController::class, 'all_payments']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.delete'])->group(function () {
+    Route::delete('/payments/{id}', [AccountsController::class, 'delete_payments']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.export'])->group(function () {
+    Route::get('/payments', [AccountsController::class, 'all_payments']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:payments.print'])->group(function () {
+    Route::get('/payments', [AccountsController::class, 'all_payments']);
+});
+
+// Menu Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.create'])->group(function () {
+    Route::post('/menu', [MumeneenController::class, 'register_menu']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.edit'])->group(function () {
+    Route::post('/update_menu/{id}', [MumeneenController::class, 'update_menu']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.view'])->group(function () {
+    Route::get('/menu', [MumeneenController::class, 'all_menu']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.view_global'])->group(function () {
+    Route::get('/menu', [MumeneenController::class, 'all_menu']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.delete'])->group(function () {
+    Route::delete('/menu/{id}', [MumeneenController::class, 'delete_menu']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.export'])->group(function () {
+    Route::get('/menu', [MumeneenController::class, 'all_menu']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:menu.print'])->group(function () {
+    Route::get('/menu', [MumeneenController::class, 'all_menu']);
+});
+
+// Sector Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.create'])->group(function () {
+    Route::post('/sector', [MumeneenController::class, 'register_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.view'])->group(function () {
+    Route::get('/sector', [MumeneenController::class, 'all_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.view_global'])->group(function () {
+    Route::get('/sector', [MumeneenController::class, 'all_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.edit'])->group(function () {
+    Route::post('/update_sector/{id}', [MumeneenController::class, 'update_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.delete'])->group(function () {
+    Route::delete('/sector/{id}', [MumeneenController::class, 'delete_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.export'])->group(function () {
+    Route::get('/sector', [MumeneenController::class, 'all_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sector.print'])->group(function () {
+    Route::get('/sector', [MumeneenController::class, 'all_sector']);
+});
+
+// SubSector Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.create'])->group(function () {
+    Route::post('/sub_sector', [MumeneenController::class, 'register_sub_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.edit'])->group(function () {
+    Route::post('/update_sub_sector/{id}', [MumeneenController::class, 'update_sub_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.view'])->group(function () {
+    Route::get('/sub_sector', [MumeneenController::class, 'all_sub_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.view_global'])->group(function () {
+    Route::get('/sub_sector', [MumeneenController::class, 'all_sub_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.delete'])->group(function () {
+    Route::delete('/sub_sector/{id}', [MumeneenController::class, 'delete_sub_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.export'])->group(function () {
+    Route::get('/sub_sector', [MumeneenController::class, 'all_sub_sector']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.print'])->group(function () {
+    Route::get('/sub_sector', [MumeneenController::class, 'all_sub_sector']);
+});
+
+// Expense Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.create'])->group(function () {
+    Route::post('/expense', [AccountsController::class, 'register_expense']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.edit'])->group(function () {
+    Route::post('/update_expense/{id}', [AccountsController::class, 'update_expense']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.view'])->group(function () {
+    Route::get('/expense', [AccountsController::class, 'all_expense']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.view_global'])->group(function () {
+    Route::get('/expense', [AccountsController::class, 'all_expense']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.delete'])->group(function () { 
+    Route::delete('/expense/{id}', [AccountsController::class, 'delete_expense']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.export'])->group(function () {
+    Route::get('/expense', [AccountsController::class, 'all_expense']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:expense.print'])->group(function () {
+    Route::get('/expense', [AccountsController::class, 'all_expense']);
+});
+
+// Transfer Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.create'])->group(function () {
+    Route::post('/transfer/create', [TransferController::class, 'create']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.edit'])->group(function () {
+    Route::put('/transfer/edit/{id}', [TransferController::class, 'edit']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.view'])->group(function () {
+    Route::get('/transfer/view/{id}', [TransferController::class, 'view']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.view_global'])->group(function () {
+    Route::get('/transfer/view_global', [TransferController::class, 'viewGlobal']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.delete'])->group(function () {
+    Route::delete('/transfer/delete/{id}', [TransferController::class, 'delete']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.export'])->group(function () {
+    Route::get('/transfer/export', [TransferController::class, 'export']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:transfer.print'])->group(function () {
+    Route::get('/transfer/print/{id}', [TransferController::class, 'print']);
+});
+
+// Notifications Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.create'])->group(function () {
+    Route::post('/notifications/create', [NotificationsController::class, 'create']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.edit'])->group(function () {
+    Route::put('/notifications/edit/{id}', [NotificationsController::class, 'edit']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.view'])->group(function () {
+    Route::get('/notifications/view/{id}', [NotificationsController::class, 'view']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.view_global'])->group(function () {
+    Route::get('/notifications/view_global', [NotificationsController::class, 'viewGlobal']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.delete'])->group(function () {
+    Route::delete('/notifications/delete/{id}', [NotificationsController::class, 'delete']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.export'])->group(function () {
+    Route::get('/notifications/export', [NotificationsController::class, 'export']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:notifications.print'])->group(function () {
+    Route::get('/notifications/print/{id}', [NotificationsController::class, 'print']);
+});
+
+// Dashboard Widgets Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.create'])->group(function () {
+    Route::post('/dashboard_widgets/create', [DashboardWidgetsController::class, 'create']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.edit'])->group(function () {
+    Route::put('/dashboard_widgets/edit/{id}', [DashboardWidgetsController::class, 'edit']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view'])->group(function () {
+    Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view_global'])->group(function () {
+    Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.delete'])->group(function () {
+    Route::delete('/dashboard_widgets/delete/{id}', [DashboardWidgetsController::class, 'delete']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.export'])->group(function () {
+    Route::get('/dashboard_widgets/export', [DashboardWidgetsController::class, 'export']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.print'])->group(function () {
+    Route::get('/dashboard_widgets/print/{id}', [DashboardWidgetsController::class, 'print']);
+});
+
+// Feedback Routes
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.create'])->group(function () {
+    Route::post('/feedback', [FeedbackController::class, 'register_feedback']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.edit'])->group(function () {
+    Route::post('/update_feedback/{id}', [FeedbackController::class, 'update_feedback']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.view'])->group(function () {
+    Route::get('/feedback', [FeedbackController::class, 'view_feedbacks']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.view_global'])->group(function () {
+    Route::get('/feedback', [FeedbackController::class, 'view_feedbacks']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.delete'])->group(function () {
+    Route::delete('/feedback/{id}', [FeedbackController::class, 'delete_feedback']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.export'])->group(function () {
+    Route::get('/feedback', [FeedbackController::class, 'view_feedbacks']);
+});
+Route::middleware(['auth:sanctum', 'check-api-permission:feedback.print'])->group(function () {
+    Route::get('/feedback', [FeedbackController::class, 'view_feedbacks']);
 });
