@@ -70,3 +70,4 @@ class MigrateCsvData extends Command
     
         $this->info("Successfully updated {$updatedCount} user records from the CSV file.");
     }
+}
