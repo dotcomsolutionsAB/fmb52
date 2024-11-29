@@ -17,7 +17,6 @@ class MigrateCsvData extends Command
     // Execute the console command
     public function handle()
     {
-        // Define the path to the CSV file in the public storage folder
         $csvFilePath = public_path('storage/Kolkata_ITS.csv');
     
         if (!file_exists($csvFilePath)) {
@@ -31,7 +30,6 @@ class MigrateCsvData extends Command
             return;
         }
     
-        // Read the CSV header row
         $header = fgetcsv($fileHandle);
         if (!$header) {
             $this->error('The CSV file is empty or has no header.');
@@ -53,16 +51,22 @@ class MigrateCsvData extends Command
             $user = User::where('its', $rowData['ITS_ID'])->first();
     
             if ($user) {
-                // Update only if the user exists
-                $user->update([
+                // Prepare data for update
+                $updateData = [
                     'email' => $rowData['Email'] ?? $user->email,
-                    'its_family_id' => $rowData['Family_ID'] ?? $user->its_family_id,
+                    'its_family_id' => $rowData['Family_ID'] !== '' ? $rowData['Family_ID'] : $user->its_family_id,
                     'gender' => $rowData['Gender'] ?? $user->gender,
-                    'age' => $rowData['Age'] ?? $user->age,
+                    'age' => is_numeric($rowData['Age']) ? (int) $rowData['Age'] : $user->age,
                     'building' => $rowData['Address'] ?? $user->building,
-                ]);
+                ];
     
+                // Debugging logs
+                $this->info("Updating user ID {$user->id}: " . json_encode($updateData));
+    
+                $user->update($updateData);
                 $updatedCount++;
+            } else {
+                $this->info("User with ITS ID {$rowData['ITS_ID']} not found. Skipping.");
             }
         }
     
