@@ -1484,13 +1484,29 @@ class MumeneenController extends Controller
     // users by family
     public function usersByFamily(Request $request)
     {
-        $get_family_user = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
-                             ->where('family_id', $request->input('family_id'))
-                             ->get();
-
+        $family_id = $request->input('family_id');
+    
+        // Fetch the HOF ITS family ID for the given family ID
+        $hof_its_family_id = User::where('family_id', $family_id)
+            ->where('mumeneen_type', 'HOF')
+            ->value('its_family_id');
+    
+        $get_family_user = User::select(
+                'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+                'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 
+                'role', 'username', 'photo_id'
+            )
+            ->with(['photo:id,file_url'])
+            ->where('family_id', $family_id)
+            ->orderByRaw("FIELD(mumeneen_type, 'HOF', 'FM')") // HOF first, then FM
+            ->orderByRaw("CASE WHEN its_family_id = ? THEN 0 ELSE 1 END", [$hof_its_family_id]) // Prioritize ITS Family ID matching HOF
+            ->orderBy('its_family_id', 'asc')                // Secondary sort by ITS Family ID
+            ->orderBy('age', 'desc')                         // Tertiary sort by age descending
+            ->get();
+    
         return isset($get_family_user) && $get_family_user->isNotEmpty()
             ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user], 200)
-            : response()->json(['Sorry, failed to fetched records!'], 404);
+            : response()->json(['Sorry, failed to fetch records!'], 404);
     }
     public function familyHubDetails(Request $request, $family_id)
 {

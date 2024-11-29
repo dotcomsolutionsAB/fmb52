@@ -17,7 +17,8 @@ class MigrateCsvData extends Command
     // Execute the console command
     public function handle()
     {
-        $csvFilePath = storage_path('app/csv/users_data.csv'); // Update this path to your actual CSV file location
+        $csvFilePath  = public_path('storage/Kolkata_ITS.csv');
+       // te this path to your actual CSV file location
 
         if (!file_exists($csvFilePath)) {
             $this->error("CSV file not found at: {$csvFilePath}");
