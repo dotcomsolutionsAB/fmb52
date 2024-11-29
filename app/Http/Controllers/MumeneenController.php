@@ -250,14 +250,21 @@ class MumeneenController extends Controller
     // dashboard
     public function get_user($id)
     {
-        $get_user_records = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username','photo_id')
-                             ->where('id', $id)
-                             ->with(['photo:id,file_url'])
-                             ->get();
-
-        return isset($get_user_records) && $get_user_records->isNotEmpty()
-            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_user_records], 200)
-            : response()->json(['Sorry, failed to fetched records!'], 404);
+        $get_user_records = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username', 'photo_id')
+                                 ->where('id', $id)
+                                 ->with(['photo:id,file_url'])
+                                 ->get();
+    
+        if (isset($get_user_records) && $get_user_records->isNotEmpty()) {
+            return response()->json(
+                ['message' => 'User Record Fetched Successfully!', 'data' => $get_user_records],
+                200,
+                [],
+                JSON_UNESCAPED_SLASHES
+            );
+        } else {
+            return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
+        }
     }
 
     // update
@@ -1485,4 +1492,40 @@ class MumeneenController extends Controller
             ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user], 200)
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
+    public function familyHubDetails(Request $request, $family_id)
+{
+    $jamiat_id = Auth::user()->jamiat_id;
+
+    // Fetch all years for the current jamiat
+    $years = YearModel::where('jamiat_id', $jamiat_id)
+        ->orderBy('year', 'asc') // Ensure the years are in ascending order
+        ->get();
+
+    if ($years->isEmpty()) {
+        return response()->json(['message' => 'No year data found for the Jamiat.'], 404);
+    }
+
+    // Fetch hub data for the given family_id for all years
+    $hub_data = HubModel::select('year', 'hub_amount', 'paid_amount', 'due_amount')
+        ->where('family_id', $family_id)
+        ->where('jamiat_id', $jamiat_id)
+        ->get()
+        ->keyBy('year'); // Key by year for easy lookup
+
+    // Prepare a response with year-wise hub details
+    $yearly_details = $years->map(function ($year) use ($hub_data) {
+        $year_str = $year->year; // Extract the year string
+
+        $hub_record = $hub_data->get($year_str); // Find hub record for this year
+
+        return [
+            'year' => $year_str,
+            'hub_amount' => $hub_record->hub_amount ?? 0,
+            'paid_amount' => $hub_record->paid_amount ?? 0,
+            'due_amount' => $hub_record->due_amount ?? 0,
+        ];
+    });
+
+    return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
+}
 }
