@@ -1483,48 +1483,52 @@ class MumeneenController extends Controller
 
     // users by family
     public function usersByFamily(Request $request)
-{
-    $family_id = $request->input('family_id');
-
-    // Fetch all family members sorted by age descending
-    $family_members = User::select(
-            'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
-            'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 
-            'role', 'username', 'photo_id'
-        )
-        ->with(['photo:id,file_url'])
-        ->where('family_id', $family_id)
-        ->orderBy('age', 'desc')
-        ->get();
-
-    if ($family_members->isEmpty()) {
-        return response()->json(['Sorry, failed to fetch records!'], 404);
-    }
-
-    // Prepare sorted list
-    $sorted_members = [];
-    $processed_family_ids = []; // Track processed `its_family_id`
-
-    foreach ($family_members as $member) {
-        // Skip if already processed
-        if (in_array($member->its_family_id, $processed_family_ids)) {
-            continue;
+    {
+        $family_id = $request->input('family_id');
+    
+        // Fetch all family members sorted by age descending
+        $family_members = User::select(
+                'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+                'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 
+                'role', 'username', 'photo_id'
+            )
+            ->with(['photo:id,file_url'])
+            ->where('family_id', $family_id)
+            ->orderBy('age', 'desc')
+            ->get();
+    
+        if ($family_members->isEmpty()) {
+            return response()->json(['Sorry, failed to fetch records!'], 404);
         }
-
-        // Add this member and their matching `its_family_id` members
-        $sorted_members[] = $member; // Add current member
-        $processed_family_ids[] = $member->its_family_id; // Mark this `its_family_id` as processed
-
-        // Add other members with the same `its_family_id`
-        $same_family_members = $family_members->where('its_family_id', $member->its_family_id)
-            ->where('id', '!=', $member->id); // Exclude the current member
-        foreach ($same_family_members as $related_member) {
-            $sorted_members[] = $related_member;
+    
+        // Prepare sorted list
+        $sorted_members = [];
+        $processed_members = []; // Track processed user IDs
+    
+        foreach ($family_members as $member) {
+            // Skip if already processed
+            if (in_array($member->id, $processed_members)) {
+                continue;
+            }
+    
+            // Add this member
+            $sorted_members[] = $member;
+            $processed_members[] = $member->id;
+    
+            // Add other members with the same `its_family_id`
+            $same_family_members = $family_members->filter(function ($related_member) use ($member, $processed_members) {
+                return $related_member->its_family_id === $member->its_family_id
+                    && !in_array($related_member->id, $processed_members);
+            });
+    
+            foreach ($same_family_members as $related_member) {
+                $sorted_members[] = $related_member;
+                $processed_members[] = $related_member->id;
+            }
         }
+    
+        return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
     }
-
-    return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
-}
     public function familyHubDetails(Request $request, $family_id)
 {
     $jamiat_id = Auth::user()->jamiat_id;
