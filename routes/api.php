@@ -290,9 +290,11 @@ Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.create'])->gro
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.edit'])->group(function () {
     Route::post('/update_user/{id}', [MumeneenController::class, 'update_record']);
 });
+
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->group(function () {
     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+    Route::get('/user', [MumeneenController::class, 'users']);
 });
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view_global'])->group(function () {
     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);

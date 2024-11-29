@@ -41,7 +41,6 @@ class MumeneenController extends Controller
 {
     public function __construct()
 {
-    $this->middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->only([ 'usersWithHubData']);
 }
 
     
