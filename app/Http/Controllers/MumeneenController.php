@@ -1494,7 +1494,7 @@ class MumeneenController extends Controller
             )
             ->with(['photo:id,file_url'])
             ->where('family_id', $family_id)
-            ->orderBy('age', 'desc')
+            ->orderBy('age', 'desc') // Start with the eldest
             ->get();
     
         if ($family_members->isEmpty()) {
@@ -1503,27 +1503,29 @@ class MumeneenController extends Controller
     
         // Prepare sorted list
         $sorted_members = [];
-        $processed_members = []; // Track processed user IDs
+        $processed_family_ids = []; // Track processed `its_family_id`
+        $processed_member_ids = []; // Track processed member IDs
     
         foreach ($family_members as $member) {
-            // Skip if already processed
-            if (in_array($member->id, $processed_members)) {
+            // Skip if the member has already been processed
+            if (in_array($member->id, $processed_member_ids)) {
                 continue;
             }
     
-            // Add this member
+            // Add the current member to the sorted list
             $sorted_members[] = $member;
-            $processed_members[] = $member->id;
+            $processed_member_ids[] = $member->id;
+            $processed_family_ids[] = $member->its_family_id;
     
             // Add other members with the same `its_family_id`
-            $same_family_members = $family_members->filter(function ($related_member) use ($member, $processed_members) {
-                return $related_member->its_family_id === $member->its_family_id
-                    && !in_array($related_member->id, $processed_members);
-            });
-    
-            foreach ($same_family_members as $related_member) {
-                $sorted_members[] = $related_member;
-                $processed_members[] = $related_member->id;
+            foreach ($family_members as $related_member) {
+                if (
+                    $related_member->its_family_id === $member->its_family_id &&
+                    !in_array($related_member->id, $processed_member_ids)
+                ) {
+                    $sorted_members[] = $related_member;
+                    $processed_member_ids[] = $related_member->id;
+                }
             }
         }
     
