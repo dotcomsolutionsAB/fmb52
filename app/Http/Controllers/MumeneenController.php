@@ -1486,27 +1486,44 @@ class MumeneenController extends Controller
     {
         $family_id = $request->input('family_id');
     
-        // Fetch the HOF ITS family ID for the given family ID
-        $hof_its_family_id = User::where('family_id', $family_id)
-            ->where('mumeneen_type', 'HOF')
-            ->value('its_family_id');
-    
-        $get_family_user = User::select(
+        // Fetch all family members sorted by age descending
+        $family_members = User::select(
                 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
                 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 
                 'role', 'username', 'photo_id'
             )
             ->with(['photo:id,file_url'])
             ->where('family_id', $family_id)
-            ->orderByRaw("FIELD(mumeneen_type, 'HOF', 'FM')") // HOF first, then FM
-            ->orderByRaw("CASE WHEN its_family_id = ? THEN 0 ELSE 1 END", [$hof_its_family_id]) // Prioritize ITS Family ID matching HOF
-            ->orderBy('its_family_id', 'asc')                // Secondary sort by ITS Family ID
-            ->orderBy('age', 'desc')                         // Tertiary sort by age descending
+            ->orderBy('age', 'desc')
             ->get();
     
-        return isset($get_family_user) && $get_family_user->isNotEmpty()
-            ? response()->json(['User Record Fetched Successfully!', 'data' => $get_family_user], 200)
-            : response()->json(['Sorry, failed to fetch records!'], 404);
+        if ($family_members->isEmpty()) {
+            return response()->json(['Sorry, failed to fetch records!'], 404);
+        }
+    
+        // Prepare sorted list
+        $sorted_members = [];
+        $processed_family_ids = []; // Track processed `its_family_id`
+    
+        foreach ($family_members as $member) {
+            // Skip if already processed
+            if (in_array($member->its_family_id, $processed_family_ids)) {
+                continue;
+            }
+    
+            // Add this member and their matching `its_family_id` members
+            $sorted_members[] = $member; // Add current member
+            $processed_family_ids[] = $member->its_family_id; // Mark this `its_family_id` as processed
+    
+            // Add other members with the same `its_family_id`
+            $same_family_members = $family_members->where('its_family_id', $member->its_family_id)
+                ->where('id', '!=', $member->id); // Exclude the current member
+            foreach ($same_family_members as $related_member) {
+                $sorted_members[] = $related_member;
+            }
+        }
+    
+        return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
     }
     public function familyHubDetails(Request $request, $family_id)
 {
