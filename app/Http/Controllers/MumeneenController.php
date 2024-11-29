@@ -1501,48 +1501,31 @@ class MumeneenController extends Controller
             return response()->json(['Sorry, failed to fetch records!'], 404);
         }
     
-        // Prepare sorted list
+        // Sort members manually by `its_family_id` grouping
         $sorted_members = [];
-        $processed_member_ids = []; // Track processed member IDs
+        $grouped_by_its_family_id = [];
     
+        // Group members by `its_family_id`
         foreach ($family_members as $member) {
-            // Skip if already processed
-            if (in_array($member->id, $processed_member_ids)) {
-                continue;
-            }
+            $grouped_by_its_family_id[$member->its_family_id][] = $member;
+        }
     
-            // Add this member to the sorted list
-            $sorted_members[] = $member;
-            $processed_member_ids[] = $member->id;
-    
-            // Add all members with the same `its_family_id`
-            $related_members = $family_members->filter(function ($related_member) use ($member, $processed_member_ids) {
-                return $related_member->its_family_id === $member->its_family_id
-                    && !in_array($related_member->id, $processed_member_ids);
+        // Process each group by age
+        foreach ($grouped_by_its_family_id as $its_family_id => $members) {
+            // Sort each group by age descending (already sorted from initial query, but for safety)
+            usort($members, function ($a, $b) {
+                return $b->age <=> $a->age;
             });
     
-            foreach ($related_members as $related_member) {
-                $sorted_members[] = $related_member;
-                $processed_member_ids[] = $related_member->id;
+            // Append members to the final sorted list
+            foreach ($members as $member) {
+                $sorted_members[] = $member;
             }
-        }
-    
-        // Debugging processed member IDs
-        if (empty($processed_member_ids)) {
-            \Log::info('Processed Member IDs are empty.');
-        } else {
-            \Log::info('Processed Member IDs: ' . implode(', ', $processed_member_ids));
-        }
-    
-        // Debugging final sorted members
-        if (empty($sorted_members)) {
-            \Log::info('Sorted Members are empty.');
-        } else {
-            \Log::info('Sorted Members Count: ' . count($sorted_members));
         }
     
         return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
-    }    public function familyHubDetails(Request $request, $family_id)
+    }  
+     public function familyHubDetails(Request $request, $family_id)
 {
     $jamiat_id = Auth::user()->jamiat_id;
 
