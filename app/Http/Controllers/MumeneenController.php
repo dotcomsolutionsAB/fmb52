@@ -1503,29 +1503,27 @@ class MumeneenController extends Controller
     
         // Prepare sorted list
         $sorted_members = [];
-        $processed_family_ids = []; // Track processed `its_family_id`
         $processed_member_ids = []; // Track processed member IDs
     
         foreach ($family_members as $member) {
-            // Skip if the member has already been processed
+            // Skip if already processed
             if (in_array($member->id, $processed_member_ids)) {
                 continue;
             }
     
-            // Add the current member to the sorted list
+            // Add this member to the sorted list
             $sorted_members[] = $member;
             $processed_member_ids[] = $member->id;
-            $processed_family_ids[] = $member->its_family_id;
     
             // Add other members with the same `its_family_id`
-            foreach ($family_members as $related_member) {
-                if (
-                    $related_member->its_family_id === $member->its_family_id &&
-                    !in_array($related_member->id, $processed_member_ids)
-                ) {
-                    $sorted_members[] = $related_member;
-                    $processed_member_ids[] = $related_member->id;
-                }
+            $related_members = $family_members->filter(function ($related_member) use ($member, $processed_member_ids) {
+                return $related_member->its_family_id === $member->its_family_id
+                    && !in_array($related_member->id, $processed_member_ids);
+            });
+    
+            foreach ($related_members as $related_member) {
+                $sorted_members[] = $related_member;
+                $processed_member_ids[] = $related_member->id;
             }
         }
     
