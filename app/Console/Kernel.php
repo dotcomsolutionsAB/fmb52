@@ -10,6 +10,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\UpdateHubTable::class,
         \App\Console\Commands\MigrateData::class,
+        \App\Console\Commands\MigrateCsvData::class,
     ];
 
     // Define the application's command schedule
