@@ -1515,7 +1515,7 @@ class MumeneenController extends Controller
             $sorted_members[] = $member;
             $processed_member_ids[] = $member->id;
     
-            // Add other members with the same `its_family_id`
+            // Add all members with the same `its_family_id`
             $related_members = $family_members->filter(function ($related_member) use ($member, $processed_member_ids) {
                 return $related_member->its_family_id === $member->its_family_id
                     && !in_array($related_member->id, $processed_member_ids);
@@ -1527,9 +1527,22 @@ class MumeneenController extends Controller
             }
         }
     
+        // Debugging processed member IDs
+        if (empty($processed_member_ids)) {
+            \Log::info('Processed Member IDs are empty.');
+        } else {
+            \Log::info('Processed Member IDs: ' . implode(', ', $processed_member_ids));
+        }
+    
+        // Debugging final sorted members
+        if (empty($sorted_members)) {
+            \Log::info('Sorted Members are empty.');
+        } else {
+            \Log::info('Sorted Members Count: ' . count($sorted_members));
+        }
+    
         return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
-    }
-    public function familyHubDetails(Request $request, $family_id)
+    }    public function familyHubDetails(Request $request, $family_id)
 {
     $jamiat_id = Auth::user()->jamiat_id;
 
