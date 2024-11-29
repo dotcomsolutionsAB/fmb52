@@ -251,8 +251,9 @@ class MumeneenController extends Controller
     // dashboard
     public function get_user($id)
     {
-        $get_user_records = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username')
+        $get_user_records = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username','photo_id')
                              ->where('id', $id)
+                             ->with(['photo:id,file_url'])
                              ->get();
 
         return isset($get_user_records) && $get_user_records->isNotEmpty()
