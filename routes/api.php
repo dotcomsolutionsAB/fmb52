@@ -168,6 +168,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // receipts
     Route::post('/receipts', [AccountsController::class, 'register_receipts']);
     Route::get('/receipts', [AccountsController::class, 'all_receipts']);
+    Route::post('/receipts/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
     Route::post('/update_receipts/{id}', [AccountsController::class, 'update_receipts']);
     Route::delete('/receipts/{id}', [AccountsController::class, 'delete_receipts']);
 
@@ -300,6 +301,7 @@ Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->group
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view_global'])->group(function () {
     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+    Route::get('/user', [MumeneenController::class, 'users']);
 });
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.delete'])->group(function () {
     Route::delete('/user/{id}', [MumeneenController::class, 'delete_user']);

@@ -544,6 +544,29 @@ class AccountsController extends Controller
             : response()->json(['message' => 'No receipts found!'], 404);
     }
 
+    public function getReceiptsByFamilyIds(Request $request)
+{
+    // Validate and retrieve the family_id array from the request
+    $family_ids = $request->input('family_ids');
+
+    if (empty($family_ids) || !is_array($family_ids)) {
+        return response()->json(['message' => 'Invalid or missing family_ids.'], 400);
+    }
+
+    // Fetch receipts matching the provided family_id values
+    $get_receipts = ReceiptsModel::select(
+        'jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+        'sector', 'sub_sector', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
+        'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
+        'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
+    )
+    ->whereIn('family_id', $family_ids)
+    ->get();
+
+    return $get_receipts->isNotEmpty()
+        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_receipts], 200)
+        : response()->json(['message' => 'No receipts found for the provided family IDs.'], 404);
+}
     // update
     public function update_receipts(Request $request, $id)
     {
