@@ -188,7 +188,7 @@ class MumeneenController extends Controller
         
 
         // Fetch all users belonging to the Jamiat
-        $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username', 'photo_id')
+        $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status','thali_status', 'role', 'username', 'photo_id')
             ->with(['photo:id,file_url'])
             ->where('jamiat_id', $jamiat_id)
             ->get();
