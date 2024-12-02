@@ -28,7 +28,7 @@ class PDFController extends Controller
 
         // Prepare data for the PDF
         $data = [
-            'header_image' => public_path('images/logo.png'), // Replace with the actual header image path
+            'logo_image' => public_path('images/logo.png'), // Replace with the actual header image path
             'receipt' => $receipt,
             'amount_in_words' => $amountInWords,
         ];
