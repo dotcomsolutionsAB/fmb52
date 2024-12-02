@@ -26,6 +26,9 @@ use App\Http\Controllers\TestMiddlewareController;
 
 Route::get('/test-middleware', [TestMiddlewareController::class, 'test']);
 
+use App\Http\Controllers\PDFController;
+
+Route::get('/generate-pdf', [PDFController::class, 'generatePDF']);
 
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
