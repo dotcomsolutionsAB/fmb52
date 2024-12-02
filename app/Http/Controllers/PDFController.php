@@ -35,7 +35,7 @@ class PDFController extends Controller
         $filename = preg_replace('/[^A-Za-z0-9_\-]/', '_', 'receipt_' . $receipt->receipt_no) . '.pdf';
         // Load the Blade view and generate the PDF
         $pdf = Pdf::loadView('receipt_template', $data)
-                  ->setPaper('a5', 'portrait'); // A5 size paper
+        ->setPaper('a5', 'landscape'); // Land
 
         // Stream the PDF in the browser or force a download
         return $pdf->download($filename);

@@ -6,21 +6,28 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            padding: 0;
         }
         .header {
-            text-align: center;
-            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
         }
         .header img {
-            max-width: 100%;
+            width: 60px; /* Adjust size for the logo */
+            margin-right: 10px;
         }
-        .header h1 {
+        .header-title {
             font-size: 16px;
-            margin: 10px 0;
+            font-weight: bold;
         }
-        .header p {
+        .header-subtitle {
+            font-size: 10px;
+            margin-top: -5px;
+        }
+        .header-ac {
             font-size: 12px;
-            line-height: 1.5;
+            margin-top: -5px;
         }
         .content table {
             width: 100%;
@@ -32,19 +39,26 @@
             padding: 5px;
         }
         .footer {
-            margin-top: 20px;
-            font-size: 12px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 10px;
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <img src="{{ $header_image }}" alt="Header">
-        <h1>DAWOODI BOHRA JAMAAT TRUST (KOLKATA)</h1>
-        <p>
-            Registered with the Additional Registrar of Assurances - III, as Deed No IV-00429 of 2011 (Kolkata)<br>
-            A/c. FAIZ UL MAWAID IL BURHANIYAH
-        </p>
+        <img src="{{ $logo_image }}" alt="Logo">
+        <div>
+            <div class="header-title">DAWOODI BOHRA JAMAAT TRUST (KOLKATA)</div>
+            <div class="header-subtitle">
+                Registered with the Additional Registrar of Assurances - III, as Deed No IV-00429 of 2011 (Kolkata)
+            </div>
+            <div class="header-ac">A/c. FAIZ UL MAWAID IL BURHANIYAH</div>
+        </div>
     </div>
 
     <div class="content">
@@ -70,11 +84,15 @@
                 <td>{{ $receipt->its }}</td>
             </tr>
             <tr>
-                <th>Amount:</th>
-                <td>{{ $receipt->amount }} ({{ $amount_in_words }} Only)</td>
+                <th>Mohalla:</th>
+                <td>{{ $receipt->sector }}</td>
             </tr>
             <tr>
-                <th>Payment Mode:</th>
+                <th>Amount:</th>
+                <td>Rs. {{ number_format($receipt->amount, 2) }} ({{ $amount_in_words }} Only)</td>
+            </tr>
+            <tr>
+                <th>Paid By:</th>
                 <td>{{ ucfirst($receipt->mode) }}</td>
             </tr>
             @if($receipt->mode == 'cheque')
@@ -100,11 +118,15 @@
                 <th>Comments:</th>
                 <td>{{ $receipt->comments }}</td>
             </tr>
+            <tr>
+                <th>Received By:</th>
+                <td>{{ $receipt->collected_by }}</td>
+            </tr>
         </table>
     </div>
 
     <div class="footer">
-        <p>Received By: {{ $receipt->collected_by }}</p>
+        THIS RECEIPT IS COMPUTER GENERATED AND DOES NOT REQUIRE SIGNATURE
     </div>
 </body>
 </html>
