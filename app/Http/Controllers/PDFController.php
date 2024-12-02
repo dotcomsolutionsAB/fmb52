@@ -38,7 +38,7 @@ class PDFController extends Controller
                   ->setPaper('a5', 'portrait'); // A5 size paper
 
         // Stream the PDF in the browser or force a download
-        return $pdf->stream('receipt_' . $receipt->receipt_no . '.pdf');
+        return $pdf->download('receipt_' . $receipt->receipt_no . '.pdf');
     }
 
     /**
