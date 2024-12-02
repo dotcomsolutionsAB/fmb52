@@ -32,13 +32,13 @@ class PDFController extends Controller
             'receipt' => $receipt,
             'amount_in_words' => $amountInWords,
         ];
-
+        $filename = preg_replace('/[^A-Za-z0-9_\-]/', '_', 'receipt_' . $receipt->receipt_no) . '.pdf';
         // Load the Blade view and generate the PDF
         $pdf = Pdf::loadView('receipt_template', $data)
                   ->setPaper('a5', 'portrait'); // A5 size paper
 
         // Stream the PDF in the browser or force a download
-        return $pdf->download('receipt_' . $receipt->receipt_no . '.pdf');
+        return $pdf->download($filename);
     }
 
     /**
