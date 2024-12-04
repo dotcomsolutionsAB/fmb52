@@ -1488,8 +1488,8 @@ class MumeneenController extends Controller
     
         // Fetch all family members sorted by age descending
         $family_members = User::select(
-                'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
-                'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 
+                'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no',
+                'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status',
                 'role', 'username', 'photo_id'
             )
             ->with(['photo:id,file_url'])
@@ -1523,42 +1523,49 @@ class MumeneenController extends Controller
             }
         }
     
+        // Remove the first member from the sorted list
+        if (!empty($sorted_members)) {
+            array_shift($sorted_members); // Remove the first element
+        }
+    
         return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
-    }  
-     public function familyHubDetails(Request $request, $family_id)
-{
-    $jamiat_id = Auth::user()->jamiat_id;
-
-    // Fetch all years for the current jamiat
-    $years = YearModel::where('jamiat_id', $jamiat_id)
-        ->orderBy('year', 'asc') // Ensure the years are in ascending order
-        ->get();
-
-    if ($years->isEmpty()) {
-        return response()->json(['message' => 'No year data found for the Jamiat.'], 404);
     }
-
-    // Fetch hub data for the given family_id for all years
-    $hub_data = HubModel::select('year', 'hub_amount', 'paid_amount', 'due_amount')
-        ->where('family_id', $family_id)
-        ->where('jamiat_id', $jamiat_id)
-        ->get()
-        ->keyBy('year'); // Key by year for easy lookup
-
-    // Prepare a response with year-wise hub details
-    $yearly_details = $years->map(function ($year) use ($hub_data) {
-        $year_str = $year->year; // Extract the year string
-
-        $hub_record = $hub_data->get($year_str); // Find hub record for this year
-
-        return [
-            'year' => $year_str,
-            'hub_amount' => $hub_record->hub_amount ?? 0,
-            'paid_amount' => $hub_record->paid_amount ?? 0,
-            'due_amount' => $hub_record->due_amount ?? 0,
-        ];
-    });
-
-    return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
-}
+        public function familyHubDetails(Request $request, $family_id)
+    {
+        $jamiat_id = Auth::user()->jamiat_id;
+    
+        // Fetch all years for the current jamiat
+        $years = YearModel::where('jamiat_id', $jamiat_id)
+            ->orderBy('year', 'desc') // Ensure the years are in descending order
+            ->limit(3) // Limit to the last 3 years
+            ->get();
+    
+        if ($years->isEmpty()) {
+            return response()->json(['message' => 'No year data found for the Jamiat.'], 404);
+        }
+    
+        // Fetch hub data for the given family_id for the last three years
+        $hub_data = HubModel::select('year', 'hub_amount', 'paid_amount', 'due_amount')
+            ->where('family_id', $family_id)
+            ->where('jamiat_id', $jamiat_id)
+            ->whereIn('year', $years->pluck('year')) // Only fetch data for the last three years
+            ->get()
+            ->keyBy('year'); // Key by year for easy lookup
+    
+        // Prepare a response with year-wise hub details for the last three years
+        $yearly_details = $years->map(function ($year) use ($hub_data) {
+            $year_str = $year->year; // Extract the year string
+    
+            $hub_record = $hub_data->get($year_str); // Find hub record for this year
+    
+            return [
+                'year' => $year_str,
+                'hub_amount' => $hub_record->hub_amount ?? 0,
+                'paid_amount' => $hub_record->paid_amount ?? 0,
+                'due_amount' => $hub_record->due_amount ?? 0,
+            ];
+        });
+    
+        return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
+    }
 }
