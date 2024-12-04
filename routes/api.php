@@ -30,6 +30,11 @@ use App\Http\Controllers\OrdersController;
 
 Route::post('/orders', [OrdersController::class, 'createOrder']);
 
+use App\Http\Controllers\PaymentController;
+
+Route::post('/payment/verify', [PaymentController::class, 'verifyPayment']);
+Route::post('/webhook/payment', [PaymentController::class, 'handleWebhook']);
+
 use App\Http\Controllers\PDFController;
 
 Route::get('/generate-pdf', [PDFController::class, 'generatePDF']);
