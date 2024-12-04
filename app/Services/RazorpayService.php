@@ -11,8 +11,13 @@ class RazorpayService
 
     public function __construct()
     {
-        $this->keyId = config('services.razorpay.key_id');
-        $this->keySecret = config('services.razorpay.key_secret');
+        // Hardcoding the Razorpay credentials
+        $this->keyId = 'rzp_test_iq7vXbQV1sn7Rl';
+        $this->keySecret = 'tt7rx8jJtA0IxD5DawCOmCVL';
+
+        if (!$this->keyId || !$this->keySecret) {
+            throw new \Exception('Razorpay API credentials are missing.');
+        }
     }
 
     public function createOrder($amount, $currency = 'INR', $receipt = null)
