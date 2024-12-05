@@ -64,26 +64,25 @@ class DashboardController extends Controller
 
     // User Demographics Query
     $userStats = DB::table('users')
-        ->selectRaw("
-            COUNT(*) AS total_users,
-            SUM(CASE WHEN mumeneen_type = 'HOF' THEN 1 ELSE 0 END) AS total_hof,
-            SUM(CASE WHEN mumeneen_type = 'FM' THEN 1 ELSE 0 END) AS total_fm,
-            SUM(CASE WHEN gender = 'Male' THEN 1 ELSE 0 END) AS total_males,
-            SUM(CASE WHEN gender = 'Female' THEN 1 ELSE 0 END) AS total_females,
-            SUM(CASE WHEN TIMESTAMPDIFF(YEAR, dob, CURDATE()) < 13 THEN 1 ELSE 0 END) AS total_children
-        ")
-        ->where('jamiat_id', $jamiatId)
-        ->where('role', 'mumeneen') // Include only mumeneen users
-        ->where(function ($query) use ($sectorFilter, $subSectorFilter) {
-            if ($sectorFilter) {
-                $query->whereIn('sector', $sectorFilter);
-            }
-            if ($subSectorFilter) {
-                $query->whereIn('sub_sector', $subSectorFilter);
-            }
-        })
-        ->first();
-
+    ->selectRaw("
+        COUNT(*) AS total_users,
+        SUM(CASE WHEN mumeneen_type = 'HOF' THEN 1 ELSE 0 END) AS total_hof,
+        SUM(CASE WHEN mumeneen_type = 'FM' THEN 1 ELSE 0 END) AS total_fm,
+        SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END) AS total_males,
+        SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END) AS total_females,
+        SUM(CASE WHEN age < 13 THEN 1 ELSE 0 END) AS total_children
+    ")
+    ->where('jamiat_id', $jamiatId)
+    ->where('role', 'mumeneen') // Include only mumeneen users
+    ->where(function ($query) use ($sectorFilter, $subSectorFilter) {
+        if ($sectorFilter) {
+            $query->whereIn('sector', $sectorFilter);
+        }
+        if ($subSectorFilter) {
+            $query->whereIn('sub_sector', $subSectorFilter);
+        }
+    })
+    ->first();
     // Prepare Response
     $response = [
         'year' => $year,
