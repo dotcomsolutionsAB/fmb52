@@ -231,28 +231,15 @@ class MumeneenController extends Controller
                 return $user;
             });
     
-            // Group by sector and sub_sector, ensuring "Burhani" comes first
-            $grouped_data = $users_with_hub_data->groupBy(function ($user) {
-                return $user->sector === 'Burhani' ? 'Burhani' : $user->sector;
-            });
+            // Group by sector and then sub_sector in ascending order
+            $grouped_data = $users_with_hub_data->groupBy(['sector', 'sub_sector']);
     
-            // Now make sure 'Burhani' is on top, followed by other sectors
-            $grouped_data = $grouped_data->sortKeys(function ($key) {
-                return $key === 'Burhani' ? -1 : 1;
-            });
-    
-            // Nested grouping by sub_sector within each sector
-            $grouped_data = $grouped_data->map(function ($sectorGroup) {
-                return $sectorGroup->groupBy('sub_sector');
-            });
-    
+            // Return the grouped and sorted data
             return response()->json(['User Fetched Successfully!', 'data' => $grouped_data], 200);
         }
     
         return response()->json(['Sorry, failed to fetch records!'], 404);
     }
-    
-
 
     // dashboard
     public function get_user($id)
