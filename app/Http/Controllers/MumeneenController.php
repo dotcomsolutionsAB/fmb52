@@ -231,8 +231,15 @@ class MumeneenController extends Controller
                 return $user;
             });
     
-            // Group by sector and then sub_sector in ascending order
-            $grouped_data = $users_with_hub_data->groupBy(['sector', 'sub_sector']);
+            // Group by sector and then sub_sector
+            $grouped_data = $users_with_hub_data->groupBy('sector')->map(function ($sectorGroup) {
+                return $sectorGroup->groupBy('sub_sector'); // Group by sub_sector within each sector
+            });
+    
+            // Sort sectors and sub_sectors alphabetically
+            $grouped_data = $grouped_data->sortKeys()->map(function ($sectorGroup) {
+                return $sectorGroup->sortKeys(); // Sort sub_sectors alphabetically within each sector
+            });
     
             // Return the grouped and sorted data
             return response()->json(['User Fetched Successfully!', 'data' => $grouped_data], 200);
@@ -240,7 +247,6 @@ class MumeneenController extends Controller
     
         return response()->json(['Sorry, failed to fetch records!'], 404);
     }
-
     // dashboard
     public function get_user($id)
     {
