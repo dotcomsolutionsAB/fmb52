@@ -173,7 +173,7 @@ class MumeneenController extends Controller
     public function usersWithHubData(Request $request, $year = 0)
     {
         $jamiat_id = Auth::user()->jamiat_id;
-
+    
         // Fetch the corresponding year string from YearModel using the provided year ID
         if ($year !== 0) {
             $yearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('id', $year)->first();
@@ -183,33 +183,31 @@ class MumeneenController extends Controller
             $currentYearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('is_current', '1')->first();
             $year = $currentYearRecord->year ?? date('Y'); // Use the current year string if no record is found
         }
-
-        // Debug the year value
-        
-
-        // Fetch all users belonging to the Jamiat
+    
+        // Fetch all users belonging to the Jamiat with 'mumeneen_type' = 'HOF'
         $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status','thali_status', 'role', 'username', 'photo_id')
             ->with(['photo:id,file_url'])
             ->where('jamiat_id', $jamiat_id)
+            ->where('mumeneen_type', 'HOF') // Filter only HOF users
             ->get();
-
+    
         if ($get_all_users->isNotEmpty()) {
             // Collect all family IDs from the fetched users
             $family_ids = $get_all_users->pluck('family_id')->toArray();
-
+    
             // Fetch hub data for the specified year string
-            $hub_data = HubModel::select('id','family_id', 'hub_amount', 'paid_amount', 'due_amount', 'year')
+            $hub_data = HubModel::select('id', 'family_id', 'hub_amount', 'paid_amount', 'due_amount', 'year')
                 ->whereIn('family_id', $family_ids)
                 ->where('jamiat_id', $jamiat_id)
                 ->where('year', $year) // Ensure we're fetching data for the correct year string
                 ->get()
                 ->keyBy('family_id'); // Key by family_id for easy lookup
-
+    
             // Calculate overdue amounts as the sum of due_amount from all previous years
             $previous_years = YearModel::where('jamiat_id', $jamiat_id)
                 ->where('year', '<', $year) // Compare as strings since years are in a "YYYY-YYYY" format
                 ->pluck('year');
-
+    
             $overdue_data = HubModel::select('family_id', DB::raw('SUM(due_amount) as overdue'))
                 ->whereIn('family_id', $family_ids)
                 ->where('jamiat_id', $jamiat_id)
@@ -217,34 +215,43 @@ class MumeneenController extends Controller
                 ->groupBy('family_id')
                 ->get()
                 ->keyBy('family_id'); // Key by family_id for easy lookup
-
+    
             // Map hub data and overdue amounts to users
             $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
-                if ($user->mumeneen_type === 'FM') {
-                    $user->hub_amount = 'NA';
-                    $user->paid_amount = 'NA';
-                    $user->due_amount = 'NA';
-                    $user->overdue = 'NA';
-                } else {
-                    // Find hub record for the user's family_id and year
-                    $hub_record = $hub_data->get($user->family_id);
-                    $user->hub_amount = $hub_record->hub_amount ?? 'NA';
-                    $user->paid_amount = $hub_record->paid_amount ?? 'NA';
-                    $user->due_amount = $hub_record->due_amount ?? 'NA';
-
-                    // Calculate overdue amount from previous years
-                    $overdue_record = $overdue_data->get($user->family_id);
-                    $user->overdue = $overdue_record->overdue ?? 0;
-                }
+                // Find hub record for the user's family_id and year
+                $hub_record = $hub_data->get($user->family_id);
+                $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+                $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+                $user->due_amount = $hub_record->due_amount ?? 'NA';
+    
+                // Calculate overdue amount from previous years
+                $overdue_record = $overdue_data->get($user->family_id);
+                $user->overdue = $overdue_record->overdue ?? 0;
+    
                 return $user;
             });
-
-            return response()->json(['User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
+    
+            // Group by sector and sub_sector, ensuring "Burhani" comes first
+            $grouped_data = $users_with_hub_data->groupBy(function ($user) {
+                return $user->sector === 'Burhani' ? 'Burhani' : $user->sector;
+            });
+    
+            // Now make sure 'Burhani' is on top, followed by other sectors
+            $grouped_data = $grouped_data->sortKeys(function ($key) {
+                return $key === 'Burhani' ? -1 : 1;
+            });
+    
+            // Nested grouping by sub_sector within each sector
+            $grouped_data = $grouped_data->map(function ($sectorGroup) {
+                return $sectorGroup->groupBy('sub_sector');
+            });
+    
+            return response()->json(['User Fetched Successfully!', 'data' => $grouped_data], 200);
         }
-
+    
         return response()->json(['Sorry, failed to fetch records!'], 404);
     }
-
+    
 
 
     // dashboard
