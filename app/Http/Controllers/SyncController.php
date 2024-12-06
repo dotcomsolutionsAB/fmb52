@@ -10,24 +10,24 @@ class SyncController extends Controller
      * Find ITS mismatches between users and t_its_data from both perspectives.
      */
     public function findItsMismatches()
-    {
-        $itsOnlyInUsers = DB::table('users')
-            ->select('its')
-            ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
-            ->whereNull('t_its_data.its') // ITS in users but not in t_its_data
-            ->get();
+{
+    $itsOnlyInUsers = DB::table('users')
+        ->select('users.its') // Qualify the column with the table name
+        ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
+        ->whereNull('t_its_data.its') // ITS in users but not in t_its_data
+        ->get();
 
-        $itsOnlyInItsData = DB::table('t_its_data')
-            ->select('its')
-            ->leftJoin('users', 't_its_data.its', '=', 'users.its')
-            ->whereNull('users.its') // ITS in t_its_data but not in users
-            ->get();
+    $itsOnlyInItsData = DB::table('t_its_data')
+        ->select('t_its_data.its') // Qualify the column with the table name
+        ->leftJoin('users', 't_its_data.its', '=', 'users.its')
+        ->whereNull('users.its') // ITS in t_its_data but not in users
+        ->get();
 
-        return [
-            'its_only_in_users' => $itsOnlyInUsers,
-            'its_only_in_its_data' => $itsOnlyInItsData,
-        ];
-    }
+    return [
+        'its_only_in_users' => $itsOnlyInUsers,
+        'its_only_in_its_data' => $itsOnlyInItsData,
+    ];
+}
 
     /**
      * Find mismatches in ITS and Mumeneen type between users and t_its_data.
