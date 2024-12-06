@@ -57,23 +57,34 @@ class SyncController extends Controller
     public function findItsAndMumeneenTypeMismatches()
     {
         $mismatchedFromUsers = DB::table('users')
-            ->select('users.its', 'users.mumeneen_type as mumeneen_type_in_users', 't_its_data.mumeneen_type as mumeneen_type_in_its_data')
+            ->select(
+                'users.its',
+                'users.name as its_name',
+                'users.mumeneen_type as mumeneen_type_in_users',
+                't_its_data.mumeneen_type as mumeneen_type_in_its_data',
+                'users.hof_its as current_hof'
+            )
             ->join('t_its_data', 'users.its', '=', 't_its_data.its')
             ->whereColumn('users.mumeneen_type', '!=', 't_its_data.mumeneen_type') // Mumeneen type mismatch
             ->get();
-
+    
         $mismatchedFromItsData = DB::table('t_its_data')
-            ->select('t_its_data.its', 't_its_data.mumeneen_type as mumeneen_type_in_its_data', 'users.mumeneen_type as mumeneen_type_in_users')
+            ->select(
+                't_its_data.its',
+                't_its_data.name as its_name',
+                't_its_data.mumeneen_type as mumeneen_type_in_its_data',
+                'users.mumeneen_type as mumeneen_type_in_users',
+                't_its_data.hof_its as current_hof'
+            )
             ->join('users', 't_its_data.its', '=', 'users.its')
             ->whereColumn('t_its_data.mumeneen_type', '!=', 'users.mumeneen_type') // Mumeneen type mismatch
             ->get();
-
-        return [
+    
+        return response()->json([
             'mismatched_from_users' => $mismatchedFromUsers,
             'mismatched_from_its_data' => $mismatchedFromItsData,
-        ];
+        ]);
     }
-
     /**
      * Central method to execute all comparisons and consolidate results.
      */
