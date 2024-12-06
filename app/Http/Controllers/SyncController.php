@@ -56,7 +56,7 @@ class SyncController extends Controller
      * Central method to execute all comparisons and consolidate results.
      */
    
-     public function findMobileDiscrepancies()
+     public function findMobileMismatches()
      {
          // Mobile numbers in t_its_data but not in users
          $mobileOnlyInItsData = DB::table('t_its_data')
