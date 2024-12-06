@@ -31,7 +31,6 @@ use App\Http\Controllers\SyncController;
 Route::get('/sync/its-mismatches', [SyncController::class, 'findItsMismatches']);
 Route::get('/sync/its-mumeneen-type-mismatches', [SyncController::class, 'findItsAndMumeneenTypeMismatches']);
 Route::get('/sync/its-mobile-mismatches', [SyncController::class, 'findMobileMismatches']);
-
 Route::get('/sync/all', [SyncController::class, 'syncData']);
 
 use App\Http\Controllers\OrdersController;

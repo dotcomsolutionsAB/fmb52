@@ -55,16 +55,7 @@ class SyncController extends Controller
     /**
      * Central method to execute all comparisons and consolidate results.
      */
-    public function syncData()
-    {
-        $itsMismatch = $this->findItsMismatches();
-        $itsAndTypeMismatch = $this->findItsAndMumeneenTypeMismatches();
-
-        return response()->json([
-            'its_mismatch' => $itsMismatch,
-            'its_and_type_mismatch' => $itsAndTypeMismatch,
-        ]);
-    }
+   
     public function findMobileMismatches()
     {
         // Mobile numbers exist in users but not in t_its_data
@@ -100,7 +91,7 @@ class SyncController extends Controller
         $itsMismatch = $this->findItsMismatches();
         $itsAndTypeMismatch = $this->findItsAndMumeneenTypeMismatches();
         $itsMobileMismatch = $this->findMobileMismatches();
-        
+
         return response()->json([
             'its_mismatch' => $itsMismatch,
             'its_and_type_mismatch' => $itsAndTypeMismatch,
