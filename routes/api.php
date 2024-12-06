@@ -26,6 +26,7 @@ use App\Http\Controllers\TestMiddlewareController;
 
 Route::get('/test-middleware', [TestMiddlewareController::class, 'test']);
 
+
 use App\Http\Controllers\OrdersController;
 
 Route::post('/orders', [OrdersController::class, 'createOrder']);

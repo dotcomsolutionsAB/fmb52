@@ -46,6 +46,35 @@ class DashboardController extends Controller
         })
         ->first();
 
+    // Payment Modes Query
+    $paymentModes = DB::table('t_receipts')
+        ->selectRaw("
+            mode,
+            SUM(amount) AS total_amount
+        ")
+        ->where('year', $year)
+        ->whereExists(function ($query) use ($jamiatId, $sectorFilter, $subSectorFilter) {
+            $query->select(DB::raw(1))
+                ->from('users')
+                ->whereColumn('users.family_id', 't_receipts.family_id')
+                ->where('users.jamiat_id', $jamiatId)
+                ->where('users.role', 'mumeneen'); // Include only mumeneen users
+
+            if ($sectorFilter) {
+                $query->whereIn('users.sector', $sectorFilter);
+            }
+            if ($subSectorFilter) {
+                $query->whereIn('users.sub_sector', $subSectorFilter);
+            }
+        })
+        ->groupBy('mode')
+        ->get();
+
+    // Process Payment Modes
+    $paymentBreakdown = $paymentModes->mapWithKeys(function ($item) {
+        return [$item->mode => number_format($item->total_amount, 0, '.', ',')];
+    });
+
     // Thaali-Taking Query
     $thaaliTakingCount = DB::table('users')
         ->where('jamiat_id', $jamiatId)
@@ -64,25 +93,26 @@ class DashboardController extends Controller
 
     // User Demographics Query
     $userStats = DB::table('users')
-    ->selectRaw("
-        COUNT(*) AS total_users,
-        SUM(CASE WHEN mumeneen_type = 'HOF' THEN 1 ELSE 0 END) AS total_hof,
-        SUM(CASE WHEN mumeneen_type = 'FM' THEN 1 ELSE 0 END) AS total_fm,
-        SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END) AS total_males,
-        SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END) AS total_females,
-        SUM(CASE WHEN age < 13 THEN 1 ELSE 0 END) AS total_children
-    ")
-    ->where('jamiat_id', $jamiatId)
-    ->where('role', 'mumeneen') // Include only mumeneen users
-    ->where(function ($query) use ($sectorFilter, $subSectorFilter) {
-        if ($sectorFilter) {
-            $query->whereIn('sector', $sectorFilter);
-        }
-        if ($subSectorFilter) {
-            $query->whereIn('sub_sector', $subSectorFilter);
-        }
-    })
-    ->first();
+        ->selectRaw("
+            COUNT(*) AS total_users,
+            SUM(CASE WHEN mumeneen_type = 'HOF' THEN 1 ELSE 0 END) AS total_hof,
+            SUM(CASE WHEN mumeneen_type = 'FM' THEN 1 ELSE 0 END) AS total_fm,
+            SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END) AS total_males,
+            SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END) AS total_females,
+            SUM(CASE WHEN age < 13 THEN 1 ELSE 0 END) AS total_children
+        ")
+        ->where('jamiat_id', $jamiatId)
+        ->where('role', 'mumeneen') // Include only mumeneen users
+        ->where(function ($query) use ($sectorFilter, $subSectorFilter) {
+            if ($sectorFilter) {
+                $query->whereIn('sector', $sectorFilter);
+            }
+            if ($subSectorFilter) {
+                $query->whereIn('sub_sector', $subSectorFilter);
+            }
+        })
+        ->first();
+
     // Prepare Response
     $response = [
         'year' => $year,
@@ -101,6 +131,7 @@ class DashboardController extends Controller
         'total_males' => number_format($userStats->total_males, 0, '.', ','),
         'total_females' => number_format($userStats->total_females, 0, '.', ','),
         'total_children' => number_format($userStats->total_children, 0, '.', ','),
+        'payment_breakdown' => $paymentBreakdown, // Add payment breakdown
     ];
 
     return response()->json($response);
