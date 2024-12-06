@@ -10,49 +10,41 @@ class SyncController extends Controller
      * Find ITS mismatches between users and t_its_data from both perspectives.
      */
     public function findItsMismatches()
-    {
-        // ITS in users but not in t_its_data
-        $itsOnlyInUsers = DB::table('users')
-            ->select(
-                'users.its',
-                'users.name as user_name',
-                'users.hof_its as user_hof_its',
-                'users.mumeneen_type as user_mumeneen_type',
-                'users.gender as user_gender',
-                'users.age as user_age',
-                'users.sector as user_sector'
-            )
-            ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
-            ->whereNull('t_its_data.its') // ITS in users but not in t_its_data
-            ->orderBy('users.hof_its')
-            ->get();
-    
-        // ITS in t_its_data but not in users
-        $itsOnlyInItsData = DB::table('t_its_data')
-            ->select(
-                't_its_data.its',
-                't_its_data.name as its_data_name',
-                't_its_data.hof_its as its_data_hof_its',
-                't_its_data.mumeneen_type as its_data_mumeneen_type',
-                't_its_data.gender as its_data_gender',
-                't_its_data.age as its_data_age',
-                't_its_data.sector as its_data_sector'
-            )
-            ->leftJoin('users', 't_its_data.its', '=', 'users.its')
-            ->whereNull('users.its') // ITS in t_its_data but not in users
-            ->orderBy('t_its_data.hof_its')
-            ->get();
-    
-        // Prepare response with headers
-        return response()->json([
-            'header' => [
-                'hof_its' => 'Head of Family ITS',
-                'name' => 'Name',
-            ],
-            'its_only_in_users' => $itsOnlyInUsers,
-            'its_only_in_its_data' => $itsOnlyInItsData,
-        ]);
-    }
+{
+    // ITS in users but not in t_its_data
+    $itsOnlyInUsers = DB::table('users')
+        ->select(
+            'users.hof_its',
+            DB::raw('GROUP_CONCAT(users.name SEPARATOR ", ") as family_members'),
+            DB::raw('COUNT(users.its) as total_members')
+        )
+        ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
+        ->whereNull('t_its_data.its') // ITS in users but not in t_its_data
+        ->where('users.jamiat_id', 1)
+        ->where('users.role', 'mumeneen')
+        ->groupBy('users.hof_its')
+        ->orderBy('users.hof_its')
+        ->get();
+
+    // ITS in t_its_data but not in users
+    $itsOnlyInItsData = DB::table('t_its_data')
+        ->select(
+            't_its_data.hof_its',
+            DB::raw('GROUP_CONCAT(t_its_data.name SEPARATOR ", ") as family_members'),
+            DB::raw('COUNT(t_its_data.its) as total_members')
+        )
+        ->leftJoin('users', 't_its_data.its', '=', 'users.its')
+        ->whereNull('users.its') // ITS in t_its_data but not in users
+        ->groupBy('t_its_data.hof_its')
+        ->orderBy('t_its_data.hof_its')
+        ->get();
+
+    // Prepare response
+    return response()->json([
+        'its_only_in_users' => $itsOnlyInUsers,
+        'its_only_in_its_data' => $itsOnlyInItsData,
+    ]);
+}
     /**
      * Find mismatches in ITS and Mumeneen type between users and t_its_data.
      */
