@@ -15,8 +15,11 @@ class SyncController extends Controller
     $itsOnlyInUsers = DB::table('users')
         ->select(
             'users.hof_its',
-            DB::raw('GROUP_CONCAT(users.name SEPARATOR ", ") as family_members'),
-            DB::raw('COUNT(users.its) as total_members')
+            DB::raw('GROUP_CONCAT(CONCAT(users.its, ":", users.name, " (", IFNULL(users.age, "N/A"), "y, ", IFNULL(users.mobile, "N/A"), ")") SEPARATOR ", ") as family_members'),
+            DB::raw('COUNT(users.its) as total_members'),
+            'users.hof_its as hof_its_id',
+            DB::raw('(SELECT name FROM users WHERE its = users.hof_its LIMIT 1) as hof_name'),
+            DB::raw('(SELECT COUNT(*) > 0 FROM users WHERE its = users.hof_its LIMIT 1) as hof_present_in_users')
         )
         ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
         ->whereNull('t_its_data.its') // ITS in users but not in t_its_data
@@ -30,8 +33,11 @@ class SyncController extends Controller
     $itsOnlyInItsData = DB::table('t_its_data')
         ->select(
             't_its_data.hof_its',
-            DB::raw('GROUP_CONCAT(t_its_data.name SEPARATOR ", ") as family_members'),
-            DB::raw('COUNT(t_its_data.its) as total_members')
+            DB::raw('GROUP_CONCAT(CONCAT(t_its_data.its, ":", t_its_data.name, " (", IFNULL(t_its_data.age, "N/A"), "y, ", IFNULL(t_its_data.mobile, "N/A"), ")") SEPARATOR ", ") as family_members'),
+            DB::raw('COUNT(t_its_data.its) as total_members'),
+            't_its_data.hof_its as hof_its_id',
+            DB::raw('(SELECT name FROM t_its_data WHERE its = t_its_data.hof_its LIMIT 1) as hof_name'),
+            DB::raw('(SELECT COUNT(*) > 0 FROM users WHERE its = t_its_data.hof_its LIMIT 1) as hof_present_in_users')
         )
         ->leftJoin('users', 't_its_data.its', '=', 'users.its')
         ->whereNull('users.its') // ITS in t_its_data but not in users
