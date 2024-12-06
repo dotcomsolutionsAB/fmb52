@@ -65,4 +65,46 @@ class SyncController extends Controller
             'its_and_type_mismatch' => $itsAndTypeMismatch,
         ]);
     }
+    public function findMobileMismatches()
+    {
+        // Mobile numbers exist in users but not in t_its_data
+        $mobileOnlyInUsers = DB::table('users')
+            ->select('users.its', 'users.mobile', 't_its_data.mobile as mobile_in_its_data')
+            ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
+            ->whereNull('t_its_data.mobile') // Mobile exists in users but not in t_its_data
+            ->get();
+
+        // Mobile numbers exist in t_its_data but not in users
+        $mobileOnlyInItsData = DB::table('t_its_data')
+            ->select('t_its_data.its', 't_its_data.mobile', 'users.mobile as mobile_in_users')
+            ->leftJoin('users', 't_its_data.its', '=', 'users.its')
+            ->whereNull('users.mobile') // Mobile exists in t_its_data but not in users
+            ->get();
+
+        // Mobile numbers mismatch between the two tables for the same ITS
+        $mobileMismatchForSameITS = DB::table('users')
+            ->select('users.its', 'users.mobile as mobile_in_users', 't_its_data.mobile as mobile_in_its_data')
+            ->join('t_its_data', 'users.its', '=', 't_its_data.its')
+            ->whereColumn('users.mobile', '!=', 't_its_data.mobile') // Mobile mismatch
+            ->get();
+
+        return response()->json([
+            'mobile_only_in_users' => $mobileOnlyInUsers,
+            'mobile_only_in_its_data' => $mobileOnlyInItsData,
+            'mobile_mismatch_for_same_its' => $mobileMismatchForSameITS,
+        ]);
+    }
+
+    public function syncData()
+    {
+        $itsMismatch = $this->findItsMismatches();
+        $itsAndTypeMismatch = $this->findItsAndMumeneenTypeMismatches();
+        $itsMobileMismatch = $this->findMobileMismatches();
+        
+        return response()->json([
+            'its_mismatch' => $itsMismatch,
+            'its_and_type_mismatch' => $itsAndTypeMismatch,
+            'mobile_mismatch' =>$itsMobileMismatch,
+        ]);
+    }
 }
