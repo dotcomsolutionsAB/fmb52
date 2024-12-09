@@ -186,12 +186,13 @@ class MumeneenController extends Controller
     
         // Fetch all users belonging to the Jamiat with 'mumeneen_type' = 'HOF'
         $get_all_users = User::select('id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'thali_status', 'role', 'username', 'photo_id')
-            ->with(['photo:id,file_url'])
-            ->where('jamiat_id', $jamiat_id)
-            ->where('mumeneen_type', 'HOF') // Filter only HOF users
-            ->orderBy('sector') // Sort by sector
-            ->orderBy('sub_sector') // Then sort by sub_sector
-            ->get();
+        ->with(['photo:id,file_url'])
+        ->where('jamiat_id', $jamiat_id)
+        ->where('mumeneen_type', 'HOF') // Filter only HOF users
+        ->orderByRaw("sector IS NULL OR sector = ''") // Push empty sectors to the end
+        ->orderBy('sector') // Sort non-empty sectors alphabetically
+        ->orderBy('sub_sector') // Then sort by sub_sector
+        ->get();
     
         if ($get_all_users->isNotEmpty()) {
             // Collect all family IDs from the fetched users
