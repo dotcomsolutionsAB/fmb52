@@ -1525,9 +1525,9 @@ class MumeneenController extends Controller
             usort($members, function ($a, $b) {
                 return $b->age <=> $a->age;
             });
-            if (!empty($sorted_members)) {
-                array_shift($sorted_members); // Remove the first element
-            }
+            // if (!empty($sorted_members)) {
+            //     array_shift($sorted_members); // Remove the first element
+            // }
     
             // Append members to the final sorted list
             foreach ($members as $member) {
