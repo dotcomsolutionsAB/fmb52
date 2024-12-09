@@ -143,7 +143,7 @@ public function getCashSummary()
     // Define the default year
     $defaultYear = '1445-1446';
 
-    // Step 1: Get cash receipts grouped by sector and filtered by year
+    // Step 1: Get cash receipts grouped by sector
     $cashReceipts = DB::table('t_receipts')
         ->select('sector', DB::raw('SUM(amount) as cash'))
         ->where('mode', 'cash')
@@ -151,13 +151,12 @@ public function getCashSummary()
         ->groupBy('sector')
         ->get();
 
-    // Step 2: Get deposited payments grouped by sector, filtered by year
+    // Step 2: Get deposited payments grouped by sector
     $depositedPayments = DB::table('t_payments')
-        ->join('t_receipts', 't_payments.id', '=', 't_receipts.payment_id') // Use payment_id to relate
-        ->select('t_receipts.sector', DB::raw('SUM(t_payments.amount) as deposited'))
-        ->where('t_payments.mode', 'cash')
-        ->where('t_payments.year', $defaultYear)
-        ->groupBy('t_receipts.sector')
+        ->select('sector', DB::raw('SUM(amount) as deposited'))
+        ->where('mode', 'cash')
+        ->where('year', $defaultYear)
+        ->groupBy('sector')
         ->get();
 
     // Step 3: Merge data to calculate in_hand
@@ -173,10 +172,25 @@ public function getCashSummary()
         ];
     });
 
+    // Include any sectors in payments that are missing in receipts
+    $additionalSectors = $depositedPayments->filter(function ($payment) use ($cashReceipts) {
+        return !$cashReceipts->contains('sector', $payment->sector);
+    })->map(function ($payment) {
+        return [
+            'sector' => $payment->sector,
+            'cash' => 0,
+            'deposited' => $payment->deposited,
+            'in_hand' => -$payment->deposited,
+        ];
+    });
+
+    // Combine results
+    $finalSummary = $summary->concat($additionalSectors);
+
     // Step 4: Return response
     return response()->json([
         'success' => true,
-        'data' => $summary,
+        'data' => $finalSummary,
     ]);
 }
 }
