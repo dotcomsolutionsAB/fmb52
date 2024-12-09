@@ -140,18 +140,23 @@ class DashboardController extends Controller
 
 public function getCashSummary()
 {
-    // Step 1: Get cash receipts grouped by sector
+    // Define the default year
+    $defaultYear = '1445-1446';
+
+    // Step 1: Get cash receipts grouped by sector and filtered by year
     $cashReceipts = DB::table('t_receipts')
         ->select('sector', DB::raw('SUM(amount) as cash'))
         ->where('mode', 'cash')
+        ->where('year', $defaultYear)
         ->groupBy('sector')
         ->get();
 
-    // Step 2: Get deposited payments grouped by sector
+    // Step 2: Get deposited payments grouped by sector, filtered by year
     $depositedPayments = DB::table('t_payments')
-        ->join('t_receipts', 't_payments.receipt_no', '=', 't_receipts.payment_no')
+        ->join('t_receipts', 't_payments.id', '=', 't_receipts.payment_id') // Use payment_id to relate
         ->select('t_receipts.sector', DB::raw('SUM(t_payments.amount) as deposited'))
         ->where('t_payments.mode', 'cash')
+        ->where('t_payments.year', $defaultYear)
         ->groupBy('t_receipts.sector')
         ->get();
 
