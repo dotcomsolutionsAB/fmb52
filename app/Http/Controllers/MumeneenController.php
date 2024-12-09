@@ -191,7 +191,7 @@ class MumeneenController extends Controller
         ->where('mumeneen_type', 'HOF') // Filter only HOF users
         ->orderByRaw("sector IS NULL OR sector = ''") // Push empty sectors to the end
         ->orderBy('sector') // Sort non-empty sectors alphabetically
-        ->orderBy('sub_sector') // Then sort by sub_sector
+        ->orderBy('folio_no') // Then sort by sub_sector
         ->get();
     
         if ($get_all_users->isNotEmpty()) {
