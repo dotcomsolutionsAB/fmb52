@@ -122,6 +122,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // sub-sector
     Route::post('/sub_sector', [MumeneenController::class, 'register_sub_sector']);
     Route::get('/sub_sector', [MumeneenController::class, 'all_sub_sector']);
+    Route::get('/sub_sector/{sector}', [MumeneenController::class, 'getSubSectorsBySector']);
     Route::post('/update_sub_sector/{id}', [MumeneenController::class, 'update_sub_sector']);
     Route::delete('/sub_sector/{id}', [MumeneenController::class, 'delete_sub_sector']);
 

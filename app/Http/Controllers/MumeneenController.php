@@ -925,6 +925,22 @@ class MumeneenController extends Controller
             ? response()->json(['message' => 'Sub-Sector records fetched successfully!', 'data' => $get_all_sub_sector], 200)
             : response()->json(['message' => 'No sub-sector records found!'], 404);
     }
+    public function getSubSectorsBySector($sector)
+{
+    $subSectors = SubSectorModel::select('jamiat_id', 'name', 'notes', 'log_user')
+        ->where('sector', $sector)
+        ->get();
+
+    return $subSectors->isNotEmpty()
+        ? response()->json([
+            'message' => 'Sub-Sectors for the given sector fetched successfully!',
+            'data' => $subSectors
+        ], 200)
+        : response()->json([
+            'message' => 'No sub-sectors found for the given sector!',
+            'sector' => $sector
+        ], 404);
+}
 
     // update
     public function update_sub_sector(Request $request, $id)
