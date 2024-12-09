@@ -1502,6 +1502,7 @@ class MumeneenController extends Controller
                 'role', 'username', 'photo_id'
             )
             ->with(['photo:id,file_url'])
+            ->where("type",'FM')
             ->where('family_id', $family_id)
             ->orderBy('age', 'desc') // Start with the eldest
             ->get();
