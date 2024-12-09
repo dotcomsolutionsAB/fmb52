@@ -91,7 +91,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Daashboard
     Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
-    
+    Route::get('/dashboard/cash-summary', [DashboardController::class, 'getCashSummary']);
     
     
     // user

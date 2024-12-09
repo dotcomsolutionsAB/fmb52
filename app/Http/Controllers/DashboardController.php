@@ -136,4 +136,42 @@ class DashboardController extends Controller
 
     return response()->json($response);
 }
+use Illuminate\Support\Facades\DB;
+
+public function getCashSummary()
+{
+    // Step 1: Get cash receipts grouped by sector
+    $cashReceipts = DB::table('t_receipts')
+        ->select('sector', DB::raw('SUM(amount) as cash'))
+        ->where('mode', 'cash')
+        ->groupBy('sector')
+        ->get();
+
+    // Step 2: Get deposited payments grouped by sector
+    $depositedPayments = DB::table('t_payments')
+        ->join('t_receipts', 't_payments.receipt_no', '=', 't_receipts.payment_no')
+        ->select('t_receipts.sector', DB::raw('SUM(t_payments.amount) as deposited'))
+        ->where('t_payments.mode', 'cash')
+        ->groupBy('t_receipts.sector')
+        ->get();
+
+    // Step 3: Merge data to calculate in_hand
+    $summary = $cashReceipts->map(function ($receipt) use ($depositedPayments) {
+        $sectorPayments = $depositedPayments->firstWhere('sector', $receipt->sector);
+        $deposited = $sectorPayments ? $sectorPayments->deposited : 0;
+
+        return [
+            'sector' => $receipt->sector,
+            'cash' => $receipt->cash,
+            'deposited' => $deposited,
+            'in_hand' => $receipt->cash - $deposited,
+        ];
+    });
+
+    // Step 4: Return response
+    return response()->json([
+        'success' => true,
+        'data' => $summary,
+    ]);
+}
 }
