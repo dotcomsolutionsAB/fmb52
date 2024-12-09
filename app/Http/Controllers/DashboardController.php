@@ -136,7 +136,7 @@ class DashboardController extends Controller
 
     return response()->json($response);
 }
-use Illuminate\Support\Facades\DB;
+
 
 public function getCashSummary()
 {
