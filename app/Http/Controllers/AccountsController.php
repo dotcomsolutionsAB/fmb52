@@ -748,7 +748,7 @@ class AccountsController extends Controller
     WhatsappQueueModel::create([
         'jamiat_id' => $jamiat_id,
         'group_id' => 'receipt_' . uniqid(),
-        'callback_data' => 'receipt_' . $receipt->receipt_no,
+        'callback_data' => '917439515253',
         'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
         'to' => $receipt->mobile, // Use mobile number
         'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
