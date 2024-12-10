@@ -725,7 +725,7 @@ class AccountsController extends Controller
     ];
 
     // Insert into WhatsApp queue table
-    WhatsAppQueue::create([
+    WhatsappQueueModel::create([
         'group_id' => 'receipt_' . uniqid(),
         'callback_data' => 'receipt_' . $receipt->receipt_no,
         'recipient_type' => 'individual',
