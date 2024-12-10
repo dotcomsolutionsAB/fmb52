@@ -1,6 +1,7 @@
 <?php
 namespace App\Console;
 
+use App\Console\Commands\ProcessWhatsAppQueue;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -11,6 +12,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\UpdateHubTable::class,
         \App\Console\Commands\MigrateData::class,
         \App\Console\Commands\MigrateCsvData::class,
+        \App\Console\Commands\ProcessWhatsAppQueue::class,
     ];
 
     // Define the application's command schedule
@@ -18,6 +20,7 @@ class Kernel extends ConsoleKernel
     {
         // Schedule the command to run daily at midnight
         $schedule->command('hub:update')->everyFiveMinutes();
+        $schedule->command('whatsapp:process-queue')->everyFiveMinutes();
     }
 
     // Register the Closure-based commands for the application

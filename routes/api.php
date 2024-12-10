@@ -47,6 +47,11 @@ use App\Http\Controllers\PDFController;
 Route::get('/generate-pdf', [PDFController::class, 'generatePDF']);
 Route::get('/receipt_print/{id}', [PDFController::class, 'printReceipt']);
 
+use App\Http\Controllers\WhatsAppQueueController;
+
+Route::post('/whatsapp-queue', [WhatsAppQueueController::class, 'addToQueue']);
+Route::post('/whatsapp-queue/process', [WhatsAppQueueController::class, 'processQueue']);
+
 
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
