@@ -9,7 +9,8 @@ use App\Models\ExpenseModel;
 use App\Models\PaymentsModel;
 use App\Models\ReceiptsModel;
 use App\Models\User;
-
+use App\Models\WhatsAppQueue;
+use App\Models\WhatsappQueueModel;
 
 class AccountsController extends Controller
 {
@@ -414,10 +415,25 @@ class AccountsController extends Controller
     // create
     public function register_receipts(Request $request)
     {
+        // Fetch jamiat_id from the logged-in user
+        $user = auth()->user();
+        $jamiat_id = $user->jamiat_id;
+    
+        // Fetch the counter for receipt generation
+        $counter = DB::table('t_counter')
+            ->where('jamiat_id', $jamiat_id)
+            ->where('type', 'receipt')
+            ->first();
+    
+        if (!$counter) {
+            return response()->json(['message' => 'Counter not found for receipts!'], 400);
+        }
+    
+        // Generate receipt number using prefix, value, and postfix
+        $receipt_no = $counter->prefix . $counter->value . '/' . $counter->postfix;
+    
         $validatedData = $request->validate([
-            'jamiat_id' => 'required|integer',
             'family_id' => 'required|string|max:10',
-            'receipt_no' => 'required|string|max:100',
             'date' => 'required|date',
             'its' => 'required|string|max:8',
             'folio_no' => 'nullable|string|max:20',
@@ -441,28 +457,30 @@ class AccountsController extends Controller
             'attachment' => 'nullable|integer',
             'payment_id' => 'nullable|integer',
         ]);
-        
+    
         $get_family_member = User::select('name', 'its')
-                                  ->where('family_id', $request->input('family_id'))
-                                  ->get();
-                                  
+            ->where('family_id', $request->input('family_id'))
+            ->get();
+    
         if (count($get_family_member) < 1) {
             return response()->json(['message' => 'Sorry, failed to get users!'], 400);
         }
-
+    
         $totalAmount = $request->input('amount');
-        $maximumReceivable = 10000;
+        $mode = $request->input('mode');
+        $maximumReceivable = $mode === 'cash' ? 1000 : $totalAmount; // Divide only for cash mode
         $remainingAmount = $totalAmount;
-
-        $receipts = []; 
-
+    
+        $receipts = [];
+    
+        // Loop through family members and distribute the amount
         foreach ($get_family_member as $member) {
             $amountsForMembers = min($remainingAmount, $maximumReceivable);
-
+    
             $register_receipt = ReceiptsModel::create([
-                'jamiat_id' => $request->input('jamiat_id'),
+                'jamiat_id' => $jamiat_id,
                 'family_id' => $request->input('family_id'),
-                'receipt_no' => $request->input('receipt_no'),
+                'receipt_no' => $receipt_no, // Use the generated receipt number
                 'date' => $request->input('date'),
                 'its' => $member->its,
                 'folio_no' => $request->input('folio_no'),
@@ -470,7 +488,7 @@ class AccountsController extends Controller
                 'sector' => $request->input('sector'),
                 'sub_sector' => $request->input('sub_sector'),
                 'amount' => $amountsForMembers,
-                'mode' => $request->input('mode'),
+                'mode' => $mode,
                 'bank_name' => $request->input('bank_name'),
                 'cheque_no' => $request->input('cheque_no'),
                 'cheque_date' => $request->input('cheque_date'),
@@ -486,48 +504,52 @@ class AccountsController extends Controller
                 'attachment' => $request->input('attachment'),
                 'payment_id' => $request->input('payment_id'),
             ]);
-
-            // Unset the fields from the register_receipt before adding to the receipts array
-            unset($register_receipt['id'], $register_receipt['created_at'], $register_receipt['updated_at']);
-
-            $receipts [] = $register_receipt;
-
+    
+            $receipts[] = $register_receipt;
+    
+            // Add WhatsApp queue entry
+            $this->addToWhatsAppQueue($register_receipt);
+    
             $remainingAmount -= $amountsForMembers;
-
+    
             if ($remainingAmount <= 0) {
                 break;
             }
         }
-
-        if ($remainingAmount > 0) 
-        {
+    
+        // Increment counter value after successful receipt creation
+        DB::table('t_counter')
+            ->where('jamiat_id', $jamiat_id)
+            ->where('type', 'receipt')
+            ->increment('value');
+    
+        // Handle advance receipt if remaining amount exists
+        if ($remainingAmount > 0) {
             $get_hof_member = User::whereColumn('its', 'hof_its')
-            ->where('family_id', $request->input('family_id'))
-            ->get();
-
+                ->where('family_id', $request->input('family_id'))
+                ->first();
+    
             $dataForAdvanceReceipt = [
-                'jamiat_id' => $validatedData['jamiat_id'], 
+                'jamiat_id' => $jamiat_id,
                 'family_id' => $validatedData['family_id'],
-                'name' => $get_hof_member->first()->name,
+                'name' => $get_hof_member->name,
                 'amount' => $remainingAmount,
-                'sector' => $validatedData['sector'], 
-                'sub_sector' => $validatedData['sub_sector'], 
+                'sector' => $validatedData['sector'],
+                'sub_sector' => $validatedData['sub_sector'],
             ];
+    
             $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
-
-           $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
-
+            $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
+    
             if ($advanceReceiptResponse->getStatusCode() !== 201) {
                 return response()->json(['message' => 'Failed to create Advance Receipt!'], 400);
             }
-
-            $advanceReceiptData = $advanceReceiptResponse->getOriginalContent();
         }
-
-
-        return $register_receipt
-            ? response()->json(['message' => 'Receipt created successfully!', 'receipts' => $receipts, 'advance_receipt' => $advanceReceiptData ?? null], 201)
-            : response()->json(['message' => 'Failed to create receipt!'], 400);
+    
+        return response()->json([
+            'message' => 'Receipt created successfully!',
+            'receipts' => $receipts,
+        ], 201);
     }
 
     // view
@@ -648,5 +670,50 @@ class AccountsController extends Controller
             ? response()->json(['message' => 'Receipt deleted successfully!'], 200)
             : response()->json(['message' => 'Receipt not found'], 404);
     }
+
+    protected function addToWhatsAppQueue($receipt, $phoneNumber)
+{
+    // Fetch hub details for the family from the hub table
+    $hubDetails = DB::table('hub')
+        ->where('family_id', $receipt->family_id)
+        ->select(DB::raw('SUM(hub_amount) as rate'), DB::raw('SUM(paid_amount) as paid'), DB::raw('(SUM(hub_amount) - SUM(paid_amount)) as left'))
+        ->first();
+
+    // Prepare WhatsApp template content
+    $templateContent = [
+        'name' => 'fmb_receipt_created',
+        'language' => ['code' => 'en'],
+        'components' => [
+            [
+                'type' => 'body',
+                'parameters' => [
+                    ['type' => 'text', 'text' => $receipt->name],
+                    ['type' => 'text', 'text' => $receipt->date],
+                    ['type' => 'text', 'text' => $receipt->amount],
+                    ['type' => 'text', 'text' => $receipt->mode],
+                    ['type' => 'text', 'text' => $receipt->log_user],
+                    ['type' => 'text', 'text' => $hubDetails->rate ?? 0], // Hub Amount
+                    ['type' => 'text', 'text' => $hubDetails->paid ?? 0], // Hub Paid
+                    ['type' => 'text', 'text' => $hubDetails->left ?? 0], // Hub Pending
+                ],
+            ],
+        ],
+    ];
+
+    $user = auth()->user();
+    $jamiat_id = $user->jamiat_id;
+    // Insert into WhatsApp queue table
+    WhatsappQueueModel::create([
+        'jamiat_id'=>$jamiat_id,
+        'group_id' => 'receipt_' . uniqid(),
+        'callback_data' => 'receipt_' . $receipt->receipt_no,
+        'recipient_type' => 'individual',
+        'to' => $phoneNumber,
+        'type' => 'template',
+        'file_url' => $receipt->attachment ?? '', // Add attachment URL if available
+        'content' => json_encode($templateContent),
+        'status' => 0, // Pending
+    ]);
+}
 
 }

@@ -31,8 +31,5 @@ class ProcessWhatsAppQueue extends Command
     /**
      * Execute the console command.
      */
-    protected function schedule(Schedule $schedule)
-{
-    $schedule->command('whatsapp:process-queue')->everyFiveMinutes();
-}
+    
 }

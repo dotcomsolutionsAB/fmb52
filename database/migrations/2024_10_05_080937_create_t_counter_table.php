@@ -17,6 +17,8 @@ return new class extends Migration
             $table->integer('sector')->nullable();
             $table->string('type', 50);
             $table->string('year', 10);
+            $table->string('prefix', 10);
+            $table->string('postfix', 10);
             $table->integer('value');
             $table->timestamps();  
         });

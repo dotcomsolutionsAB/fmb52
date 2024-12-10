@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WhatsAppQueue;
+
+use App\Models\WhatsappQueueModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -12,6 +13,7 @@ class WhatsAppQueueController extends Controller
     public function addToQueue(Request $request)
     {
         $validated = $request->validate([
+            'jamiat_id' => 'required|int|max:11',
             'group_id' => 'required|string|max:100',
             'callback_data' => 'nullable|string|max:256',
             'recipient_type' => 'required|string|max:256',
@@ -21,7 +23,7 @@ class WhatsAppQueueController extends Controller
             'content' => 'required|string',
         ]);
 
-        $queueEntry = WhatsAppQueue::create([
+        $queueEntry = WhatsappQueueModel::create([
             'group_id' => $validated['group_id'],
             'callback_data' => $validated['callback_data'] ?? '',
             'recipient_type' => $validated['recipient_type'],
@@ -44,7 +46,7 @@ class WhatsAppQueueController extends Controller
         $apiUrl = "https://graph.facebook.com/v19.0/357370407455461/messages";
         $accessToken = "EAAEqC1znq1MBOwsToIozZCB2QslimXlqLJO6xdRZC2x5PMTqKfPdZA7TtjBH6YTTh6jRS5mRV5JKoEkiQccjdGAx8kItaxeiJVzUe8fckCRZBZANu2sjzFiiKFvUAYZAwwGQza3ploD5heDHm3IduT9ZAFioRsUUaQsu8m8Ah2XimStQRMqBwCusecFJqUbesufjZBZAyZBlE6oZCfKKVZCSaiqs";
 
-        $pendingMessages = WhatsAppQueue::where('status', 0)->limit(100)->get();
+        $pendingMessages = WhatsappQueueModel::where('status', 0)->limit(100)->get();
 
         foreach ($pendingMessages as $message) {
             $content = json_decode($message->content, true);
