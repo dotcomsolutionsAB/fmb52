@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\File;
 
 use Illuminate\Http\Request;
 use App\Models\CounterModel;
@@ -518,7 +519,7 @@ class AccountsController extends Controller
 
         if ($pdfResponse->successful()) {
             // Save the PDF in the public directory
-            $pdfPath = "jamiat_files/{$jamiat_id}/receipt/{$formatted_receipt_no}.pdf";
+            $pdfPath = "storage/{$jamiat_id}/receipts/{$formatted_receipt_no}.pdf";
             $publicPath = public_path($pdfPath);
             file_put_contents($publicPath, $pdfResponse->body());
         }
