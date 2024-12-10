@@ -690,7 +690,7 @@ class AccountsController extends Controller
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
 {
     // Fetch hub details for the family from the hub table
-    DB::table('hub')
+    DB::table('t_hub')
     ->where('family_id', $receipt->family_id)
     ->select(DB::raw('SUM(hub_amount) as rate'), DB::raw('SUM(paid_amount) as paid'), DB::raw('(SUM(hub_amount) - SUM(paid_amount)) as `left`'))
     ->first();
