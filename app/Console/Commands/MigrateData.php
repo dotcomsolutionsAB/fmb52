@@ -113,7 +113,7 @@ class MigrateData extends Command
                 $thaliStatusString = $thaliStatusMap[$family['is_taking_thali']] ?? 'not_taking';
     
                 User::updateOrCreate(
-                    ['its' => $member['its']],
+                    ['its' => trim($member['its'])], // Ensure `its` is trimmed and used as the unique key
                     [
                         'name' => $member['name'],
                         'email' => $member['email'],
@@ -121,7 +121,6 @@ class MigrateData extends Command
                         'jamiat_id' => 1,
                         'family_id' => $family['family_id'],
                         'title' => $title,
-                        'its' => substr($member['its'], 0, 8),
                         'hof_its' => $member['hof_id'],
                         'its_family_id' => $member['family_its_id'],
                         'mumeneen_type' => $member['type'],
