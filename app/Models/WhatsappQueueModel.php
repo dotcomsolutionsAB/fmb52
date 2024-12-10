@@ -20,7 +20,8 @@ class WhatsappQueueModel extends Model
         'content', 
         'response', 
         'status', 
-        'log_user'
+        'log_user',
+        'file_url' // Added file_url
     ];
 
     // Define any relationships, if applicable

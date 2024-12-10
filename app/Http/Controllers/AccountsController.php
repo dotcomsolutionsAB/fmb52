@@ -725,22 +725,23 @@ class AccountsController extends Controller
     ];
 
     $user = Auth::user();
-    $jamiat_id = $user->jamiat_id;
-    
-    // Insert into WhatsApp queue table
-    WhatsappQueueModel::create([
-        'jamiat_id' => $jamiat_id,
-        'group_id' => 'receipt_' . uniqid(),
-        'callback_data' => 'receipt_' . $receipt->receipt_no,
-        'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
-        'to' => 917439515253, // Use mobile number instead of ITS
-        'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
-        'content' => json_encode($templateContent), // Encode the content as JSON
-        'status' => 0, // Status set to pending
-        'log_user' => $user->name, // Log the user creating the record
-        'created_at' => now(), // Current timestamp for creation
-        'updated_at' => now(), // Current timestamp for updates
-    ]);
+$jamiat_id = $user->jamiat_id;
+
+// Insert into WhatsApp queue table
+WhatsappQueueModel::create([
+    'jamiat_id' => $jamiat_id,
+    'group_id' => 'receipt_' . uniqid(),
+    'callback_data' => 'receipt_' . $receipt->receipt_no,
+    'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
+    'to' => $receipt->mobile, // Use mobile number
+    'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
+    'content' => json_encode($templateContent), // Encode the content as JSON
+    'file_url' => $pdfUrl, // Attach the PDF link
+    'status' => 0, // Status set to pending
+    'log_user' => $user->name, // Log the user creating the record
+    'created_at' => now(), // Current timestamp for creation
+    'updated_at' => now(), // Current timestamp for updates
+]);
 }
 
 }
