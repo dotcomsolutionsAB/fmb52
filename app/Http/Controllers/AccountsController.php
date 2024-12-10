@@ -690,7 +690,7 @@ class AccountsController extends Controller
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
 {
     // Define the prefix for the full file URL
-    $filePrefix = 'https://www.api.fmb52.com';
+    $filePrefix = 'https://www.api.fmb52.com/';
     
     // Generate the full URL for the PDF
     $fullPdfUrl = $filePrefix . $pdfUrl;
@@ -726,7 +726,7 @@ class AccountsController extends Controller
                 ],
             ],
         ],
-    ];
+    ]];
 
     // Get the authenticated user
     $user = Auth::user();
