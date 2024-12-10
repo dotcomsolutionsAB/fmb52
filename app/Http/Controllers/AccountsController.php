@@ -688,64 +688,63 @@ class AccountsController extends Controller
     }
 
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
-{
-    // Define the prefix for the full file URL
-    $filePrefix = 'https://www.api.fmb52.com/';
+    {
+        // Define the prefix for the full file URL
+        $filePrefix = 'https://www.api.fmb52.com/';
+        
+        // Generate the full URL for the PDF
+        $fullPdfUrl = $filePrefix . $pdfUrl;
     
-    // Generate the full URL for the PDF
-    $fullPdfUrl = $filePrefix . $pdfUrl;
-
-    // Fetch the name from the t_jamiat table based on jamiat_id
-    $jamiatName = DB::table('t_jamiat')
-        ->where('id', Auth::user()->jamiat_id)
-        ->value('name'); // Fetch only the name
-
-    // Prepare WhatsApp template content
-    $templateContent = [
-        'name' => 'fmb_receipt_created',
-        'language' => ['code' => 'en'],
-        'components' => [
-            [
-                'type' => 'header',
-                'parameters' => [
-                    [
-                        'type' => 'document',
-                        'document' => [
-                            'link' => $fullPdfUrl, // Add the full PDF URL
-                            'filename' => "{$receipt->receipt_no}.pdf", // Set the filename
+        // Fetch the name from the t_jamiat table based on jamiat_id
+        $jamiatName = DB::table('t_jamiat')
+            ->where('id', Auth::user()->jamiat_id)
+            ->value('name'); // Fetch only the name
+    
+        // Prepare WhatsApp template content
+        $templateContent = [
+            'name' => 'fmb_receipt_create',
+            'language' => ['code' => 'en'],
+            'components' => [
+                [
+                    'type' => 'header',
+                    'parameters' => [
+                        [
+                            'type' => 'document',
+                            'document' => [
+                                'link' => $fullPdfUrl, // Add the full PDF URL
+                                'filename' => "{$receipt->receipt_no}.pdf", // Set the filename
+                            ],
                         ],
                     ],
                 ],
-            ],
-            [
-                'type' => 'body',
-                'parameters' => [
-                    ['type' => 'text', 'text' => $receipt->name], // {{1}} - Contributor's Name
-                    ['type' => 'text', 'text' => number_format($receipt->amount, 2)], // {{2}} - Contribution Amount
-                    ['type' => 'text', 'text' => $jamiatName, // {{3}} - Receipt Number
+                [
+                    'type' => 'body',
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $receipt->name], // {{1}} - Contributor's Name
+                        ['type' => 'text', 'text' => number_format($receipt->amount, 2)], // {{2}} - Contribution Amount
+                        ['type' => 'text', 'text' => $jamiatName], // {{3}} - Receipt Number
+                    ],
                 ],
             ],
-        ],
-    ]];
-
-    // Get the authenticated user
-    $user = Auth::user();
-
-    // Insert into WhatsApp queue table
-    WhatsappQueueModel::create([
-        'jamiat_id' => $user->jamiat_id,
-        'group_id' => 'receipt_' . uniqid(),
-        'callback_data' => 'receipt_' . $receipt->receipt_no,
-        'recipient_type' => 'individual',
-        'to' => '917439515253' // Use the mobile number of the recipient
-        'template_name' => 'fmb_receipt_created',
-        'content' => json_encode($templateContent), // Encode the content as JSON
-        'file_url' => $fullPdfUrl, // Attach the full PDF URL
-        'status' => 0, // Pending
-        'log_user' => $jamiatName, // Log the name fetched from t_jamiat
-        'created_at' => now(), // Current timestamp for creation
-        'updated_at' => now(), // Current timestamp for updates
-    ]);
-}
-
+        ];
+    
+        // Get the authenticated user
+        $user = Auth::user();
+    
+        // Insert into WhatsApp queue table
+        WhatsappQueueModel::create([
+            'jamiat_id' => $user->jamiat_id,
+            'group_id' => 'receipt_' . uniqid(),
+            'callback_data' => 'receipt_' . $receipt->receipt_no,
+            'recipient_type' => 'individual',
+            'to' => $receipt->mobile, // Use the mobile number of the recipient
+            'template_name' => 'fmb_receipt_created',
+            'content' => json_encode($templateContent), // Encode the content as JSON
+            'file_url' => $fullPdfUrl, // Attach the full PDF URL
+            'status' => 0, // Pending
+            'log_user' => $jamiatName, // Log the name fetched from t_jamiat
+            'created_at' => now(), // Current timestamp for creation
+            'updated_at' => now(), // Current timestamp for updates
+        ]);
+    }
 }
