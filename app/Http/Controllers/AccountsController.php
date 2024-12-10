@@ -737,7 +737,7 @@ class AccountsController extends Controller
             'group_id' => 'receipt_' . uniqid(),
             'callback_data' => 'receipt_' . $receipt->receipt_no,
             'recipient_type' => 'individual',
-            'to' => $receipt->mobile, // Use the mobile number of the recipient
+            'to' => '917439515253', // Use the mobile number of the recipient
             'template_name' => 'fmb_receipt_created',
             'content' => json_encode($templateContent), // Encode the content as JSON
             'file_url' => $fullPdfUrl, // Attach the full PDF URL
