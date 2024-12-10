@@ -688,77 +688,83 @@ class AccountsController extends Controller
     }
 
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
-{
-    // Fetch hub details for the family from the hub table
-    $hubDetails = DB::table('t_hub')
-        ->where('family_id', $receipt->family_id)
-        ->select(
-            DB::raw('SUM(hub_amount) as rate'),
-            DB::raw('SUM(paid_amount) as paid'),
-            DB::raw('(SUM(hub_amount) - SUM(paid_amount)) as `left`')
-        )
-        ->first();
-
-    // Prepare WhatsApp template content
-    $templateContent = [
-        'name' => 'fmb_receipt_created',
-        'language' => ['code' => 'en'],
-        'components' => [
-            [
-                'type' => 'header',
-                'parameters' => [
-                    [
-                        'type' => 'document',
-                        'document' => [
-                            'link' => $pdfUrl, // Add PDF as header
-                            'filename' => "{$receipt->receipt_no}.pdf" // Filename for the PDF
+    {
+        // Define the prefix for the full file URL
+        $filePrefix = 'https://www.api.fmb52.com';
+    
+        // Generate the full URL for the PDF
+        $fullPdfUrl = $filePrefix . $pdfUrl;
+    
+        // Fetch hub details for the family from the hub table
+        $hubDetails = DB::table('t_hub')
+            ->where('family_id', $receipt->family_id)
+            ->select(
+                DB::raw('SUM(hub_amount) as rate'),
+                DB::raw('SUM(paid_amount) as paid'),
+                DB::raw('(SUM(hub_amount) - SUM(paid_amount)) as `left`')
+            )
+            ->first();
+    
+        // Prepare WhatsApp template content
+        $templateContent = [
+            'name' => 'fmb_receipt_created',
+            'language' => ['code' => 'en'],
+            'components' => [
+                [
+                    'type' => 'header',
+                    'parameters' => [
+                        [
+                            'type' => 'document',
+                            'document' => [
+                                'link' => $fullPdfUrl, // Use the full URL
+                                'filename' => "{$receipt->receipt_no}.pdf", // Filename for the PDF
+                            ],
                         ],
                     ],
                 ],
-            ],
-            [
-                'type' => 'body',
-                'parameters' => [
-                    ['type' => 'text', 'text' => $receipt->name],
-                    ['type' => 'text', 'text' => $receipt->date],
-                    ['type' => 'text', 'text' => $receipt->amount],
-                    ['type' => 'text', 'text' => $receipt->mode],
-                    ['type' => 'text', 'text' => $receipt->log_user],
-                    ['type' => 'text', 'text' => $hubDetails->rate ?? 0],
-                    ['type' => 'text', 'text' => $hubDetails->paid ?? 0],
-                    ['type' => 'text', 'text' => $hubDetails->left ?? 0],
+                [
+                    'type' => 'body',
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $receipt->name],
+                        ['type' => 'text', 'text' => $receipt->date],
+                        ['type' => 'text', 'text' => $receipt->amount],
+                        ['type' => 'text', 'text' => $receipt->mode],
+                        ['type' => 'text', 'text' => $receipt->log_user],
+                        ['type' => 'text', 'text' => $hubDetails->rate ?? 0],
+                        ['type' => 'text', 'text' => $hubDetails->paid ?? 0],
+                        ['type' => 'text', 'text' => $hubDetails->left ?? 0],
+                    ],
+                ],
+                [
+                    'type' => 'button',
+                    'sub_type' => 'url',
+                    'index' => 0,
+                    'parameters' => [
+                        ['type' => 'text', 'text' => $fullPdfUrl], // Use the full URL
+                    ],
                 ],
             ],
-            [
-                'type' => 'button',
-                'sub_type' => 'url',
-                'index' => 0,
-                'parameters' => [
-                    ['type' => 'text', 'text' => $pdfUrl], // Include the PDF link
-                ],
-            ],
-        ],
-    ];
-
-    // Get the authenticated user
-    $user = Auth::user();
-    $jamiat_id = $user->jamiat_id;
-
-    // Insert into WhatsApp queue table
-    WhatsappQueueModel::create([
-        'jamiat_id' => $jamiat_id,
-        'group_id' => 'receipt_' . uniqid(),
-        'callback_data' => 'receipt_' . $receipt->receipt_no,
-        'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
-        'to' => '917439515253', // Use mobile number
-        'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
-        'content' => json_encode($templateContent), // Encode the content as JSON
-        'file_url' => $pdfUrl, // Attach the PDF link
-        'status' => 0, // Status set to pending
-        'log_user' => $user->name, // Log the user creating the record
-        'created_at' => now(), // Current timestamp for creation
-        'updated_at' => now(), // Current timestamp for updates
-    ]);
-}
+        ];
+    
+        // Get the authenticated user
+        $user = Auth::user();
+        $jamiat_id = $user->jamiat_id;
+    
+        // Insert into WhatsApp queue table
+        WhatsappQueueModel::create([
+            'jamiat_id' => $jamiat_id,
+            'group_id' => 'receipt_' . uniqid(),
+            'callback_data' => 'receipt_' . $receipt->receipt_no,
+            'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
+            'to' => $receipt->mobile, // Use mobile number
+            'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
+            'content' => json_encode($templateContent), // Encode the content as JSON
+            'file_url' => $fullPdfUrl, // Attach the full PDF URL
+            'status' => 0, // Status set to pending
+            'log_user' => $user->name, // Log the user creating the record
+            'created_at' => now(), // Current timestamp for creation
+            'updated_at' => now(), // Current timestamp for updates
+        ]);
+    }
 
 }
