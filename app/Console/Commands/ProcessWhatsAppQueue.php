@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-
+use App\Http\Controllers\WhatsAppQueueController;
 class ProcessWhatsAppQueue extends Command
 {
     /**
