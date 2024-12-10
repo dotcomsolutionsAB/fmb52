@@ -14,7 +14,7 @@ use App\Models\ReceiptsModel;
 use App\Models\User;
 use App\Models\WhatsAppQueue;
 use App\Models\WhatsappQueueModel;
-
+use Auth;
 class AccountsController extends Controller
 {
     //
@@ -724,8 +724,11 @@ class AccountsController extends Controller
         ],
     ];
 
+    $user = auth()->user();
+    $jamiat_id = $user->jamiat_id;
     // Insert into WhatsApp queue table
     WhatsappQueueModel::create([
+        'jamiat_id'=>$jamiat_id,
         'group_id' => 'receipt_' . uniqid(),
         'callback_data' => 'receipt_' . $receipt->receipt_no,
         'recipient_type' => 'individual',
