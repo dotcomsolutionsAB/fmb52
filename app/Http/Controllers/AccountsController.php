@@ -716,8 +716,8 @@ class AccountsController extends Controller
                         [
                             'type' => 'document',
                             'document' => [
-                                'link' => $fullPdfUrl, // Use the full URL
-                                'filename' => "{$receipt->receipt_no}.pdf", // Filename for the PDF
+                                'link' => $fullPdfUrl, // Add the full PDF URL
+                                'filename' => "{$receipt->receipt_no}.pdf", // Set the filename
                             ],
                         ],
                     ],
@@ -725,17 +725,16 @@ class AccountsController extends Controller
                 [
                     'type' => 'body',
                     'parameters' => [
-                        ['type' => 'text', 'text' => $receipt->name],
-                        ['type' => 'text', 'text' => $receipt->date],
-                        ['type' => 'text', 'text' => $receipt->amount],
-                        ['type' => 'text', 'text' => $receipt->mode],
-                        ['type' => 'text', 'text' => $receipt->log_user],
-                        ['type' => 'text', 'text' => $hubDetails->rate ?? 0],
-                        ['type' => 'text', 'text' => $hubDetails->paid ?? 0],
-                        ['type' => 'text', 'text' => $hubDetails->left ?? 0],
+                        ['type' => 'text', 'text' => $receipt->name], // {{1}}
+                        ['type' => 'text', 'text' => $receipt->date], // {{2}}
+                        ['type' => 'text', 'text' => $receipt->amount], // {{3}}
+                        ['type' => 'text', 'text' => $receipt->mode], // {{4}}
+                        ['type' => 'text', 'text' => $receipt->log_user], // {{5}}
+                        ['type' => 'text', 'text' => $hubDetails->rate ?? 0], // {{6}}
+                        ['type' => 'text', 'text' => $hubDetails->paid ?? 0], // {{7}}
+                        ['type' => 'text', 'text' => $hubDetails->left ?? 0], // {{8}}
                     ],
                 ],
-               
             ],
         ];
     
@@ -748,12 +747,12 @@ class AccountsController extends Controller
             'jamiat_id' => $jamiat_id,
             'group_id' => 'receipt_' . uniqid(),
             'callback_data' => 'receipt_' . $receipt->receipt_no,
-            'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
-            'to' => '917439515253', // Use mobile number
-            'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
+            'recipient_type' => 'individual',
+            'to' => $receipt->mobile, // Use mobile number
+            'template_name' => 'fmb_receipt_created',
             'content' => json_encode($templateContent), // Encode the content as JSON
             'file_url' => $fullPdfUrl, // Attach the full PDF URL
-            'status' => 0, // Status set to pending
+            'status' => 0, // Pending
             'log_user' => $user->name, // Log the user creating the record
             'created_at' => now(), // Current timestamp for creation
             'updated_at' => now(), // Current timestamp for updates
