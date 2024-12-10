@@ -21,9 +21,9 @@ class MigrateData extends Command
     public function handle()
     {
         // Step 1: Truncate existing data
-        User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
-        BuildingModel::where('jamiat_id', 1)->delete();
-        HubModel::where('jamiat_id', 1)->delete();
+       // User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
+        //BuildingModel::where('jamiat_id', 1)->delete();
+        //HubModel::where('jamiat_id', 1)->delete();
 
         // Step 2: Fetch data from the API in batches
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';

@@ -17,7 +17,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Schedule the command to run daily at midnight
-        $schedule->command('hub:update')->daily();
+        $schedule->command('hub:update')->everyFiveMinutes();
     }
 
     // Register the Closure-based commands for the application
