@@ -189,6 +189,7 @@ class MumeneenController extends Controller
         ->with(['photo:id,file_url'])
         ->where('jamiat_id', $jamiat_id)
         ->where('mumeneen_type', 'HOF') // Filter only HOF users
+        ->where('status','active')//Active users only
         ->orderByRaw("sector IS NULL OR sector = ''") // Push empty sectors to the end
         ->orderBy('sector') // Sort non-empty sectors alphabetically
         ->orderBy('folio_no') // Then sort by sub_sector

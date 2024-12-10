@@ -64,12 +64,12 @@ class MigrateData extends Command
     protected function processBatch(array $families)
     {
         $totalProcessed = 0;
-
+    
         foreach ($families as $family) {
             $buildingId = null;
             $address = $family['address'] ?? [];
-
-            // Save or update building data if present
+    
+            // Save or update building data
             if (!empty($address)) {
                 $building = BuildingModel::updateOrCreate(
                     ['name' => $address['address_2'] ?? 'Unknown'],
@@ -88,22 +88,30 @@ class MigrateData extends Command
                 );
                 $buildingId = $building->id;
             }
-
+    
             // Safely handle members data
             $members = $family['members'] ?? [];
             foreach ($members as $member) {
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-
-
+    
+                // Map status enum
+                $statusMap = [
+                    '0' => 'active',
+                    '1' => 'in_active',
+                ];
+                $statusString = $statusMap[$family['status']] ?? 'in_active';
+    
+                // Map thali status
                 $thaliStatusMap = [
                     1 => 'taking',
                     2 => 'not_taking',
                     3 => 'once_a_week',
                     9 => 'joint',
                     0 => 'other_centre',
-                ];  
-                $thaliStatusString = $thaliStatusMap[$family['is_taking_thali']] ?? 'not_taking'; // Default is 'not_taking'
+                ];
+                $thaliStatusString = $thaliStatusMap[$family['is_taking_thali']] ?? 'not_taking';
+    
                 User::updateOrCreate(
                     ['its' => $member['its']],
                     [
@@ -122,17 +130,17 @@ class MigrateData extends Command
                         'folio_no' => $family['folio_no'],
                         'sector' => $family['sector'],
                         'sub_sector' => $family['sub_sector'],
-                        'thali_status' =>$thaliStatusString,// Default is 'not_taking'
-                        'status' => $family['status'],
+                        'thali_status' => $thaliStatusString,
+                        'status' => $statusString,
                         'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
                         'role' => 'mumeneen',
                         'building_id' => $buildingId
                     ]
                 );
-
+    
                 $totalProcessed++;
             }
-
+    
             // Safely handle hub array data
             $hubArray = $family['hub_array'] ?? [];
             foreach ($hubArray as $hubEntry) {
@@ -149,11 +157,11 @@ class MigrateData extends Command
                         'log_user' => 'system_migration'
                     ]
                 );
-
+    
                 $totalProcessed++;
             }
         }
-
+    
         return $totalProcessed;
     }
 }
