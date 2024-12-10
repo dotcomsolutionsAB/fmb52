@@ -724,19 +724,22 @@ class AccountsController extends Controller
         ],
     ];
 
-    $user = auth()->user();
+    $user = Auth::user();
     $jamiat_id = $user->jamiat_id;
+    
     // Insert into WhatsApp queue table
     WhatsappQueueModel::create([
-        'jamiat_id'=>$jamiat_id,
+        'jamiat_id' => $jamiat_id,
         'group_id' => 'receipt_' . uniqid(),
         'callback_data' => 'receipt_' . $receipt->receipt_no,
-        'recipient_type' => 'individual',
-        'to' => $receipt->its, // Replace with recipient phone number if available
-        'type' => 'template',
-        'file_url' => $pdfUrl, // Attach the PDF link
-        'content' => json_encode($templateContent),
-        'status' => 0, // Pending
+        'recipient_type' => 'individual', // Assuming 'individual' as the default recipient type
+        'to' => 917439515253, // Use mobile number instead of ITS
+        'template_name' => 'fmb_receipt_created', // Assuming this is the name of your WhatsApp template
+        'content' => json_encode($templateContent), // Encode the content as JSON
+        'status' => 0, // Status set to pending
+        'log_user' => $user->name, // Log the user creating the record
+        'created_at' => now(), // Current timestamp for creation
+        'updated_at' => now(), // Current timestamp for updates
     ]);
 }
 
