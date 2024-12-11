@@ -439,7 +439,7 @@ class AccountsController extends Controller
     $validatedData = $request->validate([
         'family_id' => 'required|string|max:10',
         'date' => 'required|date',
-        'its' => 'required|string|max:8',
+        'its' => 'nullable|string|max:8',
         'folio_no' => 'nullable|string|max:20',
         'name' => 'required|string|max:100',
         'sector' => 'nullable|string|max:100',
@@ -690,7 +690,7 @@ class AccountsController extends Controller
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
     {
         // Define the prefix for the full file URL
-        $filePrefix = 'https://www.api.fmb52.com/';
+        $filePrefix = 'https://api.fmb52.com/';
         
         // Generate the full URL for the PDF
         $fullPdfUrl = $filePrefix . $pdfUrl;

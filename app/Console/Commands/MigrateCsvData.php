@@ -59,6 +59,7 @@ class MigrateCsvData extends Command
             $user->save();
 
             $this->info("Updated user ID {$user->id}: " . json_encode([
+                'name'=> $user->nam,
                 'email' => $user->email,
                 'its_family_id' => $user->its_family_id,
                 'gender' => $user->gender,
