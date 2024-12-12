@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::post('/import_users', [CSVImportController::class, 'importUser']);
-    Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromCsv']);
+    Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
 
     Route::prefix('permissions')->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createPermission']);
