@@ -3,11 +3,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class UpdateUserTableForSectorSubSectorForeignKeys extends Migration
+class UpdateUsersTableForSectorSubSectorForeignKeys extends Migration
 {
     public function up()
     {
-        Schema::table('user', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             // Remove existing sector and sub_sector columns if they exist
             $table->dropColumn(['sector', 'sub_sector']);
 
