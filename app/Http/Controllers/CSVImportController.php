@@ -192,6 +192,22 @@ class CSVImportController extends Controller
             $this->insertBatch(PaymentsModel::class, $batchData);
         }
     }
+    private function formatDate($date)
+{
+    // Early check for problematic or empty dates
+    if (empty($date) || $date === '-0001-11-30' || $date === '0000-00-00') {
+        return '2021-12-12'; // Default to a valid date
+    }
+
+    // Check if the date is valid using DateTime
+    try {
+        $formattedDate = (new \DateTime($date))->format('Y-m-d');
+        return $formattedDate;
+    } catch (\Exception $e) {
+        // Return a default valid date if parsing fails
+        return '2021-12-12';
+    }
+}
 
 
 
