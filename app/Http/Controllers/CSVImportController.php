@@ -575,17 +575,20 @@ protected function processBatchFromApi(array $batchData)
     ];
 
     foreach ($batchData as $data) {
+        // Validate required keys
+        if (!isset($data['its']) || !isset($data['name']) || !isset($data['sector'])) {
+            // Log missing keys for debugging
+            \Log::warning('Missing required keys in data row', $data);
+            continue; // Skip this row
+        }
+
         $buildingId = null;
 
         // Map numeric `thali_status` to ENUM string
-        $thaliStatus = isset($thaliStatusMapping[$data['is_taking_thali']])
-            ? $thaliStatusMapping[$data['is_taking_thali']]
-            : 'other_centre'; // Default to 'other_centre' if value is not mapped
+        $thaliStatus = $thaliStatusMapping[$data['is_taking_thali']] ?? 'other_centre';
 
         // Map numeric `status` to ENUM string
-        $status = isset($statusMapping[$data['status']])
-            ? $statusMapping[$data['status']]
-            : 'active'; // Default to 'active' if value is not mapped
+        $status = $statusMapping[$data['status']] ?? 'active';
 
         // Save or update building data
         if (!empty($data['address_2'])) {
@@ -606,8 +609,8 @@ protected function processBatchFromApi(array $batchData)
         // Get sector and sub-sector IDs
         $sectorId = DB::table('t_sector')->where('name', $data['sector'])->value('id');
         $subSectorId = DB::table('t_sub_sector')
-            ->where('name', $data['sub_sector'])
-            ->where('sector', $data['sector']) // Match sub-sector within the correct sector
+            ->where('name', $data['sub_sector'] ?? null)
+            ->where('sector', $data['sector'])
             ->value('id');
 
         // Save family members
@@ -615,18 +618,18 @@ protected function processBatchFromApi(array $batchData)
             ['its' => $data['its']],
             [
                 'name' => $data['name'],
-                'email' => $data['email'],
+                'email' => $data['email'] ?? null,
                 'password' => bcrypt('default_password'),
                 'jamiat_id' => 1,
-                'family_id' => $data['family_id'],
-                'hof_its' => $data['hof_id'],
-                'its_family_id' => $data['family_its_id'],
+                'family_id' => $data['family_id'] ?? null,
+                'hof_its' => $data['hof_id'] ?? null,
+                'its_family_id' => $data['family_its_id'] ?? null,
                 'mobile' => $data['mobile'] ?? null,
-                'folio_no' => $data['folio_no'],
+                'folio_no' => $data['folio_no'] ?? null,
                 'sector' => $sectorId, // Save sector as ID
                 'sub_sector' => $subSectorId, // Save sub-sector as ID
-                'thali_status' => $thaliStatus, // Save mapped ENUM value
-                'status' => $status, // Save mapped status value
+                'thali_status' => $thaliStatus,
+                'status' => $status,
                 'username' => strtolower(str_replace(' ', '', substr($data['its'], 0, 8))),
                 'role' => 'mumeneen',
                 'building_id' => $buildingId,
