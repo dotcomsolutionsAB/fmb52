@@ -256,6 +256,7 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'jamiat_id' => $user->jamiat_id,
                         'permissions' => $permissions, // Add permissions here
+                        'photo' => $user->photo ? $user->photo->file_url : null,
                     ],
                     'message' => 'User logged in successfully!',
                 ], 200);

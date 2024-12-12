@@ -575,13 +575,17 @@ class AccountsController extends Controller
             'jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
             'sector', 'sub_sector', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
             'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
-        )->get();
-
+        )
+        ->with([
+            'user:id,name,photo_id', // Load user with selected fields
+            'user.photo:id,file_url' // Load photo relationship for the user
+        ])
+        ->get();
+    
         return $get_all_receipts->isNotEmpty()
             ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
             : response()->json(['message' => 'No receipts found!'], 404);
     }
-
     public function getReceiptsByFamilyIds(Request $request)
 {
     // Validate and retrieve the family_id array from the request
