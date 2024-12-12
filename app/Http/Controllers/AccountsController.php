@@ -576,19 +576,27 @@ class AccountsController extends Controller
     public function all_receipts()
     {
         $get_all_receipts = ReceiptsModel::select(
-            't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no', 
+            't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
             't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
-            't_receipts.sector', 't_receipts.sub_sector', 't_receipts.amount', 't_receipts.mode', 
+            't_receipts.sector', 't_receipts.sub_sector', 't_receipts.amount', 't_receipts.mode',
             't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date',
-            't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date', 
+            't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date',
             't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
             't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
             'users.name as user_name', 'users.photo_id'
         )
         ->leftJoin('users', 't_receipts.its', '=', 'users.its') // Match `its` fields
-        ->with(['user.photo']) // Ensure photo is loaded
+        ->with([
+            'user.photo:id,file_url' // Load only the `photo` URL
+        ])
         ->orderBy('t_receipts.id', 'desc') // Order by `t_receipts.id` in descending order
         ->get();
+    
+        // Simplify the response to include only the photo URL
+        $get_all_receipts->each(function ($receipt) {
+            $receipt->photo_url = $receipt->user && $receipt->user->photo ? $receipt->user->photo->file_url : null;
+            unset($receipt->user); // Remove the full user object
+        });
     
         return $get_all_receipts->isNotEmpty()
             ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
