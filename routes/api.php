@@ -324,11 +324,11 @@ Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->group
     Route::get('/user', [MumeneenController::class, 'users']);
     Route::get('/family_hub_details/{family_id}',[MumeneenController::class,'familyHubDetails']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view_global'])->group(function () {
-    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
-    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
-    Route::get('/user', [MumeneenController::class, 'users']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view_global'])->group(function () {
+//     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+//     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+//     Route::get('/user', [MumeneenController::class, 'users']);
+// });
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.delete'])->group(function () {
     Route::delete('/user/{id}', [MumeneenController::class, 'delete_user']);
 });
