@@ -574,31 +574,26 @@ class AccountsController extends Controller
 
     // view
     public function all_receipts()
-{
-    $get_all_receipts = ReceiptsModel::select(
-        't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no', 
-        't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
-        't_receipts.sector', 't_receipts.sub_sector', 't_receipts.amount', 't_receipts.mode', 
-        't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date',
-        't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date', 
-        't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
-        't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
-        'users.name as user_name', 'users.photo_id'
-    )
-    ->leftJoin('users', 't_receipts.its', '=', 'users.its') // Match `its` fields
-    ->orderBy('t_receipts.id', 'desc') // Order by `t_receipts.id` in descending order
-    ->get();
-
-    // Attach photo URLs using the relationship
-    $get_all_receipts->each(function ($receipt) {
-        $user = User::find($receipt->photo_id); // Get the user via their `photo_id`
-        $receipt->photo = $user && $user->photo ? $user->photo->file_url : null; // Get photo URL if available
-    });
-
-    return $get_all_receipts->isNotEmpty()
-        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
-        : response()->json(['message' => 'No receipts found!'], 404);
-}
+    {
+        $get_all_receipts = ReceiptsModel::select(
+            't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no', 
+            't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
+            't_receipts.sector', 't_receipts.sub_sector', 't_receipts.amount', 't_receipts.mode', 
+            't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date',
+            't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date', 
+            't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
+            't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
+            'users.name as user_name', 'users.photo_id'
+        )
+        ->leftJoin('users', 't_receipts.its', '=', 'users.its') // Match `its` fields
+        ->with(['user.photo']) // Ensure photo is loaded
+        ->orderBy('t_receipts.id', 'desc') // Order by `t_receipts.id` in descending order
+        ->get();
+    
+        return $get_all_receipts->isNotEmpty()
+            ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
+            : response()->json(['message' => 'No receipts found!'], 404);
+    }
     public function getReceiptsByFamilyIds(Request $request)
 {
     // Validate and retrieve the family_id array from the request
