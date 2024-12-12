@@ -574,23 +574,26 @@ class AccountsController extends Controller
 
     // view
     public function all_receipts()
-    {
-        $get_all_receipts = ReceiptsModel::select(
-            'jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
-            'sector', 'sub_sector', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
-            'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 'cancellation_reason',
-            'collected_by', 'log_user', 'attachment', 'payment_id'
-        )
-        ->with([
-            'user:id,name,photo_id', // Include user data
-            'user.photo:id,file_url' // Include user's photo
-        ])
-        ->get();
-    
-        return $get_all_receipts->isNotEmpty()
-            ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
-            : response()->json(['message' => 'No receipts found!'], 404);
-    }
+{
+    $get_all_receipts = ReceiptsModel::select(
+        'receipts.id', 'receipts.jamiat_id', 'receipts.family_id', 'receipts.receipt_no', 
+        'receipts.date', 'receipts.its', 'receipts.folio_no', 'receipts.name',
+        'receipts.sector', 'receipts.sub_sector', 'receipts.amount', 'receipts.mode', 
+        'receipts.bank_name', 'receipts.cheque_no', 'receipts.cheque_date',
+        'receipts.ifsc_code', 'receipts.transaction_id', 'receipts.transaction_date', 
+        'receipts.year', 'receipts.comments', 'receipts.status', 'receipts.cancellation_reason',
+        'receipts.collected_by', 'receipts.log_user', 'receipts.attachment', 'receipts.payment_id',
+        'users.name as user_name', 'users.photo_id', 'photos.file_url as photo_url'
+    )
+    ->leftJoin('users', 'receipts.its', '=', 'users.its') // Match `its` fields
+    ->leftJoin('photos', 'users.photo_id', '=', 'photos.id') // Join with `photos` table
+    ->orderBy('receipts.id', 'desc') // Order by `receipts.id` in descending order
+    ->get();
+
+    return $get_all_receipts->isNotEmpty()
+        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
+        : response()->json(['message' => 'No receipts found!'], 404);
+}
     public function getReceiptsByFamilyIds(Request $request)
 {
     // Validate and retrieve the family_id array from the request
