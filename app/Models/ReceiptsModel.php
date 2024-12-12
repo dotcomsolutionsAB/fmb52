@@ -20,4 +20,13 @@ class ReceiptsModel extends Model
         'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status',
         'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id',
     ];
+    public function sector()
+    {
+        return $this->belongsTo(SectorModel::class, 'sector_id');
+    }
+
+    public function subSector()
+    {
+        return $this->belongsTo(SubSectorModel::class, 'sub_sector_id');
+    }
 }

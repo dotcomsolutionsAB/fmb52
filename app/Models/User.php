@@ -55,4 +55,13 @@ class User extends Authenticatable
     {
         return $this->belongsTo(UploadModel::class, 'photo_id', 'id');
     }
+    public function sector()
+    {
+        return $this->belongsTo(SectorModel::class, 'sector_id');
+    }
+
+    public function subSector()
+    {
+        return $this->belongsTo(SubSectorModel::class, 'sub_sector_id');
+    }
 }
