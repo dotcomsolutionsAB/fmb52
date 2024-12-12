@@ -9,13 +9,10 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
+
+
 class CheckApiPermission
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle($request, Closure $next, $permission = null, $role = null)
     {
         $user = Auth::user();
@@ -24,10 +21,19 @@ class CheckApiPermission
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        // Check permission validity
+        $sectorId = $request->input('sector_id');
+        $subSectorId = $request->input('sub_sector_id');
+
+        if (!$sectorId || !$subSectorId) {
+            return response()->json(['message' => 'Sector ID and Sub-Sector ID are required.'], 403);
+        }
+
+        // Check permissions with sector_ids, sub_sector_ids, and validity
         if ($permission) {
-            $hasValidPermission = $user->permissions()
+            $hasPermission = $user->permissions()
                 ->where('name', $permission)
+                ->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId])
+                ->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId])
                 ->where(function ($query) {
                     $query->whereNull('valid_from')
                           ->orWhere('valid_from', '<=', now());
@@ -38,15 +44,17 @@ class CheckApiPermission
                 })
                 ->exists();
 
-            if (!$hasValidPermission) {
-                return response()->json(['message' => 'Permission denied or expired.'], 403);
+            if (!$hasPermission) {
+                return response()->json(['message' => 'Permission denied or expired for this sector or sub-sector.'], 403);
             }
         }
 
-        // Check role validity
+        // Check roles with sector_ids, sub_sector_ids, and validity
         if ($role) {
-            $hasValidRole = $user->roles()
+            $hasRole = $user->roles()
                 ->where('name', $role)
+                ->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId])
+                ->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId])
                 ->where(function ($query) {
                     $query->whereNull('valid_from')
                           ->orWhere('valid_from', '<=', now());
@@ -57,8 +65,8 @@ class CheckApiPermission
                 })
                 ->exists();
 
-            if (!$hasValidRole) {
-                return response()->json(['message' => 'Role access denied or expired.'], 403);
+            if (!$hasRole) {
+                return response()->json(['message' => 'Role access denied or expired for this sector or sub-sector.'], 403);
             }
         }
 
