@@ -20,6 +20,16 @@ class MigrateData extends Command
         $limit = 500;
         $offset = 0;
 
+        // Fetch sector and sub-sector mappings
+        $sectorMapping = DB::table('t_sector')->pluck('id', 'name')->toArray();
+        $subSectorMapping = DB::table('t_sub_sector')
+            ->select('id', 'name', 'sector')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return ["{$item->sector}:{$item->name}" => $item->id];
+            })
+            ->toArray();
+
         while (true) {
             $response = Http::get($url, ['limit' => $limit, 'offset' => $offset]);
 
@@ -35,7 +45,7 @@ class MigrateData extends Command
                 break;
             }
 
-            $entriesProcessed = $this->processBatch($families);
+            $entriesProcessed = $this->processBatch($families, $sectorMapping, $subSectorMapping);
             $offset += $limit;
 
             $this->info("Batch completed: {$entriesProcessed} entries processed for offset $offset.");
@@ -44,34 +54,23 @@ class MigrateData extends Command
         $this->info('Data migration completed successfully.');
     }
 
-    protected function processBatch(array $families)
+    protected function processBatch(array $families, array $sectorMapping, array $subSectorMapping)
     {
         $totalProcessed = 0;
         $buildingsData = [];
         $usersData = [];
         $hubsData = [];
 
-        // Define the mappings for sector and subsector
-        $sectorMapping = DB::table('t_sector')->pluck('id', 'name')->toArray();
-        $subSectorMapping = DB::table('t_sub_sector')
-            ->select('id', 'name', 'sector')
-            ->get()
-            ->mapWithKeys(function ($item) {
-                return ["{$item->sector}:{$item->name}" => $item->id];
-            })
-            ->toArray();
-
-            
-            
-            $sectorName = $family['sector'] ?? null;
-$subSectorName = $family['sub_sector'] ?? null;
-$sectorId = $sectorMapping[$sectorName] ?? null;
-$subSectorId = $subSectorMapping["{$sectorName}:{$subSectorName}"] ?? null;
-
         foreach ($families as $family) {
             $address = $family['address'] ?? [];
             $members = $family['members'] ?? [];
             $hubArray = $family['hub_array'] ?? [];
+
+            // Resolve sector and sub-sector IDs
+            $sectorName = $family['sector'] ?? null;
+            $subSectorName = $family['sub_sector'] ?? null;
+            $sectorId = $sectorMapping[$sectorName] ?? null;
+            $subSectorId = $subSectorMapping["{$sectorName}:{$subSectorName}"] ?? null;
 
             // Collect building data
             if (!empty($address)) {
@@ -96,9 +95,6 @@ $subSectorId = $subSectorMapping["{$sectorName}:{$subSectorName}"] ?? null;
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
 
-                // Map sector and subsector IDs
-               
-
                 $usersData[] = [
                     'its' => trim($member['its']),
                     'name' => $member['name'],
@@ -113,8 +109,8 @@ $subSectorId = $subSectorMapping["{$sectorName}:{$subSectorName}"] ?? null;
                     'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
                     'gender' => $gender,
                     'folio_no' => $family['folio_no'],
-                    'sector' => $sectorId, // Mapped sector ID
-                    'sub_sector' => $subSectorId, // Mapped subsector ID
+                    'sector_id' => $sectorId, // Foreign key to t_sector
+                    'sub_sector_id' => $subSectorId, // Foreign key to t_sub_sector
                     'thali_status' => $family['is_taking_thali'],
                     'status' => $family['status'],
                     'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
