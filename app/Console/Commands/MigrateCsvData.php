@@ -50,6 +50,7 @@ class MigrateCsvData extends Command
         $user = User::where('its', $rowData['ITS_ID'])->first();
 
         if ($user) {
+            $user->name = $rowData['Full_Name'];
             $user->email = $rowData['Email'] ?? $user->email;
             $user->its_family_id = $rowData['Family_ID'] ?? $user->its_family_id;
             $user->gender = $rowData['Gender'] ?? $user->gender;
