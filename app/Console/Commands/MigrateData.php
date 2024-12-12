@@ -61,6 +61,20 @@ class MigrateData extends Command
         $usersData = [];
         $hubsData = [];
 
+        // Define status and thali status mappings
+        $thaliStatusMapping = [
+            1 => 'taking',
+            2 => 'not_taking',
+            3 => 'once_a_week',
+            9 => 'joint',
+            0 => 'other_centre',
+        ];
+
+        $statusMapping = [
+            '0' => 'active',
+            '1' => 'in_active',
+        ];
+
         foreach ($families as $family) {
             $address = $family['address'] ?? [];
             $members = $family['members'] ?? [];
@@ -95,6 +109,10 @@ class MigrateData extends Command
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
 
+                // Map status and thali status
+                $statusString = $statusMapping[$family['status']] ?? 'active';
+                $thaliStatusString = $thaliStatusMapping[$family['is_taking_thali']] ?? 'not_taking';
+
                 $usersData[] = [
                     'its' => trim($member['its']),
                     'name' => $member['name'],
@@ -111,8 +129,8 @@ class MigrateData extends Command
                     'folio_no' => $family['folio_no'],
                     'sector_id' => $sectorId, // Foreign key to t_sector
                     'sub_sector_id' => $subSectorId, // Foreign key to t_sub_sector
-                    'thali_status' => $family['is_taking_thali'],
-                    'status' => $family['status'],
+                    'thali_status' => $thaliStatusString, // Mapped thali status
+                    'status' => $statusString, // Mapped status
                     'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
                     'role' => 'mumeneen',
                     'created_at' => now(),
