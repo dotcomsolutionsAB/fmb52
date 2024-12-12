@@ -520,61 +520,57 @@ class CSVImportController extends Controller
 
 
 
-public function migrateFromCsv()
+public function migrateFromApi()
 {
-    $csvPath = public_path('storage/KOLKATA_Mumineen_Database.csv');
-    if (!file_exists($csvPath)) {
-        return response()->json(['message' => 'CSV file not found.'], 404);
-    }
-
+    $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
     $batchSize = 500; // Number of rows to process in each batch
+    $offset = 0;
     $totalProcessed = 0;
 
-    if (($handle = fopen($csvPath, 'r')) !== false) {
-        $headers = fgetcsv($handle, 1000, ','); // Read the CSV headers
-        $batchData = [];
+    while (true) {
+        // Fetch data from the API
+        $response = Http::get($url, [
+            'limit' => $batchSize,
+            'offset' => $offset,
+        ]);
 
-        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-            $batchData[] = array_combine($headers, $row);
-
-            if (count($batchData) >= $batchSize) {
-                $totalProcessed += $this->processBatchFromCsv($batchData);
-                $batchData = []; // Clear the batch
-            }
+        if ($response->failed()) {
+            return response()->json(['message' => 'Failed to fetch data from API.'], 500);
         }
 
-        // Process any remaining rows
-        if (!empty($batchData)) {
-            $totalProcessed += $this->processBatchFromCsv($batchData);
+        $data = $response->json();
+        $batchData = $data['data'] ?? [];
+
+        if (empty($batchData)) {
+            break; // Exit the loop if no more data
         }
 
-        fclose($handle);
+        $totalProcessed += $this->processBatchFromApi($batchData);
+        $offset += $batchSize;
     }
 
     return response()->json([
-        'message' => 'CSV processing completed successfully.',
-        'total_processed' => $totalProcessed
+        'message' => 'API data migration completed successfully.',
+        'total_processed' => $totalProcessed,
     ]);
 }
 
-
-/**
- * Process a batch of CSV data and save to the database.
- *
- * @param array $batchData
- * @return int Total number of entries processed (inserted or updated)
- */
-protected function processBatchFromCsv(array $batchData)
+protected function processBatchFromApi(array $batchData)
 {
     $totalProcessed = 0;
 
-    // Define the mapping for numeric `thali_status` to ENUM values
+    // Define mappings for `thali_status` and `status`
     $thaliStatusMapping = [
         1 => 'taking',
         2 => 'not_taking',
         3 => 'once_a_week',
         9 => 'joint',
-        0 => 'other_centre'
+        0 => 'other_centre',
+    ];
+
+    $statusMapping = [
+        '0' => 'active',
+        '1' => 'in_active',
     ];
 
     foreach ($batchData as $data) {
@@ -585,21 +581,33 @@ protected function processBatchFromCsv(array $batchData)
             ? $thaliStatusMapping[$data['is_taking_thali']]
             : 'other_centre'; // Default to 'other_centre' if value is not mapped
 
+        // Map numeric `status` to ENUM string
+        $status = isset($statusMapping[$data['status']])
+            ? $statusMapping[$data['status']]
+            : 'active'; // Default to 'active' if value is not mapped
+
         // Save or update building data
-        if (!empty($data['address']['address_2'])) {
+        if (!empty($data['address_2'])) {
             $building = BuildingModel::updateOrCreate(
-                ['name' => $data['address']['address_2']],
+                ['name' => $data['address_2']],
                 [
                     'jamiat_id' => 1,
-                    'name' => $data['address']['address_2'],
-                    'address_lime_1' => $data['address']['address_1'] ?? null,
-                    'address_lime_2' => $data['address']['address_2'] ?? null,
-                    'city' => $data['address']['city'] ?? null,
-                    'pincode' => $data['address']['pincode'] ?? null,
+                    'name' => $data['address_2'],
+                    'address_lime_1' => $data['address_1'] ?? null,
+                    'address_lime_2' => $data['address_2'] ?? null,
+                    'city' => $data['city'] ?? null,
+                    'pincode' => $data['pincode'] ?? null,
                 ]
             );
             $buildingId = $building->id;
         }
+
+        // Get sector and sub-sector IDs
+        $sectorId = DB::table('t_sector')->where('name', $data['sector'])->value('id');
+        $subSectorId = DB::table('t_sub_sector')
+            ->where('name', $data['sub_sector'])
+            ->where('sector', $data['sector']) // Match sub-sector within the correct sector
+            ->value('id');
 
         // Save family members
         User::updateOrCreate(
@@ -614,10 +622,10 @@ protected function processBatchFromCsv(array $batchData)
                 'its_family_id' => $data['family_its_id'],
                 'mobile' => $data['mobile'] ?? null,
                 'folio_no' => $data['folio_no'],
-                'sector' => $data['sector'],
-                'sub_sector' => $data['sub_sector'],
+                'sector' => $sectorId, // Save sector as ID
+                'sub_sector' => $subSectorId, // Save sub-sector as ID
                 'thali_status' => $thaliStatus, // Save mapped ENUM value
-                'status' => $data['status'],
+                'status' => $status, // Save mapped status value
                 'username' => strtolower(str_replace(' ', '', substr($data['its'], 0, 8))),
                 'role' => 'mumeneen',
                 'building_id' => $buildingId,
