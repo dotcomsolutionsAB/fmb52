@@ -208,6 +208,23 @@ class CSVImportController extends Controller
         return '2021-12-12';
     }
 }
+private function insertBatch($model, $data)
+{
+    try {
+        // Check if data is valid
+        if (!is_array($data) || empty($data) || !is_array(reset($data))) {
+            throw new \Exception("Invalid data format for batch insert. Expected an array of arrays.");
+        }
+
+        // Disable query logging to improve performance for large batches
+        DB::connection()->disableQueryLog();
+
+        // Insert the data into the given model's table
+        $model::insert($data);
+    } catch (\Exception $e) {
+        throw new \Exception("Error inserting batch: " . $e->getMessage());
+    }
+}
 
 
 
