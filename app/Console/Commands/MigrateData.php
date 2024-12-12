@@ -139,26 +139,24 @@ class MigrateData extends Command
 
         // Collect hub data
         foreach ($hubArray as $hubEntry) {
-            $hubsData[] = [
-                'family_id' => $family['family_id'],
-                'year' => $hubEntry['year'],
-                'jamiat_id' => 1,
-                'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-                'paid_amount' => DB::raw('GREATEST(paid_amount, 0)'), // Retain existing paid amount
-                'due_amount' => DB::raw('GREATEST(hub_amount - paid_amount, 0)'), // Calculate due amount
-                'log_user' => 'system_migration',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            HubModel::updateOrCreate(
+                [
+                    'family_id' => $family['family_id'],
+                    'year' => $hubEntry['year'], // Unique keys
+                ],
+                [
+                    'jamiat_id' => 1,
+                    'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                    'paid_amount' => DB::raw('GREATEST(paid_amount, 0)'), // Retain existing value
+                    'due_amount' => DB::raw('GREATEST(hub_amount - paid_amount, 0)'), // Calculate due amount
+                    'log_user' => 'system_migration1',
+                    'updated_at' => now(),
+                ]
+            );
         }
         
         // Perform bulk operation with upsert
-        if (!empty($hubsData)) {
-            DB::table('t_hub')->upsert($hubsData, ['family_id', 'year'], [
-                'hub_amount', 'paid_amount', 'due_amount', 'updated_at'
-            ]);
-            $totalProcessed += count($hubsData);
-        }
+       
     }
 
     // Perform bulk operations
