@@ -16,7 +16,12 @@ class AuthController extends Controller
     public function __construct(MailService $mailService)
     {
         $this->mailService = $mailService;
+        
     }
+   
+
+   
+
     // genearate otp and send to `whatsapp`
     public function generate_otp(Request $request)
     {

@@ -17,6 +17,10 @@ use App\Models\WhatsappQueueModel;
 use Auth;
 class AccountsController extends Controller
 {
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'jamiat_id', 'jamiat_id');
+    }
     //
     // create
     public function register_counter(Request $request)
@@ -577,8 +581,8 @@ class AccountsController extends Controller
             'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
         )
         ->with([
-            'user:id,name,photo_id', // Load user with selected fields
-            'user.photo:id,file_url' // Load photo relationship for the user
+            'user:id,name,photo_id', // Load the user relationship
+            'user.photo:id,file_url' // Load the user's photo relationship
         ])
         ->get();
     
