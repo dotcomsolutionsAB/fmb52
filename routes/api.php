@@ -332,14 +332,14 @@ Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.view'])->group
 Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.delete'])->group(function () {
     Route::delete('/user/{id}', [MumeneenController::class, 'delete_user']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.export'])->group(function () {
-    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
-    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.print'])->group(function () {
-    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
-    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.export'])->group(function () {
+//     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+//     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:mumeneen.print'])->group(function () {
+//     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData']);
+//     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']);
+// });
 
 // Hub Routes
 Route::middleware(['auth:sanctum', 'check-api-permission:hub.create'])->group(function () {
