@@ -62,6 +62,7 @@ Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
 Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
 Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
+Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
@@ -296,7 +297,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_super_admin_counter']);
 
     Route::get('/import_its', [CSVImportController::class, 'importIts']);  
-    Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
+    
     Route::get('/import_sectors', [SectorImportController::class, 'importSectorData']);  
     Route::get('/import_sub_sectors', [SubSectorImportController::class, 'importSubSectorData']);  
 
