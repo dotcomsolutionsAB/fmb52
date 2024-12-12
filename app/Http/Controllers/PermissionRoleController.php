@@ -130,27 +130,42 @@ class PermissionRoleController extends Controller
         $request->validate([
             'user_id' => 'required|integer|exists:users,id',
             'permissions' => 'required|array',
-            'valid_from' => 'nullable|date',
-            'valid_to' => 'nullable|date|after_or_equal:valid_from',
+            'permissions.*.name' => 'required|string|exists:permissions,name',
+            'permissions.*.valid_from' => 'nullable|date',
+            'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
         ]);
-
-        $user = User::findOrFail($request->user_id);
-
-        foreach ($request->permissions as $permissionName) {
-            $permission = Permission::firstOrCreate(['name' => $permissionName]);
-            $user->givePermissionTo($permission);
-
-            // Attach validity to the pivot table
-            $user->permissions()->updateExistingPivot(
-                $permission->id,
-                [
-                    'valid_from' => $request->valid_from,
-                    'valid_to' => $request->valid_to,
-                ]
-            );
+    
+        try {
+            $user = User::findOrFail($request->user_id);
+    
+            foreach ($request->permissions as $permissionData) {
+                $permission = Permission::where('name', $permissionData['name'])->first();
+    
+                if ($permission) {
+                    $user->givePermissionTo($permission);
+    
+                    // Update the pivot table with validity
+                    $user->permissions()->updateExistingPivot(
+                        $permission->id,
+                        [
+                            'valid_from' => $permissionData['valid_from'] ?? null,
+                            'valid_to' => $permissionData['valid_to'] ?? null,
+                        ]
+                    );
+                }
+            }
+    
+            return response()->json([
+                'message' => 'Permissions assigned to user successfully',
+                'user_id' => $user->id,
+                'permissions' => $request->permissions,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while assigning permissions',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json(['message' => 'Permissions assigned to user successfully', 'user' => $user], 200);
     }
 
     /**
