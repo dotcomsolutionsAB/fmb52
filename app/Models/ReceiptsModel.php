@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class ReceiptsModel extends Model
 {
     //
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'its', 'its');
+    }
+    
     protected $table = 't_receipts';  // Replace with your actual table name
 
     protected $fillable = [

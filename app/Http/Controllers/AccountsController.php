@@ -578,11 +578,12 @@ class AccountsController extends Controller
         $get_all_receipts = ReceiptsModel::select(
             'jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
             'sector', 'sub_sector', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
-            'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
+            'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 'cancellation_reason',
+            'collected_by', 'log_user', 'attachment', 'payment_id'
         )
         ->with([
-            'user:id,name,photo_id', // Load the user relationship
-            'user.photo:id,file_url' // Load the user's photo relationship
+            'user:id,name,photo_id', // Include user data
+            'user.photo:id,file_url' // Include user's photo
         ])
         ->get();
     
