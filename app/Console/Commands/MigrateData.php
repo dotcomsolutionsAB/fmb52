@@ -17,7 +17,7 @@ class MigrateData extends Command
     public function handle()
     {
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
-        $limit = 500;
+        $limit = 3000;
         $offset = 0;
 
         // Fetch sector and sub-sector mappings
