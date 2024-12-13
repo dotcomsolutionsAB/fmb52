@@ -508,73 +508,73 @@ Route::middleware(['auth:sanctum', 'check-api-permission:expense.print'])->group
 });
 
 // Transfer Routes
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.create'])->group(function () {
-    Route::post('/transfer/create', [TransferController::class, 'create']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.edit'])->group(function () {
-    Route::put('/transfer/edit/{id}', [TransferController::class, 'edit']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.view'])->group(function () {
-    Route::get('/transfer/view/{id}', [TransferController::class, 'view']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.view_global'])->group(function () {
-    Route::get('/transfer/view_global', [TransferController::class, 'viewGlobal']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.delete'])->group(function () {
-    Route::delete('/transfer/delete/{id}', [TransferController::class, 'delete']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.export'])->group(function () {
-    Route::get('/transfer/export', [TransferController::class, 'export']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:transfer.print'])->group(function () {
-    Route::get('/transfer/print/{id}', [TransferController::class, 'print']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.create'])->group(function () {
+//     Route::post('/transfer/create', [TransferController::class, 'create']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.edit'])->group(function () {
+//     Route::put('/transfer/edit/{id}', [TransferController::class, 'edit']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.view'])->group(function () {
+//     Route::get('/transfer/view/{id}', [TransferController::class, 'view']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.view_global'])->group(function () {
+//     Route::get('/transfer/view_global', [TransferController::class, 'viewGlobal']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.delete'])->group(function () {
+//     Route::delete('/transfer/delete/{id}', [TransferController::class, 'delete']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.export'])->group(function () {
+//     Route::get('/transfer/export', [TransferController::class, 'export']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:transfer.print'])->group(function () {
+//     Route::get('/transfer/print/{id}', [TransferController::class, 'print']);
+// });
 
 // Notifications Routes
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.create'])->group(function () {
-    Route::post('/notifications/create', [NotificationsController::class, 'create']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.edit'])->group(function () {
-    Route::put('/notifications/edit/{id}', [NotificationsController::class, 'edit']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.view'])->group(function () {
-    Route::get('/notifications/view/{id}', [NotificationsController::class, 'view']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.view_global'])->group(function () {
-    Route::get('/notifications/view_global', [NotificationsController::class, 'viewGlobal']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.delete'])->group(function () {
-    Route::delete('/notifications/delete/{id}', [NotificationsController::class, 'delete']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.export'])->group(function () {
-    Route::get('/notifications/export', [NotificationsController::class, 'export']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:notifications.print'])->group(function () {
-    Route::get('/notifications/print/{id}', [NotificationsController::class, 'print']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.create'])->group(function () {
+//     Route::post('/notifications/create', [NotificationsController::class, 'create']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.edit'])->group(function () {
+//     Route::put('/notifications/edit/{id}', [NotificationsController::class, 'edit']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.view'])->group(function () {
+//     Route::get('/notifications/view/{id}', [NotificationsController::class, 'view']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.view_global'])->group(function () {
+//     Route::get('/notifications/view_global', [NotificationsController::class, 'viewGlobal']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.delete'])->group(function () {
+//     Route::delete('/notifications/delete/{id}', [NotificationsController::class, 'delete']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.export'])->group(function () {
+//     Route::get('/notifications/export', [NotificationsController::class, 'export']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:notifications.print'])->group(function () {
+//     Route::get('/notifications/print/{id}', [NotificationsController::class, 'print']);
+// });
 
 // Dashboard Widgets Routes
-Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.create'])->group(function () {
-    Route::post('/dashboard_widgets/create', [DashboardWidgetsController::class, 'create']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.edit'])->group(function () {
-    Route::put('/dashboard_widgets/edit/{id}', [DashboardWidgetsController::class, 'edit']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.create'])->group(function () {
+//     Route::post('/dashboard_widgets/create', [DashboardWidgetsController::class, 'create']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.edit'])->group(function () {
+//     Route::put('/dashboard_widgets/edit/{id}', [DashboardWidgetsController::class, 'edit']);
+// });
 // Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view'])->group(function () {
 //     Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
 // });
 Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view_global'])->group(function () {
     Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.delete'])->group(function () {
-    Route::delete('/dashboard_widgets/delete/{id}', [DashboardWidgetsController::class, 'delete']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.export'])->group(function () {
-    Route::get('/dashboard_widgets/export', [DashboardWidgetsController::class, 'export']);
-});
-Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.print'])->group(function () {
-    Route::get('/dashboard_widgets/print/{id}', [DashboardWidgetsController::class, 'print']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.delete'])->group(function () {
+//     Route::delete('/dashboard_widgets/delete/{id}', [DashboardWidgetsController::class, 'delete']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.export'])->group(function () {
+//     Route::get('/dashboard_widgets/export', [DashboardWidgetsController::class, 'export']);
+// });
+// Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.print'])->group(function () {
+//     Route::get('/dashboard_widgets/print/{id}', [DashboardWidgetsController::class, 'print']);
+// });
 
 // Feedback Routes
 Route::middleware(['auth:sanctum', 'check-api-permission:feedback.create'])->group(function () {
