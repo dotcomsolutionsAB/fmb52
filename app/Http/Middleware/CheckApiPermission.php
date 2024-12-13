@@ -140,10 +140,21 @@ class CheckApiPermission
                 ->get();
     
             if ($userPermissions->isEmpty()) {
-                return response()->json(['message' => "You don't have permission."], 403);
+                return response()->json([
+                    'message' => "You don't have permission.",
+                    'debug' => [
+                        'checked_permission' => $permission,
+                        'sector_id' => $sectorId,
+                        'sub_sector_id' => $subSectorId,
+                        'user_permissions' => $userPermissions,
+                    ],
+                ], 403);
             }
     
-            return response()->json(['message' => 'Permission details', 'permissions' => $userPermissions], 200);
+            return response()->json([
+                'message' => 'Permission details',
+                'permissions' => $userPermissions,
+            ], 200);
         }
     
         // Case 2: Sector ID or Sub-Sector ID provided
@@ -164,8 +175,20 @@ class CheckApiPermission
             ->exists();
     
         if (!$hasPermission) {
+            $userPermissions = \DB::table('user_permission_sectors')
+                ->join('permissions', 'user_permission_sectors.permission_id', '=', 'permissions.id')
+                ->where('user_permission_sectors.user_id', $user->id)
+                ->select('user_permission_sectors.*', 'permissions.name as permission_name')
+                ->get();
+    
             return response()->json([
                 'message' => 'Permission denied or expired for this sector or sub-sector.',
+                'debug' => [
+                    'checked_permission' => $permission,
+                    'sector_id' => $sectorId,
+                    'sub_sector_id' => $subSectorId,
+                    'user_permissions' => $userPermissions,
+                ],
             ], 403);
         }
     
