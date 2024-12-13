@@ -207,19 +207,19 @@ class MumeneenController extends Controller
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
             'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
-            'building', 'sector', 'sub_sector', 'status', 'thali_status', 'role', 'username', 'photo_id'
+            'building', 'sector_id', 'sub_sector_id', 'status', 'thali_status', 'role', 'username', 'photo_id'
         )
             ->with(['photo:id,file_url'])
             ->where('jamiat_id', $jamiat_id)
             ->where('mumeneen_type', 'HOF')
             ->where('status', 'active')
             ->where(function ($query) use ($permittedSectorIds, $permittedSubSectorIds) {
-                $query->whereIn('sector', $permittedSectorIds)
-                      ->orWhereIn('sub_sector', $permittedSubSectorIds);
+                $query->whereIn('sector_id', $permittedSectorIds)
+                      ->orWhereIn('sub_sector_id', $permittedSubSectorIds);
             })
-            ->orderByRaw("sector IS NULL OR sector = ''") // Push empty sectors to the end
-            ->orderBy('sector')
-            ->orderBy('folio_no')
+            ->orderByRaw("sector_id IS NULL OR sector_id = ''") // Push empty sectors to the end
+            ->orderBy('sector_id') // Sort by sector ID
+            ->orderBy('folio_no') // Then sort by folio number
             ->get();
     
         if ($get_all_users->isNotEmpty()) {
