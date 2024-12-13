@@ -134,9 +134,25 @@ class PermissionRoleController extends Controller
             'permissions.*.valid_from' => 'nullable|date',
             'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
             'permissions.*.sector_ids' => 'nullable|array',
-            'permissions.*.sector_ids.*' => 'integer|exists:t_sector,id',
+            'permissions.*.sector_ids.*' => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'all' && !is_numeric($value)) {
+                        $fail($attribute.' must be an integer or "all".');
+                    }
+                },
+            ],
             'permissions.*.sub_sector_ids' => 'nullable|array',
-            'permissions.*.sub_sector_ids.*' => 'integer|exists:t_sub_sector,id',
+            'permissions.*.sub_sector_ids.*' => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    if ($value !== 'all' && !is_numeric($value)) {
+                        $fail($attribute.' must be an integer or "all".');
+                    }
+                },
+            ],
         ]);
     
         try {
