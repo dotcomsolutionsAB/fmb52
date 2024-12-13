@@ -236,29 +236,7 @@ class PermissionRoleController extends Controller
         return $subSectorIds; // Return the original array if "all" is not present
     }
 
-/**
- * Resolve sector IDs based on input
- */
-private function resolveSectorIds(array $sectorIds)
-{
-    if (in_array('all', $sectorIds)) {
-        return \DB::table('t_sector')->pluck('id')->toArray(); // Fetch all sector IDs
-    }
 
-    return $sectorIds; // Return the original array if "all" is not present
-}
-
-/**
- * Resolve sub-sector IDs based on input
- */
-private function resolveSubSectorIds(array $subSectorIds)
-{
-    if (in_array('all', $subSectorIds)) {
-        return \DB::table('t_sub_sector')->pluck('id')->toArray(); // Fetch all sub-sector IDs
-    }
-
-    return $subSectorIds; // Return the original array if "all" is not present
-}
     /**
      * Get valid permissions for a user
      */
