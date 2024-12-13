@@ -1,8 +1,5 @@
 <?php
 
-
-
-
 namespace App\Http\Middleware;
 
 use Closure;
@@ -16,29 +13,33 @@ class CheckApiPermission
     {
         $user = Auth::user();
 
-        // Check if the user is authenticated
+        // If no permission or role is provided, skip checks
+        if (!$permission && !$role) {
+            return $next($request);
+        }
+
+        // Ensure the user is authenticated
         if (!$user) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        // If `sector_id` and `sub_sector_id` are not required, skip the check
+        // Retrieve optional sector and sub-sector IDs
         $sectorId = $request->input('sector_id');
         $subSectorId = $request->input('sub_sector_id');
 
+        // If sector or sub-sector IDs are required but missing
         if (($permission || $role) && (!$sectorId || !$subSectorId)) {
-            return response()->json(['message' => 'Sector ID and Sub-Sector ID are required for permission or role validation.'], 403);
+            return response()->json([
+                'message' => 'Sector ID and Sub-Sector ID are required for permission or role validation.'
+            ], 403);
         }
 
-        // Check permissions with sector_ids, sub_sector_ids, and validity
+        // Check for permissions
         if ($permission) {
             $hasPermission = $user->permissions()
                 ->where('name', $permission)
-                ->when($sectorId, function ($query) use ($sectorId) {
-                    $query->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId]);
-                })
-                ->when($subSectorId, function ($query) use ($subSectorId) {
-                    $query->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId]);
-                })
+                ->when($sectorId, fn($query) => $query->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId]))
+                ->when($subSectorId, fn($query) => $query->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId]))
                 ->where(function ($query) {
                     $query->whereNull('valid_from')
                           ->orWhere('valid_from', '<=', now());
@@ -50,20 +51,18 @@ class CheckApiPermission
                 ->exists();
 
             if (!$hasPermission) {
-                return response()->json(['message' => 'Permission denied or expired for this sector or sub-sector.'], 403);
+                return response()->json([
+                    'message' => 'Permission denied or expired for this sector or sub-sector.'
+                ], 403);
             }
         }
 
-        // Check roles with sector_ids, sub_sector_ids, and validity
+        // Check for roles
         if ($role) {
             $hasRole = $user->roles()
                 ->where('name', $role)
-                ->when($sectorId, function ($query) use ($sectorId) {
-                    $query->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId]);
-                })
-                ->when($subSectorId, function ($query) use ($subSectorId) {
-                    $query->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId]);
-                })
+                ->when($sectorId, fn($query) => $query->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId]))
+                ->when($subSectorId, fn($query) => $query->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId]))
                 ->where(function ($query) {
                     $query->whereNull('valid_from')
                           ->orWhere('valid_from', '<=', now());
@@ -75,7 +74,9 @@ class CheckApiPermission
                 ->exists();
 
             if (!$hasRole) {
-                return response()->json(['message' => 'Role access denied or expired for this sector or sub-sector.'], 403);
+                return response()->json([
+                    'message' => 'Role access denied or expired for this sector or sub-sector.'
+                ], 403);
             }
         }
 
