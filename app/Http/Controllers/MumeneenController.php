@@ -165,22 +165,29 @@ class MumeneenController extends Controller
             $year = $currentYearRecord->year ?? date('Y');
         }
     
-        // Fetch sector and subsector IDs the user has permissions for
+        // Fetch sector IDs where the user has either 'mumeneen.view' or 'mumeneen.view_global' permission
         $permittedSectorIds = \DB::table('user_permission_sectors')
-            ->where('user_id', $user->id)
-            ->pluck('sector_id')
+            ->join('permissions', 'user_permission_sectors.permission_id', '=', 'permissions.id')
+            ->where('user_permission_sectors.user_id', $user->id)
+            ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
+            ->pluck('user_permission_sectors.sector_id')
             ->toArray();
     
-        $permittedSubSectorIds = \DB::table('user_permission_sub_sectors')
-            ->where('user_id', $user->id)
-            ->pluck('sub_sector_id')
-            ->toArray();
-    
-        if (empty($permittedSectorIds) && empty($permittedSubSectorIds)) {
-            return response()->json(['message' => 'You do not have access to any sectors or subsectors.'], 403);
+        // If no sector permissions, skip checking sub-sectors
+        if (empty($permittedSectorIds)) {
+            return response()->json(['message' => 'You do not have access to any sectors.'], 403);
         }
     
-        // Fetch users belonging to the permitted sectors and subsectors
+        // Fetch sub-sector IDs where the user has either 'mumeneen.view' or 'mumeneen.view_global' permission
+        $permittedSubSectorIds = \DB::table('user_permission_sub_sectors')
+            ->join('permissions', 'user_permission_sub_sectors.permission_id', '=', 'permissions.id')
+            ->where('user_permission_sub_sectors.user_id', $user->id)
+            ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
+            ->whereIn('user_permission_sub_sectors.sector_id', $permittedSectorIds)
+            ->pluck('user_permission_sub_sectors.sub_sector_id')
+            ->toArray();
+    
+        // Fetch users belonging to the permitted sectors and sub-sectors
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
             'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
