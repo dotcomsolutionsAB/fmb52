@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CheckApiPermission
 {
@@ -36,7 +37,7 @@ class CheckApiPermission
 
         // Check for permissions
         if ($permission) {
-            $hasPermission = \DB::table('user_permission_sectors')
+            $hasPermission = DB::table('user_permission_sectors')
                 ->where('user_id', $user->id)
                 ->where('permission_id', function ($query) use ($permission) {
                     $query->select('id')
@@ -56,7 +57,7 @@ class CheckApiPermission
                 ->exists();
 
             if ($subSectorId) {
-                $hasPermission = $hasPermission || \DB::table('user_permission_sub_sectors')
+                $hasPermission = $hasPermission || DB::table('user_permission_sub_sectors')
                     ->where('user_id', $user->id)
                     ->where('permission_id', function ($query) use ($permission) {
                         $query->select('id')
@@ -85,7 +86,7 @@ class CheckApiPermission
 
         // Check for roles
         if ($role) {
-            $hasRole = \DB::table('model_has_roles')
+            $hasRole = DB::table('model_has_roles')
                 ->where('model_id', $user->id)
                 ->where('role_id', function ($query) use ($role) {
                     $query->select('id')
