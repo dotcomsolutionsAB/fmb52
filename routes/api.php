@@ -447,18 +447,18 @@ Route::middleware(['auth:sanctum', 'check-api-permission:sector.create'])->group
 Route::middleware(['auth:sanctum', 'check-api-permission:sector.view'])->group(function () {
     Route::get('/sector', [MumeneenController::class, 'all_sector']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:sector.view_global'])->group(function () {
-    Route::get('/sector', [MumeneenController::class, 'all_sector']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:sector.view_global'])->group(function () {
+//     Route::get('/sector', [MumeneenController::class, 'all_sector']);
+// });
 Route::middleware(['auth:sanctum', 'check-api-permission:sector.edit'])->group(function () {
     Route::post('/update_sector/{id}', [MumeneenController::class, 'update_sector']);
 });
 Route::middleware(['auth:sanctum', 'check-api-permission:sector.delete'])->group(function () {
     Route::delete('/sector/{id}', [MumeneenController::class, 'delete_sector']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:sector.export'])->group(function () {
-    Route::get('/sector', [MumeneenController::class, 'all_sector']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:sector.export'])->group(function () {
+//     Route::get('/sector', [MumeneenController::class, 'all_sector']);
+// });
 // Route::middleware(['auth:sanctum', 'check-api-permission:sector.print'])->group(function () {
 //     Route::get('/sector', [MumeneenController::class, 'all_sector']);
 // });
