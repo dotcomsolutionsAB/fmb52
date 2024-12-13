@@ -146,22 +146,80 @@ class PermissionRoleController extends Controller
             $permission = Permission::where('name', $permissionData['name'])->first();
 
             if ($permission) {
+                // Grant the permission to the user
                 $user->givePermissionTo($permission);
 
-                // Handle "all" for sectors and sub-sectors
-                $sectorIds = $permissionData['sector_ids'] === ['all'] ? ['all'] : ($permissionData['sector_ids'] ?? []);
-                $subSectorIds = $permissionData['sub_sector_ids'] === ['all'] ? ['all'] : ($permissionData['sub_sector_ids'] ?? []);
+                // Handle "all" or specific sectors
+                $sectorIds = $permissionData['sector_ids'] ?? [];
+                $subSectorIds = $permissionData['sub_sector_ids'] ?? [];
 
-                // Prepare additional fields for the pivot table
-                $pivotData = [
-                    'valid_from' => $permissionData['valid_from'] ?? null,
-                    'valid_to' => $permissionData['valid_to'] ?? null,
-                    'sector_ids' => json_encode($sectorIds), // Store as JSON
-                    'sub_sector_ids' => json_encode($subSectorIds), // Store as JSON
-                ];
+                if ($sectorIds === ['all']) {
+                    // Handle permission for all sectors
+                    $allSectorIds = SectorModel::pluck('id')->toArray();
+                    foreach ($allSectorIds as $sectorId) {
+                        UserPermission::updateOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'permission_id' => $permission->id,
+                                'sector_id' => $sectorId,
+                                'sub_sector_id' => null,
+                            ],
+                            [
+                                'valid_from' => $permissionData['valid_from'] ?? null,
+                                'valid_to' => $permissionData['valid_to'] ?? null,
+                            ]
+                        );
+                    }
+                } elseif (!empty($sectorIds)) {
+                    foreach ($sectorIds as $sectorId) {
+                        UserPermission::updateOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'permission_id' => $permission->id,
+                                'sector_id' => $sectorId,
+                                'sub_sector_id' => null,
+                            ],
+                            [
+                                'valid_from' => $permissionData['valid_from'] ?? null,
+                                'valid_to' => $permissionData['valid_to'] ?? null,
+                            ]
+                        );
+                    }
+                }
 
-                // Update the pivot table with additional fields
-                $user->permissions()->updateExistingPivot($permission->id, $pivotData);
+                if ($subSectorIds === ['all']) {
+                    // Handle permission for all sub-sectors
+                    $allSubSectorIds = SubSectorModel::pluck('id')->toArray();
+                    foreach ($allSubSectorIds as $subSectorId) {
+                        UserPermission::updateOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'permission_id' => $permission->id,
+                                'sector_id' => null,
+                                'sub_sector_id' => $subSectorId,
+                            ],
+                            [
+                                'valid_from' => $permissionData['valid_from'] ?? null,
+                                'valid_to' => $permissionData['valid_to'] ?? null,
+                            ]
+                        );
+                    }
+                } elseif (!empty($subSectorIds)) {
+                    foreach ($subSectorIds as $subSectorId) {
+                        UserPermission::updateOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'permission_id' => $permission->id,
+                                'sector_id' => null,
+                                'sub_sector_id' => $subSectorId,
+                            ],
+                            [
+                                'valid_from' => $permissionData['valid_from'] ?? null,
+                                'valid_to' => $permissionData['valid_to'] ?? null,
+                            ]
+                        );
+                    }
+                }
             }
         }
 
