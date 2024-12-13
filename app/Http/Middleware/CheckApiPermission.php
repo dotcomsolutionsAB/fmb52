@@ -22,6 +22,9 @@ class CheckApiPermission
         $sectorId = $request->input('sector_id');
         $subSectorId = $request->input('sub_sector_id');
 
+        $hasPermission = false;
+        $hasRole = false;
+
         // Check for permissions
         if ($permission) {
             $hasPermission = DB::table('user_permission_sectors')
@@ -39,12 +42,6 @@ class CheckApiPermission
                           ->orWhere('user_permission_sectors.valid_to', '>=', now());
                 })
                 ->exists();
-
-            if (!$hasPermission) {
-                return response()->json([
-                    'message' => 'Permission denied for this sector or sub-sector.'
-                ], 403);
-            }
         }
 
         // Check for roles
@@ -68,12 +65,13 @@ class CheckApiPermission
                           ->orWhere('valid_to', '>=', now());
                 })
                 ->exists();
+        }
 
-            if (!$hasRole) {
-                return response()->json([
-                    'message' => 'Role access denied for this sector or sub-sector.'
-                ], 403);
-            }
+        // Allow if either permission or role is valid
+        if (!$hasPermission && !$hasRole) {
+            return response()->json([
+                'message' => 'Access denied for this sector or sub-sector.'
+            ], 403);
         }
 
         return $next($request);

@@ -49,7 +49,7 @@ class MumeneenController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|',
+            'email' => 'required|email',
             'password' => 'required|string',
             'jamiat_id' => 'required|integer',
             'family_id' => 'required|string|max:10',
@@ -68,37 +68,15 @@ class MumeneenController extends Controller
             'gender' => 'required|in:male,female',
             'title' => 'nullable|in:Shaikh,Mulla',
             'folio_no' => 'nullable|string|max:20',
-            'sector' => 'nullable|string|max:100',
-            'sub_sector' => 'nullable|string|max:100',
+            'sector_id' => 'nullable|integer',
+            'sub_sector_id' => 'nullable|integer',
             'building' => 'nullable|integer',
             'age' => 'nullable|integer',
             'role' => 'required|in:superadmin,jamiat_admin,mumeneen',
             'status' => 'required|in:active,inactive',
             'username' => 'required|string',
-            // 'files' => 'nullable|file|mimes:jpeg,png,jpg',
         ]);
-        
-        // $uploadedIds = [];
-
-        // if ($request->input('files')) {
-        //     $uploadController = new UploadController();
-
-        //     $response = $uploadController->upload(new Request([
-        //         'files' => $request->file('files'),
-        //         'file_name' => $request->file('its'),
-        //         'type' => 'Users',
-        //         'jamiat_id' => $request->file('jamiat_id'),
-        //         'family_id' => $request->file('family_id')
-        //     ]));
-
-        //     $uploadedIds = $response->getData()->upload_ids ?? [];
-        // }
-
-        // else{
-        //     $uploadedIds = 1;
-        // }
-        // dd($uploadedIds);
-
+    
         $register_user = User::create([
             'name' => $request->input('name'),
             'email' => strtolower($request->input('email')),
@@ -114,19 +92,18 @@ class MumeneenController extends Controller
             'age' => $request->input('age'),
             'building' => $request->input('building'),
             'folio_no' => $request->input('folio_no'),
-            'sector' => $request->input('sector'),
-            'sub_sector' => $request->input('sub_sector'),
+            'sector_id' => $request->input('sector_id'), // Updated field
+            'sub_sector_id' => $request->input('sub_sector_id'), // Updated field
             'role' => $request->input('role'),
             'status' => $request->input('status'),
             'username' => $request->input('username'),
-            // 'photo_id' => $request->input('photo_id'),
         ]);
-
+    
         unset($register_user['id'], $register_user['created_at'], $register_user['updated_at']);
     
         return isset($register_user) && $register_user !== null
-        ? response()->json(['User created successfully!', 'data' => $register_user], 201)
-        : response()->json(['Failed to create successfully!'], 400);
+            ? response()->json(['User created successfully!', 'data' => $register_user], 201)
+            : response()->json(['Failed to create successfully!'], 400);
     }
 
     // view
