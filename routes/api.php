@@ -65,9 +65,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // User Management
+    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData'])
+    ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
+
     Route::prefix('users')->group(function () {
-        Route::get('/get_all/{year?}', [MumeneenController::class, 'usersWithHubData'])
-            ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
+       
         Route::post('/update/{id}', [MumeneenController::class, 'update_record'])
             ->middleware(['check-api-permission:mumeneen.edit']);
         Route::delete('/{id}', [MumeneenController::class, 'delete_user'])
