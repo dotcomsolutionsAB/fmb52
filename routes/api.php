@@ -122,7 +122,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/its/{id}', [MumeneenController::class, 'delete_its']);
     
     // sector
-    Route::post('/sector', [MumeneenController::class, 'register_sector']);
+    Route::post('/sector_registor', [MumeneenController::class, 'register_sector']);
     Route::get('/sector', [MumeneenController::class, 'all_sector']);
     Route::post('/update_sector/{id}', [MumeneenController::class, 'update_sector']);
     Route::delete('/sector/{id}', [MumeneenController::class, 'delete_sector']);
@@ -560,9 +560,9 @@ Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.creat
 Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.edit'])->group(function () {
     Route::put('/dashboard_widgets/edit/{id}', [DashboardWidgetsController::class, 'edit']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view'])->group(function () {
-    Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view'])->group(function () {
+//     Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
+// });
 Route::middleware(['auth:sanctum', 'check-api-permission:dashboard_widgets.view_global'])->group(function () {
     Route::get('/dashboard-stats', [DashboardController::class, 'getDashboardStats']);
 });
