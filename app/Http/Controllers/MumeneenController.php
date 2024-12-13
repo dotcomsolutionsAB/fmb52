@@ -49,7 +49,7 @@ class MumeneenController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|unique:users,email',
+            'email' => 'required|',
             'password' => 'required|string',
             'jamiat_id' => 'required|integer',
             'family_id' => 'required|string|max:10',
