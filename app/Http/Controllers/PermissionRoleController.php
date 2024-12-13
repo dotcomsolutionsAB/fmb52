@@ -126,58 +126,48 @@ class PermissionRoleController extends Controller
      * Assign permissions to a user (model) with validity
      */
     public function assignPermissionsToUser(Request $request)
-{
-    $request->validate([
-        'user_id' => 'required|integer|exists:users,id',
-        'permissions' => 'required|array',
-        'permissions.*.name' => 'required|string|exists:permissions,name',
-        'permissions.*.valid_from' => 'nullable|date',
-        'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-        'permissions.*.sector_ids' => 'nullable|array',
-        'permissions.*.sector_ids.*' => 'integer|exists:t_sector,id',
-        'permissions.*.sub_sector_ids' => 'nullable|array',
-        'permissions.*.sub_sector_ids.*' => 'integer|exists:t_sub_sector,id',
-    ]);
-
-    try {
-        $user = User::findOrFail($request->user_id);
-
-        foreach ($request->permissions as $permissionData) {
-            $permission = Permission::where('name', $permissionData['name'])->first();
-
-            if ($permission) {
-                // Grant the permission to the user
-                $user->givePermissionTo($permission);
-
-                // Handle "all" or specific sectors
-                $sectorIds = $permissionData['sector_ids'] ?? [];
-                $subSectorIds = $permissionData['sub_sector_ids'] ?? [];
-
-                if ($sectorIds === ['all']) {
-                    // Handle permission for all sectors
-                    $allSectorIds = SectorModel::pluck('id')->toArray();
-                    foreach ($allSectorIds as $sectorId) {
-                        UserPermission::updateOrCreate(
-                            [
-                                'user_id' => $user->id,
-                                'permission_id' => $permission->id,
-                                'sector_id' => $sectorId,
-                                'sub_sector_id' => null,
-                            ],
-                            [
-                                'valid_from' => $permissionData['valid_from'] ?? null,
-                                'valid_to' => $permissionData['valid_to'] ?? null,
-                            ]
-                        );
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'permissions' => 'required|array',
+            'permissions.*.name' => 'required|string|exists:permissions,name',
+            'permissions.*.valid_from' => 'nullable|date',
+            'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
+            'permissions.*.sector_ids' => 'nullable|array',
+            'permissions.*.sector_ids.*' => 'integer|exists:t_sector,id',
+            'permissions.*.sub_sector_ids' => 'nullable|array',
+            'permissions.*.sub_sector_ids.*' => 'integer|exists:t_sub_sector,id',
+        ]);
+    
+        try {
+            $user = User::findOrFail($request->user_id);
+    
+            foreach ($request->permissions as $permissionData) {
+                $permission = Permission::where('name', $permissionData['name'])->first();
+    
+                if ($permission) {
+                    // Assign permission to user
+                    $user->givePermissionTo($permission);
+    
+                    // Handle sector and sub-sector relationships
+                    $sectorIds = $permissionData['sector_ids'] ?? [];
+                    $subSectorIds = $permissionData['sub_sector_ids'] ?? [];
+    
+                    // Handle "all" logic for sectors and sub-sectors
+                    if ($sectorIds === ['all']) {
+                        $sectorIds = \DB::table('t_sector')->pluck('id')->toArray();
                     }
-                } elseif (!empty($sectorIds)) {
+                    if ($subSectorIds === ['all']) {
+                        $subSectorIds = \DB::table('t_sub_sector')->pluck('id')->toArray();
+                    }
+    
+                    // Store the relationships in a custom table if required
                     foreach ($sectorIds as $sectorId) {
-                        UserPermission::updateOrCreate(
+                        \DB::table('user_permission_sectors')->updateOrInsert(
                             [
                                 'user_id' => $user->id,
                                 'permission_id' => $permission->id,
                                 'sector_id' => $sectorId,
-                                'sub_sector_id' => null,
                             ],
                             [
                                 'valid_from' => $permissionData['valid_from'] ?? null,
@@ -185,32 +175,12 @@ class PermissionRoleController extends Controller
                             ]
                         );
                     }
-                }
-
-                if ($subSectorIds === ['all']) {
-                    // Handle permission for all sub-sectors
-                    $allSubSectorIds = SubSectorModel::pluck('id')->toArray();
-                    foreach ($allSubSectorIds as $subSectorId) {
-                        UserPermission::updateOrCreate(
-                            [
-                                'user_id' => $user->id,
-                                'permission_id' => $permission->id,
-                                'sector_id' => null,
-                                'sub_sector_id' => $subSectorId,
-                            ],
-                            [
-                                'valid_from' => $permissionData['valid_from'] ?? null,
-                                'valid_to' => $permissionData['valid_to'] ?? null,
-                            ]
-                        );
-                    }
-                } elseif (!empty($subSectorIds)) {
+    
                     foreach ($subSectorIds as $subSectorId) {
-                        UserPermission::updateOrCreate(
+                        \DB::table('user_permission_sub_sectors')->updateOrInsert(
                             [
                                 'user_id' => $user->id,
                                 'permission_id' => $permission->id,
-                                'sector_id' => null,
                                 'sub_sector_id' => $subSectorId,
                             ],
                             [
@@ -221,21 +191,19 @@ class PermissionRoleController extends Controller
                     }
                 }
             }
+    
+            return response()->json([
+                'message' => 'Permissions assigned to user successfully.',
+                'user_id' => $user->id,
+                'permissions' => $request->permissions,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while assigning permissions.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'message' => 'Permissions assigned to user successfully',
-            'user_id' => $user->id,
-            'permissions' => $request->permissions,
-        ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'An error occurred while assigning permissions',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
-
     /**
      * Get valid permissions for a user
      */
