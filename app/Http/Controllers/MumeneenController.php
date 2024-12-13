@@ -179,13 +179,13 @@ class MumeneenController extends Controller
         }
     
         // Fetch sub-sector IDs where the user has either 'mumeneen.view' or 'mumeneen.view_global' permission
-        $permittedSubSectorIds = \DB::table('user_permission_sub_sectors')
-            ->join('permissions', 'user_permission_sub_sectors.permission_id', '=', 'permissions.id')
-            ->where('user_permission_sub_sectors.user_id', $user->id)
-            ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
-            ->whereIn('user_permission_sub_sectors.sector_id', $permittedSectorIds)
-            ->pluck('user_permission_sub_sectors.sub_sector_id')
-            ->toArray();
+       // Fetch sub-sector IDs where the user has either 'mumeneen.view' or 'mumeneen.view_global' permission
+$permittedSubSectorIds = \DB::table('user_permission_sub_sectors')
+->join('permissions', 'user_permission_sub_sectors.permission_id', '=', 'permissions.id')
+->where('user_permission_sub_sectors.user_id', $user->id)
+->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
+->pluck('user_permission_sub_sectors.sub_sector_id')
+->toArray();
     
         // Fetch users belonging to the permitted sectors and sub-sectors
         $get_all_users = User::select(
