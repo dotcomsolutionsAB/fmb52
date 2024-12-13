@@ -126,47 +126,57 @@ class PermissionRoleController extends Controller
      * Assign permissions to a user (model) with validity
      */
     public function assignPermissionsToUser(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'permissions' => 'required|array',
-            'permissions.*.name' => 'required|string|exists:permissions,name',
-            'permissions.*.valid_from' => 'nullable|date',
-            'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-        ]);
-    
-        try {
-            $user = User::findOrFail($request->user_id);
-    
-            foreach ($request->permissions as $permissionData) {
-                $permission = Permission::where('name', $permissionData['name'])->first();
-    
-                if ($permission) {
-                    $user->givePermissionTo($permission);
-    
-                    // Update the pivot table with validity
-                    $user->permissions()->updateExistingPivot(
-                        $permission->id,
-                        [
-                            'valid_from' => $permissionData['valid_from'] ?? null,
-                            'valid_to' => $permissionData['valid_to'] ?? null,
-                        ]
-                    );
-                }
+{
+    $request->validate([
+        'user_id' => 'required|integer|exists:users,id',
+        'permissions' => 'required|array',
+        'permissions.*.name' => 'required|string|exists:permissions,name',
+        'permissions.*.valid_from' => 'nullable|date',
+        'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
+        'permissions.*.sector_ids' => 'nullable|array',
+        'permissions.*.sector_ids.*' => 'integer|exists:t_sector,id',
+        'permissions.*.sub_sector_ids' => 'nullable|array',
+        'permissions.*.sub_sector_ids.*' => 'integer|exists:t_sub_sector,id',
+    ]);
+
+    try {
+        $user = User::findOrFail($request->user_id);
+
+        foreach ($request->permissions as $permissionData) {
+            $permission = Permission::where('name', $permissionData['name'])->first();
+
+            if ($permission) {
+                $user->givePermissionTo($permission);
+
+                // Handle "all" for sectors and sub-sectors
+                $sectorIds = $permissionData['sector_ids'] === ['all'] ? ['all'] : ($permissionData['sector_ids'] ?? []);
+                $subSectorIds = $permissionData['sub_sector_ids'] === ['all'] ? ['all'] : ($permissionData['sub_sector_ids'] ?? []);
+
+                // Prepare additional fields for the pivot table
+                $pivotData = [
+                    'valid_from' => $permissionData['valid_from'] ?? null,
+                    'valid_to' => $permissionData['valid_to'] ?? null,
+                    'sector_ids' => json_encode($sectorIds), // Store as JSON
+                    'sub_sector_ids' => json_encode($subSectorIds), // Store as JSON
+                ];
+
+                // Update the pivot table with additional fields
+                $user->permissions()->updateExistingPivot($permission->id, $pivotData);
             }
-    
-            return response()->json([
-                'message' => 'Permissions assigned to user successfully',
-                'user_id' => $user->id,
-                'permissions' => $request->permissions,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'An error occurred while assigning permissions',
-                'error' => $e->getMessage(),
-            ], 500);
         }
+
+        return response()->json([
+            'message' => 'Permissions assigned to user successfully',
+            'user_id' => $user->id,
+            'permissions' => $request->permissions,
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred while assigning permissions',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     /**
      * Get valid permissions for a user
