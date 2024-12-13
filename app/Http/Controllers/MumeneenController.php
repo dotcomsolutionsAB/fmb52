@@ -45,65 +45,108 @@ class MumeneenController extends Controller
 
     
     //register user
-    public function register_users(Request $request)
+    public function usersWithHubData(Request $request, $year = 0)
     {
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email',
-            'password' => 'required|string',
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'required|string|max:10',
-            'its' => [
-                'required',
-                'string',
-                'max:8',
-                Rule::unique('users')->where(function ($query) use ($request) {
-                    return $query->where('jamiat_id', $request->jamiat_id)
-                                 ->where('role', 'mumeneen');
-                })
-            ],
-            'hof_its' => 'required|string|max:8',
-            'its_family_id' => 'nullable|string|max:10',
-            'mobile' => ['required', 'string', 'min:12', 'max:20'],
-            'gender' => 'required|in:male,female',
-            'title' => 'nullable|in:Shaikh,Mulla',
-            'folio_no' => 'nullable|string|max:20',
-            'sector_id' => 'nullable|integer',
-            'sub_sector_id' => 'nullable|integer',
-            'building' => 'nullable|integer',
-            'age' => 'nullable|integer',
-            'role' => 'required|in:superadmin,jamiat_admin,mumeneen',
-            'status' => 'required|in:active,inactive',
-            'username' => 'required|string',
-        ]);
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
     
-        $register_user = User::create([
-            'name' => $request->input('name'),
-            'email' => strtolower($request->input('email')),
-            'password' => bcrypt($request->input('password')),
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'its' => $request->input('its'),
-            'hof_its' => $request->input('hof_its'),
-            'its_family_id' => $request->input('its_family_id'),
-            'mobile' => $request->input('mobile'),
-            'title' => $request->input('title'),
-            'gender' => $request->input('gender'),
-            'age' => $request->input('age'),
-            'building' => $request->input('building'),
-            'folio_no' => $request->input('folio_no'),
-            'sector_id' => $request->input('sector_id'), // Updated field
-            'sub_sector_id' => $request->input('sub_sector_id'), // Updated field
-            'role' => $request->input('role'),
-            'status' => $request->input('status'),
-            'username' => $request->input('username'),
-        ]);
+        $jamiat_id = $user->jamiat_id;
     
-        unset($register_user['id'], $register_user['created_at'], $register_user['updated_at']);
+        // Determine the year
+        if ($year !== 0) {
+            $yearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('id', $year)->first();
+            $year = $yearRecord->year ?? date('Y');
+        } else {
+            $currentYearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('is_current', '1')->first();
+            $year = $currentYearRecord->year ?? date('Y');
+        }
     
-        return isset($register_user) && $register_user !== null
-            ? response()->json(['User created successfully!', 'data' => $register_user], 201)
-            : response()->json(['Failed to create successfully!'], 400);
+        // Fetch sector IDs the user has permissions for
+        $permittedSectorIds = \DB::table('user_permission_sectors')
+            ->join('permissions', 'user_permission_sectors.permission_id', '=', 'permissions.id')
+            ->where('user_permission_sectors.user_id', $user->id)
+            ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
+            ->pluck('user_permission_sectors.sector_id')
+            ->toArray();
+    
+        // If no sector permissions, deny access
+        if (empty($permittedSectorIds)) {
+            return response()->json(['message' => 'You do not have access to any sectors.'], 403);
+        }
+    
+        // Fetch sub-sector IDs under the permitted sectors
+        $permittedSubSectorIds = \DB::table('user_permission_sub_sectors')
+            ->join('permissions', 'user_permission_sub_sectors.permission_id', '=', 'permissions.id')
+            ->where('user_permission_sub_sectors.user_id', $user->id)
+            ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
+            ->whereIn('user_permission_sub_sectors.sector_id', $permittedSectorIds)
+            ->pluck('user_permission_sub_sectors.sub_sector_id')
+            ->toArray();
+    
+        // Fetch users belonging to the permitted sectors and sub-sectors
+        $get_all_users = User::select(
+            'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
+            'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
+            'building', 'sector_id', 'sub_sector_id', 'status', 'thali_status', 'role', 'username', 'photo_id'
+        )
+            ->with(['photo:id,file_url'])
+            ->where('jamiat_id', $jamiat_id)
+            ->where('mumeneen_type', 'HOF')
+            ->where('status', 'active')
+            ->where(function ($query) use ($permittedSectorIds, $permittedSubSectorIds) {
+                $query->whereIn('sector_id', $permittedSectorIds); // Filter by sectors
+                if (!empty($permittedSubSectorIds)) {
+                    $query->orWhereIn('sub_sector_id', $permittedSubSectorIds); // Filter by sub-sectors
+                }
+            })
+            ->orderByRaw("sector_id IS NULL OR sector_id = ''") // Push empty sectors to the end
+            ->orderBy('sector_id') // Sort by sector ID
+            ->orderBy('folio_no') // Then sort by folio number
+            ->get();
+    
+        if ($get_all_users->isNotEmpty()) {
+            $family_ids = $get_all_users->pluck('family_id')->toArray();
+    
+            // Fetch hub data for the specified year
+            $hub_data = HubModel::select('id', 'family_id', 'hub_amount', 'paid_amount', 'due_amount', 'year')
+                ->whereIn('family_id', $family_ids)
+                ->where('jamiat_id', $jamiat_id)
+                ->where('year', $year)
+                ->get()
+                ->keyBy('family_id');
+    
+            // Calculate overdue amounts
+            $previous_years = YearModel::where('jamiat_id', $jamiat_id)
+                ->where('year', '<', $year)
+                ->pluck('year');
+    
+            $overdue_data = HubModel::select('family_id', DB::raw('SUM(due_amount) as overdue'))
+                ->whereIn('family_id', $family_ids)
+                ->where('jamiat_id', $jamiat_id)
+                ->whereIn('year', $previous_years)
+                ->groupBy('family_id')
+                ->get()
+                ->keyBy('family_id');
+    
+            // Map hub data and overdue amounts to users
+            $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
+                $hub_record = $hub_data->get($user->family_id);
+                $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+                $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+                $user->due_amount = $hub_record->due_amount ?? 'NA';
+    
+                $overdue_record = $overdue_data->get($user->family_id);
+                $user->overdue = $overdue_record->overdue ?? 0;
+    
+                return $user;
+            });
+    
+            return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
+        }
+    
+        return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
     }
 
     // view
