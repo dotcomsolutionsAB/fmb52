@@ -845,15 +845,34 @@ class MumeneenController extends Controller
     }
 
     // view
-    public function all_sector()
+    public function all_sector(Request $request)
     {
-        $get_all_sector = SectorModel::select('jamiat_id', 'name', 'notes', 'log_user')->get();
-
+        $user = Auth::user();
+    
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+    
+        // Fetch all sector IDs the user has permission to access
+        $permittedSectorIds = \DB::table('user_permission_sectors')
+            ->where('user_id', $user->id)
+            ->pluck('sector_id')
+            ->toArray();
+    
+        // Fetch sectors the user has permission to access
+        $get_all_sector = SectorModel::whereIn('id', $permittedSectorIds)
+            ->select('jamiat_id', 'name', 'notes', 'log_user')
+            ->get();
+    
         return $get_all_sector->isNotEmpty()
-            ? response()->json(['message' => 'Sector records fetched successfully!', 'data' => $get_all_sector], 200)
-            : response()->json(['message' => 'No Sector records found!'], 404);
+            ? response()->json([
+                'message' => 'Sector records fetched successfully!',
+                'data' => $get_all_sector,
+            ], 200)
+            : response()->json([
+                'message' => 'No Sector records found or you do not have access to any sectors!',
+            ], 404);
     }
-
     // update
     public function update_sector(Request $request, $id)
     {
