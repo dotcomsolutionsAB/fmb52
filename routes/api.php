@@ -459,9 +459,9 @@ Route::middleware(['auth:sanctum', 'check-api-permission:sector.delete'])->group
 Route::middleware(['auth:sanctum', 'check-api-permission:sector.export'])->group(function () {
     Route::get('/sector', [MumeneenController::class, 'all_sector']);
 });
-Route::middleware(['auth:sanctum', 'check-api-permission:sector.print'])->group(function () {
-    Route::get('/sector', [MumeneenController::class, 'all_sector']);
-});
+// Route::middleware(['auth:sanctum', 'check-api-permission:sector.print'])->group(function () {
+//     Route::get('/sector', [MumeneenController::class, 'all_sector']);
+// });
 
 // SubSector Routes
 Route::middleware(['auth:sanctum', 'check-api-permission:sub_sector.create'])->group(function () {
