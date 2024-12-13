@@ -64,6 +64,8 @@ Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
 Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
 
+Route::get('/sector', [MumeneenController::class, 'all_sector']);
+
 Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -123,7 +125,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // sector
     Route::post('/sector_registor', [MumeneenController::class, 'register_sector']);
-    Route::get('/sector', [MumeneenController::class, 'all_sector']);
+   
     Route::post('/update_sector/{id}', [MumeneenController::class, 'update_sector']);
     Route::delete('/sector/{id}', [MumeneenController::class, 'delete_sector']);
 
