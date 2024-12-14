@@ -26,7 +26,7 @@ Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
 Route::post('/login/{id?}', [AuthController::class, 'login']);
 Route::get('/sector', [MumeneenController::class, 'all_sector'])
-    ->middleware([
+    ->middleware(['auth:sanctum',
         'check-api-permission:sector.create,sector.edit,sector.view,sector.view_global,sector.delete,sector.export,sector.print,sub_sector.create,sub_sector.edit,sub_sector.view,sub_sector.view_global,sub_sector.delete,sub_sector.export,sub_sector.print'
     ]);
 
