@@ -631,8 +631,8 @@ class AccountsController extends Controller
 
     // Fetch receipts matching the provided family_id values
     $get_receipts = ReceiptsModel::select(
-        'jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
-        'sector', 'sub_sector', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
+        'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+        'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
         'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
         'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
     )
