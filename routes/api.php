@@ -74,6 +74,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // User Management
     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData'])
     ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
+    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']) ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
 
     Route::prefix('users')->group(function () {
        
