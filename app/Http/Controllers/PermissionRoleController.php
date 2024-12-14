@@ -134,14 +134,14 @@ class PermissionRoleController extends Controller
             'permissions.*.valid_from' => 'nullable|date',
             'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
             'sub_sector_ids' => 'required|array', // Always required and an array
-            'sub_sector_ids.*' => 'required|integer|exists:sub_sectors,id', // Validate sub-sector IDs
+            'sub_sector_ids.*' => 'required|integer|exists:t_sub_sector,id', // Validate sub-sector IDs
         ]);
     
         try {
             $user = User::findOrFail($request->user_id);
     
             // Fetch sector_ids based on the provided sub_sector_ids
-            $sectorIds = \DB::table('t_sub_sectors')
+            $sectorIds = \DB::table('t_sub_sector')
                 ->whereIn('id', $request->sub_sector_ids)
                 ->distinct()
                 ->pluck('sector_id')
