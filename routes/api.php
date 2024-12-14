@@ -100,6 +100,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/all', [PermissionRoleController::class, 'getAllRoles']);
     });
 
+    Route::prefix('sub_sector')->middleware(['auth:sanctum'])->group(function () {
+        Route::post('/', [MumeneenController::class, 'register_sub_sector'])
+            ->middleware('check-api-permission:sub_sector.create');
+        Route::post('/update/{id}', [MumeneenController::class, 'update_sub_sector'])
+            ->middleware('check-api-permission:sub_sector.edit');
+        Route::get('/', [MumeneenController::class, 'all_sub_sector'])
+            ->middleware('check-api-permission:sub_sector.view,sub_sector.view_global,sub_sector.export,sub_sector.print');
+        Route::delete('/{id}', [MumeneenController::class, 'delete_sub_sector'])
+            ->middleware('check-api-permission:sub_sector.delete');
+    });
+
     // Hubs
     Route::prefix('hub')->group(function () {
         Route::get('/', [MumeneenController::class, 'all_hub'])
