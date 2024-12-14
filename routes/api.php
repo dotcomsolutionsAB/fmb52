@@ -86,7 +86,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
            });
 
-           Route::delete('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
+           Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
 
     // Permissions and Roles
     Route::prefix('permissions')->group(function () {
