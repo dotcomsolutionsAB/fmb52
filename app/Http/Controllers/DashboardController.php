@@ -14,10 +14,32 @@ class DashboardController extends Controller
         $jamiatId = $user->jamiat_id;
         $userSubSectorAccess = json_decode($user->sub_sector_access_id, true); // Get the user's sub-sector access as an array
     
-        $year = $request->input('year', '1445-1446'); // Default year
-        $requestedSubSectors = $request->input('sub_sector', $userSubSectorAccess);
+        $year = $request->input('year'); // Required year
+        $requestedSectors = $request->input('sector', []);
+        $requestedSubSectors = $request->input('sub_sector', []);
     
-        // Validate the requested sub-sectors against the user's access
+        // Validate year, sector, and sub-sector inputs
+        $request->validate([
+            'year' => 'required|string',
+            'sector' => 'required|array',
+            'sector.*' => 'integer|exists:t_sector,id', // Validate sector IDs
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => 'integer|exists:t_sub_sector,id', // Validate sub-sector IDs
+        ]);
+    
+        // Handle "all" for sub-sector and sector inputs
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = $userSubSectorAccess; // Replace "all" with user's accessible sub-sectors
+        }
+        if (in_array('all', $requestedSectors)) {
+            $requestedSectors = DB::table('t_sub_sector')
+                ->whereIn('id', $userSubSectorAccess)
+                ->distinct()
+                ->pluck('sector_id')
+                ->toArray(); // Replace "all" with sectors corresponding to user's accessible sub-sectors
+        }
+    
+        // Ensure the requested sub-sectors match the user's access
         $subSectorFilter = array_intersect($requestedSubSectors, $userSubSectorAccess);
     
         if (empty($subSectorFilter)) {
@@ -25,6 +47,31 @@ class DashboardController extends Controller
                 'message' => 'Access denied for the requested sub-sectors.',
             ], 403);
         }
+    
+        // Fetch sector IDs corresponding to the accessible sub-sectors
+        $accessibleSectors = DB::table('t_sub_sector')
+            ->whereIn('id', $subSectorFilter)
+            ->distinct()
+            ->pluck('sector_id')
+            ->toArray();
+    
+        // Validate that the requested sectors match the accessible ones
+        $sectorFilter = array_intersect($requestedSectors, $accessibleSectors);
+    
+        if (empty($sectorFilter)) {
+            return response()->json([
+                'message' => 'Access denied for the requested sectors.',
+            ], 403);
+        }
+    
+        // Count total accessible sectors and sub-sectors
+        $totalSectorsCount = DB::table('t_sector')
+            ->whereIn('id', $accessibleSectors)
+            ->count();
+    
+        $totalSubSectorsCount = DB::table('t_sub_sector')
+            ->whereIn('id', $subSectorFilter)
+            ->count();
     
         // Summary Data Query
         $summaryData = DB::table('t_hub')
@@ -97,7 +144,10 @@ class DashboardController extends Controller
         // Prepare Response
         $response = [
             'year' => $year,
+            'sectors' => $sectorFilter,
             'sub-sectors' => $subSectorFilter,
+            'total_sectors_count' => $totalSectorsCount,
+            'total_sub_sectors_count' => $totalSubSectorsCount,
             'total_houses' => number_format($summaryData->total_houses, 0, '.', ','),
             'hub_not_set' => number_format($summaryData->hub_not_set, 0, '.', ','),
             'hub_due' => number_format($summaryData->hub_due, 0, '.', ','),
