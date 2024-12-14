@@ -22,9 +22,9 @@ class DashboardController extends Controller
         $request->validate([
             'year' => 'required|string',
             'sector' => 'required|array',
-            'sector.*' => 'integer|exists:t_sector,id', // Validate sector IDs
+            'sector.*' => 'string|in:all|integer|exists:t_sector,id', // Allow "all" or integers
             'sub_sector' => 'required|array',
-            'sub_sector.*' => 'integer|exists:t_sub_sector,id', // Validate sub-sector IDs
+            'sub_sector.*' => 'string|in:all|integer|exists:t_sub_sector,id', // Allow "all" or integers
         ]);
     
         // Handle "all" for sub-sector and sector inputs
