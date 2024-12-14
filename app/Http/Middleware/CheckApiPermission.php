@@ -18,9 +18,23 @@ class CheckApiPermission
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $hasPermission = false;
+        // Retrieve all permissions assigned to the user
+        $userPermissions = DB::table('model_has_permissions')
+            ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+            ->where('model_has_permissions.model_id', $user->id)
+            ->where('model_has_permissions.model_type', get_class($user))
+            ->select('permissions.name')
+            ->get()
+            ->pluck('name')
+            ->toArray();
+
+        // Log or debug the permissions
+        \Log::info('User Permissions:', $userPermissions);
+        \Log::info('Required Permissions:', $permissions);
 
         // Check if the user has any of the specified permissions
+        $hasPermission = false;
+
         if (!empty($permissions)) {
             $hasPermission = DB::table('model_has_permissions')
                 ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
@@ -42,6 +56,8 @@ class CheckApiPermission
         if (!$hasPermission) {
             return response()->json([
                 'message' => 'Access denied.',
+                'user_permissions' => $userPermissions, // Print user's permissions for debugging
+                'required_permissions' => $permissions, // Print required permissions for debugging
             ], 403);
         }
 

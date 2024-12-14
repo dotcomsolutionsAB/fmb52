@@ -53,7 +53,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {
-        Route::get('-stats', [DashboardController::class, 'getDashboardStats'])
+        Route::get('/stats', [DashboardController::class, 'getDashboardStats'])
             ->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print');
         
         Route::get('/cash-summary', [DashboardController::class, 'getCashSummary'])
