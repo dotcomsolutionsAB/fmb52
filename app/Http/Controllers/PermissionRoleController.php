@@ -133,8 +133,8 @@ class PermissionRoleController extends Controller
             'permissions.*.name' => 'required|string|exists:permissions,name',
             'permissions.*.valid_from' => 'nullable|date',
             'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-            'permissions.*.sector_ids' => 'nullable|array',
-            'permissions.*.sector_ids.*' => [
+            'sector_ids' => 'nullable|array',
+            'sector_ids.*' => [
                 'required',
                 function ($attribute, $value, $fail) {
                     if (!is_int($value) && $value !== 'all') {
@@ -142,8 +142,8 @@ class PermissionRoleController extends Controller
                     }
                 },
             ],
-            'permissions.*.sub_sector_ids' => 'nullable|array',
-            'permissions.*.sub_sector_ids.*' => [
+            'sub_sector_ids' => 'nullable|array',
+            'sub_sector_ids.*' => [
                 'required',
                 function ($attribute, $value, $fail) {
                     if (!is_int($value) && $value !== 'all') {
@@ -156,6 +156,16 @@ class PermissionRoleController extends Controller
         try {
             $user = User::findOrFail($request->user_id);
     
+            // Resolve sector and sub-sector IDs
+            $sectorIds = $this->resolveIds('sectors', $request->sector_ids ?? []);
+            $subSectorIds = $this->resolveIds('sub_sectors', $request->sub_sector_ids ?? []);
+    
+            // Store sector and sub-sector access in the users table
+            $user->update([
+                'sector_access_id' => $sectorIds ? json_encode($sectorIds) : null,
+                'sub_sector_access_id' => $subSectorIds ? json_encode($subSectorIds) : null,
+            ]);
+    
             foreach ($request->permissions as $permissionData) {
                 $permission = Permission::where('name', $permissionData['name'])->first();
     
@@ -163,44 +173,23 @@ class PermissionRoleController extends Controller
                     // Assign permission to user
                     $user->givePermissionTo($permission);
     
-                    // Handle sector and sub-sector relationships
-                    $sectorIds = $this->resolveSectorIds($permissionData['sector_ids'] ?? []);
-                    $subSectorIds = $this->resolveSubSectorIds($permissionData['sub_sector_ids'] ?? []);
-    
-                    // Store sector relationships
-                    foreach ($sectorIds as $sectorId) {
-                        \DB::table('user_permission_sectors')->updateOrInsert(
-                            [
-                                'user_id' => $user->id,
-                                'permission_id' => $permission->id,
-                                'sector_id' => $sectorId,
-                            ],
-                            [
-                                'valid_from' => $permissionData['valid_from'] ?? null,
-                                'valid_to' => $permissionData['valid_to'] ?? null,
-                            ]
-                        );
-                    }
-    
-                    // Store sub-sector relationships
-                    foreach ($subSectorIds as $subSectorId) {
-                        \DB::table('user_permission_sub_sectors')->updateOrInsert(
-                            [
-                                'user_id' => $user->id,
-                                'permission_id' => $permission->id,
-                                'sub_sector_id' => $subSectorId,
-                            ],
-                            [
-                                'valid_from' => $permissionData['valid_from'] ?? null,
-                                'valid_to' => $permissionData['valid_to'] ?? null,
-                            ]
-                        );
-                    }
+                    // Update model_has_permissions with validity dates
+                    \DB::table('model_has_permissions')->updateOrInsert(
+                        [
+                            'model_id' => $user->id,
+                            'model_type' => get_class($user),
+                            'permission_id' => $permission->id,
+                        ],
+                        [
+                            'valid_from' => $permissionData['valid_from'] ?? null,
+                            'valid_to' => $permissionData['valid_to'] ?? null,
+                        ]
+                    );
                 }
             }
     
             return response()->json([
-                'message' => 'Permissions assigned to user successfully.',
+                'message' => 'Permissions and sector/sub-sector access assigned successfully.',
                 'user_id' => $user->id,
                 'permissions' => $request->permissions,
             ], 200);
@@ -213,29 +202,27 @@ class PermissionRoleController extends Controller
     }
     
     /**
-     * Resolve sector IDs based on input
+     * Resolve IDs from the table based on the provided array or 'all'.
+     *
+     * @param string $table
+     * @param array $ids
+     * @return array
      */
-    private function resolveSectorIds(array $sectorIds)
+    private function resolveIds(string $table, array $ids): array
     {
-        if (in_array('all', $sectorIds)) {
-            return \DB::table('t_sector')->pluck('id')->toArray(); // Fetch all sector IDs
+        if (in_array('all', $ids)) {
+            // If 'all' is provided, fetch all IDs from the table
+            return \DB::table($table)->pluck('id')->toArray();
         }
     
-        return $sectorIds; // Return the original array if "all" is not present
+        // Otherwise, return the given IDs
+        return $ids;
     }
     
     /**
-     * Resolve sub-sector IDs based on input
+     * Resolve sector IDs based on input
      */
-    private function resolveSubSectorIds(array $subSectorIds)
-    {
-        if (in_array('all', $subSectorIds)) {
-            return \DB::table('t_sub_sector')->pluck('id')->toArray(); // Fetch all sub-sector IDs
-        }
-    
-        return $subSectorIds; // Return the original array if "all" is not present
-    }
-
+   
 
     /**
      * Get valid permissions for a user

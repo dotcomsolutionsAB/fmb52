@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class CheckApiPermission
 {
-    public function handle($request, Closure $next, $permission = null, $role = null)
+    public function handle($request, Closure $next, ...$permissions)
     {
         $user = Auth::user();
 
@@ -18,59 +18,30 @@ class CheckApiPermission
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        // Retrieve optional sector and sub-sector IDs
-        $sectorId = $request->input('sector_id');
-        $subSectorId = $request->input('sub_sector_id');
-
         $hasPermission = false;
-        $hasRole = false;
 
-        // Check for permissions
-        if ($permission) {
-            $hasPermission = DB::table('user_permission_sectors')
-                ->join('permissions', 'user_permission_sectors.permission_id', '=', 'permissions.id')
-                ->where('user_permission_sectors.user_id', $user->id)
-                ->where('permissions.name', $permission)
-                ->when($sectorId, fn($query) => $query->where('user_permission_sectors.sector_id', $sectorId))
-                ->when($subSectorId, fn($query) => $query->where('user_permission_sectors.sub_sector_id', $subSectorId))
+        // Check if the user has any of the specified permissions
+        if (!empty($permissions)) {
+            $hasPermission = DB::table('model_has_permissions')
+                ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+                ->where('model_has_permissions.model_id', $user->id)
+                ->where('model_has_permissions.model_type', get_class($user))
+                ->whereIn('permissions.name', $permissions)
                 ->where(function ($query) {
-                    $query->whereNull('user_permission_sectors.valid_from')
-                          ->orWhere('user_permission_sectors.valid_from', '<=', now());
+                    $query->whereNull('model_has_permissions.valid_from')
+                          ->orWhere('model_has_permissions.valid_from', '<=', now());
                 })
                 ->where(function ($query) {
-                    $query->whereNull('user_permission_sectors.valid_to')
-                          ->orWhere('user_permission_sectors.valid_to', '>=', now());
+                    $query->whereNull('model_has_permissions.valid_to')
+                          ->orWhere('model_has_permissions.valid_to', '>=', now());
                 })
                 ->exists();
         }
 
-        // Check for roles
-        if ($role) {
-            $hasRole = DB::table('model_has_roles')
-                ->where('model_id', $user->id)
-                ->where('role_id', function ($query) use ($role) {
-                    $query->select('id')
-                          ->from('roles')
-                          ->where('name', $role)
-                          ->limit(1);
-                })
-                ->when($sectorId, fn($query) => $query->whereRaw("FIND_IN_SET(?, sector_ids)", [$sectorId]))
-                ->when($subSectorId, fn($query) => $query->whereRaw("FIND_IN_SET(?, sub_sector_ids)", [$subSectorId]))
-                ->where(function ($query) {
-                    $query->whereNull('valid_from')
-                          ->orWhere('valid_from', '<=', now());
-                })
-                ->where(function ($query) {
-                    $query->whereNull('valid_to')
-                          ->orWhere('valid_to', '>=', now());
-                })
-                ->exists();
-        }
-
-        // Allow if either permission or role is valid
-        if (!$hasPermission && !$hasRole) {
+        // Deny access if none of the permissions are valid
+        if (!$hasPermission) {
             return response()->json([
-                'message' => 'Access denied for this sector or sub-sector.'
+                'message' => 'Access denied.',
             ], 403);
         }
 
