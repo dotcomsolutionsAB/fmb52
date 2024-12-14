@@ -848,15 +848,32 @@ class MumeneenController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
     
-        // Fetch all sector IDs the user has permission to access
-        $permittedSectorIds = \DB::table('user_permission_sectors')
-            ->where('user_id', $user->id)
+        // Fetch the user's accessible sub-sectors from the `sub_sector_access_id` column
+        $userSubSectorAccess = json_decode($user->sub_sector_access_id, true); // Get user's accessible sub-sectors as an array
+    
+        if (empty($userSubSectorAccess)) {
+            return response()->json([
+                'message' => 'No access to any sectors or sub-sectors.',
+            ], 403);
+        }
+    
+        // Fetch all sector IDs linked to the user's accessible sub-sectors
+        $permittedSectorIds = \DB::table('t_sub_sector')
+            ->whereIn('id', $userSubSectorAccess)
+            ->distinct()
             ->pluck('sector_id')
             ->toArray();
     
-        // Fetch sectors the user has permission to access
-        $get_all_sector = SectorModel::whereIn('id', $permittedSectorIds)
-            ->select('jamiat_id', 'name', 'notes', 'log_user')
+        if (empty($permittedSectorIds)) {
+            return response()->json([
+                'message' => 'No sectors linked to the accessible sub-sectors.',
+            ], 404);
+        }
+    
+        // Fetch sector details based on permitted sector IDs
+        $get_all_sector = \DB::table('t_sector')
+            ->whereIn('id', $permittedSectorIds)
+            ->select('id', 'jamiat_id', 'name', 'notes', 'log_user')
             ->get();
     
         return $get_all_sector->isNotEmpty()
