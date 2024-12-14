@@ -81,6 +81,74 @@ class DashboardController extends Controller
             ->whereIn('id', $subSectorFilter)
             ->count();
     
+        // Summary Data Query
+        $summaryData = DB::table('t_hub')
+            ->selectRaw("
+                COUNT(DISTINCT t_hub.family_id) AS total_houses,
+                SUM(CASE WHEN t_hub.hub_amount = 0 THEN 1 ELSE 0 END) AS hub_not_set,
+                SUM(CASE WHEN t_hub.due_amount > 0 THEN 1 ELSE 0 END) AS hub_due,
+                SUM(t_hub.hub_amount) AS total_hub_amount,
+                SUM(t_hub.paid_amount) AS total_paid_amount,
+                SUM(t_hub.due_amount) AS total_due_amount
+            ")
+            ->where('t_hub.year', $year)
+            ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
+                $query->select(DB::raw(1))
+                    ->from('users')
+                    ->whereColumn('users.family_id', 't_hub.family_id')
+                    ->where('users.jamiat_id', $jamiatId)
+                    ->where('users.role', 'mumeneen') // Include only mumeneen users
+                    ->whereIn('users.sub_sector', $subSectorFilter);
+            })
+            ->first();
+    
+        // Payment Modes Query
+        $paymentModes = DB::table('t_receipts')
+            ->selectRaw("
+                mode,
+                SUM(amount) AS total_amount
+            ")
+            ->where('year', $year)
+            ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
+                $query->select(DB::raw(1))
+                    ->from('users')
+                    ->whereColumn('users.family_id', 't_receipts.family_id')
+                    ->where('users.jamiat_id', $jamiatId)
+                    ->where('users.role', 'mumeneen') // Include only mumeneen users
+                    ->whereIn('users.sub_sector', $subSectorFilter);
+            })
+            ->groupBy('mode')
+            ->get();
+    
+        // Process Payment Modes
+        $paymentBreakdown = $paymentModes->mapWithKeys(function ($item) {
+            return [$item->mode => number_format($item->total_amount, 0, '.', ',')];
+        });
+    
+        // Thaali-Taking Query
+        $thaaliTakingCount = DB::table('users')
+            ->where('jamiat_id', $jamiatId)
+            ->where('role', 'mumeneen') // Include only mumeneen users
+            ->where('thali_status', 'taking')
+            ->whereIn('sub_sector', $subSectorFilter)
+            ->distinct('family_id')
+            ->count('family_id');
+    
+        // User Demographics Query
+        $userStats = DB::table('users')
+            ->selectRaw("
+                COUNT(*) AS total_users,
+                SUM(CASE WHEN mumeneen_type = 'HOF' THEN 1 ELSE 0 END) AS total_hof,
+                SUM(CASE WHEN mumeneen_type = 'FM' THEN 1 ELSE 0 END) AS total_fm,
+                SUM(CASE WHEN LOWER(gender) = 'male' THEN 1 ELSE 0 END) AS total_males,
+                SUM(CASE WHEN LOWER(gender) = 'female' THEN 1 ELSE 0 END) AS total_females,
+                SUM(CASE WHEN age < 13 THEN 1 ELSE 0 END) AS total_children
+            ")
+            ->where('jamiat_id', $jamiatId)
+            ->where('role', 'mumeneen') // Include only mumeneen users
+            ->whereIn('sub_sector', $subSectorFilter)
+            ->first();
+    
         // Prepare response data
         $response = [
             'year' => $year,
@@ -88,6 +156,20 @@ class DashboardController extends Controller
             'sub-sectors' => $subSectorFilter,
             'total_sectors_count' => $totalSectorsCount,
             'total_sub_sectors_count' => $totalSubSectorsCount,
+            'total_houses' => number_format($summaryData->total_houses, 0, '.', ','),
+            'hub_not_set' => number_format($summaryData->hub_not_set, 0, '.', ','),
+            'hub_due' => number_format($summaryData->hub_due, 0, '.', ','),
+            'total_hub_amount' => number_format($summaryData->total_hub_amount, 0, '.', ','),
+            'total_paid_amount' => number_format($summaryData->total_paid_amount, 0, '.', ','),
+            'total_due_amount' => number_format($summaryData->total_due_amount, 0, '.', ','),
+            'thaali_taking' => number_format($thaaliTakingCount, 0, '.', ','),
+            'total_users' => number_format($userStats->total_users, 0, '.', ','),
+            'total_hof' => number_format($userStats->total_hof, 0, '.', ','),
+            'total_fm' => number_format($userStats->total_fm, 0, '.', ','),
+            'total_males' => number_format($userStats->total_males, 0, '.', ','),
+            'total_females' => number_format($userStats->total_females, 0, '.', ','),
+            'total_children' => number_format($userStats->total_children, 0, '.', ','),
+            'payment_breakdown' => $paymentBreakdown,
         ];
     
         return response()->json($response);
