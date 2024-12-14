@@ -141,7 +141,7 @@ class PermissionRoleController extends Controller
             $user = User::findOrFail($request->user_id);
     
             // Fetch sector_ids based on the provided sub_sector_ids
-            $sectorIds = \DB::table('sub_sectors')
+            $sectorIds = \DB::table('t_sub_sectors')
                 ->whereIn('id', $request->sub_sector_ids)
                 ->distinct()
                 ->pluck('sector_id')
