@@ -978,21 +978,43 @@ class MumeneenController extends Controller
             : response()->json(['message' => 'No sub-sector records found or you do not have access to any sub-sectors!'], 404);
     }
     public function getSubSectorsBySector($sector)
-{
-    $subSectors = SubSectorModel::select('jamiat_id', 'name', 'notes', 'log_user')
-        ->where('sector', $sector)
-        ->get();
-
-    return $subSectors->isNotEmpty()
-        ? response()->json([
-            'message' => 'Sub-Sectors for the given sector fetched successfully!',
-            'data' => $subSectors
-        ], 200)
-        : response()->json([
-            'message' => 'No sub-sectors found for the given sector!',
-            'sector' => $sector
-        ], 404);
-}
+    {
+        $user = Auth::user();
+    
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+    
+        // Get accessible sector IDs from the user's sector_access_id field
+        $permittedSectorIds = json_decode($user->sector_access_id, true);
+    
+        if (empty($permittedSectorIds)) {
+            return response()->json(['message' => 'No access to any sectors.'], 403);
+        }
+    
+        // Check if the requested sector is within the user's permitted sectors
+        if (!in_array($sector, $permittedSectorIds)) {
+            return response()->json([
+                'message' => 'Access denied for the requested sector!',
+                'sector' => $sector
+            ], 403);
+        }
+    
+        // Fetch sub-sectors within the permitted sector
+        $subSectors = SubSectorModel::select('jamiat_id', 'name', 'notes', 'log_user')
+            ->where('sector_id', $sector)
+            ->get();
+    
+        return $subSectors->isNotEmpty()
+            ? response()->json([
+                'message' => 'Sub-Sectors for the given sector fetched successfully!',
+                'data' => $subSectors
+            ], 200)
+            : response()->json([
+                'message' => 'No sub-sectors found for the given sector!',
+                'sector' => $sector
+            ], 404);
+    }
 
     // update
     public function update_sub_sector(Request $request, $id)
