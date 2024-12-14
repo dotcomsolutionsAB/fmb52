@@ -958,11 +958,12 @@ class MumeneenController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
     
-        // Fetch all accessible sector IDs for the user
-        $permittedSectorIds = DB::table('user_permission_sectors')
-            ->where('user_id', $user->id)
-            ->pluck('sector_id')
-            ->toArray();
+        // Get accessible sector IDs from the user's sector_access_id field
+        $permittedSectorIds = json_decode($user->sub_sector_access_id, true);
+    
+        if (empty($permittedSectorIds)) {
+            return response()->json(['message' => 'No access to any sectors.'], 403);
+        }
     
         // Fetch sub-sectors within the permitted sectors
         $get_all_sub_sector = SubSectorModel::whereIn('sector_id', $permittedSectorIds)
