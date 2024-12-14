@@ -133,37 +133,24 @@ class PermissionRoleController extends Controller
             'permissions.*.name' => 'required|string|exists:permissions,name',
             'permissions.*.valid_from' => 'nullable|date',
             'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-            'sector_ids' => 'nullable|array',
-            'sector_ids.*' => [
-                'required',
-                function ($attribute, $value, $fail) {
-                    if (!is_int($value) && $value !== 'all') {
-                        $fail("$attribute must be an integer or the string 'all'.");
-                    }
-                },
-            ],
-            'sub_sector_ids' => 'nullable|array',
-            'sub_sector_ids.*' => [
-                'required',
-                function ($attribute, $value, $fail) {
-                    if (!is_int($value) && $value !== 'all') {
-                        $fail("$attribute must be an integer or the string 'all'.");
-                    }
-                },
-            ],
+            'sub_sector_ids' => 'required|array', // Always required and an array
+            'sub_sector_ids.*' => 'required|integer|exists:sub_sectors,id', // Validate sub-sector IDs
         ]);
     
         try {
             $user = User::findOrFail($request->user_id);
     
-            // Resolve sector and sub-sector IDs
-            $sectorIds = $this->resolveIds('sectors', $request->sector_ids ?? []);
-            $subSectorIds = $this->resolveIds('sub_sectors', $request->sub_sector_ids ?? []);
+            // Fetch sector_ids based on the provided sub_sector_ids
+            $sectorIds = \DB::table('sub_sectors')
+                ->whereIn('id', $request->sub_sector_ids)
+                ->distinct()
+                ->pluck('sector_id')
+                ->toArray();
     
             // Store sector and sub-sector access in the users table
             $user->update([
-                'sector_access_id' => $sectorIds ? json_encode($sectorIds) : null,
-                'sub_sector_access_id' => $subSectorIds ? json_encode($subSectorIds) : null,
+                'sector_access_id' => json_encode($sectorIds),
+                'sub_sector_access_id' => json_encode($request->sub_sector_ids),
             ]);
     
             foreach ($request->permissions as $permissionData) {
@@ -208,16 +195,6 @@ class PermissionRoleController extends Controller
      * @param array $ids
      * @return array
      */
-    private function resolveIds(string $table, array $ids): array
-    {
-        if (in_array('all', $ids)) {
-            // If 'all' is provided, fetch all IDs from the table
-            return \DB::table($table)->pluck('id')->toArray();
-        }
-    
-        // Otherwise, return the given IDs
-        return $ids;
-    }
     
     /**
      * Resolve sector IDs based on input

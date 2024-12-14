@@ -165,32 +165,20 @@ class MumeneenController extends Controller
             $year = $currentYearRecord->year ?? date('Y');
         }
     
-        // Fetch sector permissions
-        $permittedSectorIds = \DB::table('user_permission_sectors')
-            ->join('permissions', 'user_permission_sectors.permission_id', '=', 'permissions.id')
-            ->where('user_permission_sectors.user_id', $user->id)
-            ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
-            ->pluck('user_permission_sectors.sector_id')
-            ->toArray();
+        // Fetch sub-sector permissions from authenticated user
+        $permittedSubSectorIds = $user->sub_sector_access_id ?? [];
     
-        // Fetch sub-sector permissions
-        $permittedSubSectorIds = [];
-        if (!empty($permittedSectorIds)) {
-            $permittedSubSectorIds = \DB::table('user_permission_sub_sectors')
-                ->join('permissions', 'user_permission_sub_sectors.permission_id', '=', 'permissions.id')
-                ->where('user_permission_sub_sectors.user_id', $user->id)
-                ->whereIn('permissions.name', ['mumeneen.view', 'mumeneen.view_global'])
-                ->whereIn('user_permission_sub_sectors.sector_id', $permittedSectorIds) // Ensures sub-sectors belong to permitted sectors
-                ->pluck('user_permission_sub_sectors.sub_sector_id')
-                ->toArray();
+        // Ensure sub-sector access IDs are an array
+        if (!is_array($permittedSubSectorIds)) {
+            $permittedSubSectorIds = json_decode($permittedSubSectorIds, true) ?? [];
         }
     
-        // Return forbidden if no sector and sub-sector permissions
-        if (empty($permittedSectorIds) && empty($permittedSubSectorIds)) {
-            return response()->json(['message' => 'You do not have access to any sectors or sub-sectors.'], 403);
+        // Return forbidden if no sub-sector permissions
+        if (empty($permittedSubSectorIds)) {
+            return response()->json(['message' => 'You do not have access to any sub-sectors.'], 403);
         }
     
-        // Fetch users belonging to the permitted sectors and sub-sectors
+        // Fetch users belonging to the permitted sub-sectors
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
             'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
@@ -200,12 +188,9 @@ class MumeneenController extends Controller
             ->where('jamiat_id', $jamiat_id)
             ->where('mumeneen_type', 'HOF')
             ->where('status', 'active')
-            ->where(function ($query) use ($permittedSectorIds, $permittedSubSectorIds) {
-                $query->whereIn('sector_id', $permittedSectorIds)
-                    ->orWhereIn('sub_sector_id', $permittedSubSectorIds);
-            })
-            ->orderByRaw("sector_id IS NULL OR sector_id = ''") // Push empty sectors to the end
-            ->orderBy('sector_id') // Sort by sector ID
+            ->whereIn('sub_sector_id', $permittedSubSectorIds)
+            ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
+            ->orderBy('sub_sector_id') // Sort by sub-sector ID
             ->orderBy('folio_no') // Then sort by folio number
             ->get();
     
@@ -250,7 +235,8 @@ class MumeneenController extends Controller
         }
     
         return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
-    } // dashboard
+    }
+    // dashboard
     public function get_user($id)
     {
         $get_user_records = User::select('name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector', 'sub_sector', 'status', 'role', 'username', 'photo_id')

@@ -185,11 +185,11 @@ class AuthController extends Controller
             $request->validate([
                 'username' => ['required', 'string'],
             ]);
-
+    
             $otpRecord = User::select('otp', 'expires_at')
                 ->where('username', $request->username)
                 ->first();
-
+    
             if ($otpRecord) {
                 if (!$otpRecord || $otpRecord->otp != $otp) {
                     return response()->json([
@@ -205,16 +205,16 @@ class AuthController extends Controller
                     // Remove OTP record after successful validation
                     User::where('username', $request->username)
                         ->update(['otp' => null, 'expires_at' => null]);
-
+    
                     // Retrieve the user
                     $user = User::where('username', $request->username)->first();
-
+    
                     // Generate a Sanctum token
                     $generated_token = $user->createToken('API TOKEN')->plainTextToken;
-
+    
                     // Retrieve user permissions
                     $permissions = $user->getAllPermissions()->pluck('name');
-
+    
                     return response()->json([
                         'success' => true,
                         'data' => [
@@ -223,7 +223,10 @@ class AuthController extends Controller
                             'role' => $user->role,
                             'id' => $user->id,
                             'jamiat_id' => $user->jamiat_id,
-                            'permissions' => $permissions, // Add permissions here
+                            'permissions' => $permissions,
+                            'sector_access_id' => $user->sector_access_id, // Added sector_access_id
+                            'sub_sector_access_id' => $user->sub_sector_access_id, // Added sub_sector_access_id
+                            'photo' => $user->photo ? $user->photo->file_url : null,
                         ],
                         'message' => 'User logged in successfully!',
                     ], 200);
@@ -239,19 +242,19 @@ class AuthController extends Controller
                 'username' => ['required', 'string'],
                 'password' => 'required',
             ]);
-
+    
             // Find the user by username
             $user = User::where('username', $request->username)->first();
-
+    
             if (Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
                 $user = Auth::user();
-
+    
                 // Generate a Sanctum token
                 $generated_token = $user->createToken('API TOKEN')->plainTextToken;
-
+    
                 // Retrieve user permissions
                 $permissions = $user->getAllPermissions()->pluck('name');
-
+    
                 return response()->json([
                     'success' => true,
                     'data' => [
@@ -260,7 +263,9 @@ class AuthController extends Controller
                         'role' => $user->role,
                         'id' => $user->id,
                         'jamiat_id' => $user->jamiat_id,
-                        'permissions' => $permissions, // Add permissions here
+                        'permissions' => $permissions,
+                        'sector_access_id' => $user->sector_access_id, // Added sector_access_id
+                        'sub_sector_access_id' => $user->sub_sector_access_id, // Added sub_sector_access_id
                         'photo' => $user->photo ? $user->photo->file_url : null,
                     ],
                     'message' => 'User logged in successfully!',
@@ -273,6 +278,7 @@ class AuthController extends Controller
             }
         }
     }
+    
 
 
     // user `logout`
