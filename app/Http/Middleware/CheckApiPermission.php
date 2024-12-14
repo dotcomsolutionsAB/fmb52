@@ -15,7 +15,7 @@ class CheckApiPermission
 
     // Ensure the user is authenticated
     if (!$user) {
-        return response()->json(['message' => 'Unauthorized.'], 403);
+        return response()->json(['message' => 'Unauthorized.3e3e3'], 403);
     }
 
     // Retrieve all permissions assigned to the user
