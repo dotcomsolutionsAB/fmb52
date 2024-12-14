@@ -98,7 +98,7 @@ class DashboardController extends Controller
                     ->whereColumn('users.family_id', 't_hub.family_id')
                     ->where('users.jamiat_id', $jamiatId)
                     ->where('users.role', 'mumeneen') // Include only mumeneen users
-                    ->whereIn('users.sub_sector', $subSectorFilter);
+                    ->whereIn('users.sub_sector_id', $subSectorFilter);
             })
             ->first();
     
@@ -115,7 +115,7 @@ class DashboardController extends Controller
                     ->whereColumn('users.family_id', 't_receipts.family_id')
                     ->where('users.jamiat_id', $jamiatId)
                     ->where('users.role', 'mumeneen') // Include only mumeneen users
-                    ->whereIn('users.sub_sector', $subSectorFilter);
+                    ->whereIn('users.sub_sector_id', $subSectorFilter);
             })
             ->groupBy('mode')
             ->get();
@@ -130,7 +130,7 @@ class DashboardController extends Controller
             ->where('jamiat_id', $jamiatId)
             ->where('role', 'mumeneen') // Include only mumeneen users
             ->where('thali_status', 'taking')
-            ->whereIn('sub_sector', $subSectorFilter)
+            ->whereIn('sub_sector_id', $subSectorFilter)
             ->distinct('family_id')
             ->count('family_id');
     
@@ -146,7 +146,7 @@ class DashboardController extends Controller
             ")
             ->where('jamiat_id', $jamiatId)
             ->where('role', 'mumeneen') // Include only mumeneen users
-            ->whereIn('sub_sector', $subSectorFilter)
+            ->whereIn('sub_sector_id', $subSectorFilter)
             ->first();
     
         // Prepare response data
