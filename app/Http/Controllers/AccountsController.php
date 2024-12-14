@@ -578,7 +578,7 @@ class AccountsController extends Controller
         $user = Auth::user();
     
         if (!$user) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'Unauthorized.  11'], 403);
         }
     
         // Get user's accessible sector and sub-sector IDs
