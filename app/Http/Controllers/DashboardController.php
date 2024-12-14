@@ -243,29 +243,29 @@ class DashboardController extends Controller
     
         // Step 1: Get cash receipts grouped by sector
         $cashReceipts = DB::table('t_receipts')
-            ->select('sector', DB::raw('SUM(amount) as cash'))
+            ->select('sector_id', DB::raw('SUM(amount) as cash'))
             ->where('mode', 'cash')
             ->where('year', $defaultYear)
-            ->whereIn('sector', $sectorFilter) // Filter by accessible sectors
-            ->groupBy('sector')
+            ->whereIn('sector_id', $sectorFilter) // Updated to sector_id
+            ->groupBy('sector_id')
             ->get();
     
         // Step 2: Get deposited payments grouped by sector
         $depositedPayments = DB::table('t_payments')
-            ->select('sector', DB::raw('SUM(amount) as deposited'))
+            ->select('sector_id', DB::raw('SUM(amount) as deposited'))
             ->where('mode', 'cash')
             ->where('year', $defaultYear)
-            ->whereIn('sector', $sectorFilter) // Filter by accessible sectors
-            ->groupBy('sector')
+            ->whereIn('sector_id', $sectorFilter) // Updated to sector_id
+            ->groupBy('sector_id')
             ->get();
     
         // Step 3: Merge data to calculate in_hand
         $summary = $cashReceipts->map(function ($receipt) use ($depositedPayments) {
-            $sectorPayments = $depositedPayments->firstWhere('sector', $receipt->sector);
+            $sectorPayments = $depositedPayments->firstWhere('sector_id', $receipt->sector_id);
             $deposited = $sectorPayments ? $sectorPayments->deposited : 0;
     
             return [
-                'sector' => $receipt->sector,
+                'sector_id' => $receipt->sector_id,
                 'cash' => $receipt->cash,
                 'deposited' => $deposited,
                 'in_hand' => $receipt->cash - $deposited,
@@ -274,10 +274,10 @@ class DashboardController extends Controller
     
         // Include any sectors in payments that are missing in receipts
         $additionalSectors = $depositedPayments->filter(function ($payment) use ($cashReceipts) {
-            return !$cashReceipts->contains('sector', $payment->sector);
+            return !$cashReceipts->contains('sector_id', $payment->sector_id);
         })->map(function ($payment) {
             return [
-                'sector' => $payment->sector,
+                'sector_id' => $payment->sector_id,
                 'cash' => 0,
                 'deposited' => $payment->deposited,
                 'in_hand' => -$payment->deposited,
@@ -293,4 +293,5 @@ class DashboardController extends Controller
             'data' => $finalSummary,
         ]);
     }
+    
 }
