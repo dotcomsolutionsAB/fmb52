@@ -84,8 +84,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/details/{id}', [MumeneenController::class, 'get_user']);
         Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
         Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
-        Route::delete('/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
-    });
+           });
+
+           Route::delete('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
 
     // Permissions and Roles
     Route::prefix('permissions')->group(function () {
