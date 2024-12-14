@@ -16,8 +16,11 @@ class SectorModel extends Model
     ];
 
     // Define the relationship with the SubSector model
-    public function get_subSectors()
+   
+    public function subSectors()
     {
-        return $this->hasMany(SubSectorModel::class, 'sector', 'name');
+        return $this->hasMany(SubSectorModel::class, 'sector_id');
     }
+
+
 }

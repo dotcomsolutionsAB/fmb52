@@ -20,4 +20,10 @@ class SubSectorModel extends Model
     {
         return $this->belongsTo(SectorModel::class, 'sector', 'name');
     }
+
+    public function sector()
+{
+    return $this->belongsTo(SubSectorModel::class, 'sector_id');
+}
+
 }
