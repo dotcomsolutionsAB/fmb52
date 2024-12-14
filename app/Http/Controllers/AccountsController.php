@@ -573,7 +573,7 @@ class AccountsController extends Controller
 
 
     // view
-    public function getAllReceipts(Request $request)
+    public function all_receipts(Request $request)
     {
         $user = Auth::user();
     
