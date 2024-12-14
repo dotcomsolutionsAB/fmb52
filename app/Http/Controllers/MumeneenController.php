@@ -952,11 +952,29 @@ class MumeneenController extends Controller
     // view
     public function all_sub_sector()
     {
-        $get_all_sub_sector = SubSectorModel::select('jamiat_id', 'sector', 'name', 'notes', 'log_user')->get();
-
+        $user = Auth::user();
+    
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+    
+        // Fetch all accessible sector IDs for the user
+        $permittedSectorIds = DB::table('user_permission_sectors')
+            ->where('user_id', $user->id)
+            ->pluck('sector_id')
+            ->toArray();
+    
+        // Fetch sub-sectors within the permitted sectors
+        $get_all_sub_sector = SubSectorModel::whereIn('sector_id', $permittedSectorIds)
+            ->select('jamiat_id', 'sector_id', 'name', 'notes', 'log_user')
+            ->get();
+    
         return $get_all_sub_sector->isNotEmpty()
-            ? response()->json(['message' => 'Sub-Sector records fetched successfully!', 'data' => $get_all_sub_sector], 200)
-            : response()->json(['message' => 'No sub-sector records found!'], 404);
+            ? response()->json([
+                'message' => 'Sub-Sector records fetched successfully!',
+                'data' => $get_all_sub_sector,
+            ], 200)
+            : response()->json(['message' => 'No sub-sector records found or you do not have access to any sub-sectors!'], 404);
     }
     public function getSubSectorsBySector($sector)
 {
