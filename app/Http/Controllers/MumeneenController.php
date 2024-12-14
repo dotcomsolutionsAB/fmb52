@@ -986,7 +986,7 @@ class MumeneenController extends Controller
         }
     
         // Get accessible sector IDs from the user's sector_access_id field
-        $permittedSectorIds = json_decode($user->sector_access_id, true);
+        $permittedSectorIds = json_decode($user->sub_sector_access_id, true);
     
         if (empty($permittedSectorIds)) {
             return response()->json(['message' => 'No access to any sectors.'], 403);

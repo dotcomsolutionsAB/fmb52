@@ -205,21 +205,32 @@ class PermissionRoleController extends Controller
      * Get valid permissions for a user
      */
     public function getUserPermissions($userId)
-    {
-        $user = User::findOrFail($userId);
-        $permissions = $user->permissions()
-            ->where(function ($query) {
-                $query->whereNull('valid_from')
-                      ->orWhere('valid_from', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('valid_to')
-                      ->orWhere('valid_to', '>=', now());
-            })
-            ->get();
+{
+    $user = User::findOrFail($userId);
 
-        return response()->json(['user' => $user, 'permissions' => $permissions], 200);
-    }
+    // Fetch permissions with validity conditions
+    $permissions = $user->permissions()
+        ->where(function ($query) {
+            $query->whereNull('valid_from')
+                  ->orWhere('valid_from', '<=', now());
+        })
+        ->where(function ($query) {
+            $query->whereNull('valid_to')
+                  ->orWhere('valid_to', '>=', now());
+        })
+        ->get();
+
+    // Include sector and sub-sector access IDs
+    $sectorAccessIds = json_decode($user->sector_access_id, true) ?? [];
+    $subSectorAccessIds = json_decode($user->sub_sector_access_id, true) ?? [];
+
+    return response()->json([
+        'user' => $user,
+        'permissions' => $permissions,
+        'sector_access_ids' => $sectorAccessIds,
+        'sub_sector_access_ids' => $subSectorAccessIds,
+    ], 200);
+}
 
     /**
      * Get valid permissions for a role
@@ -245,4 +256,71 @@ class PermissionRoleController extends Controller
 
         return response()->json(['role' => $role, 'permissions' => $permissions], 200);
     }
+
+    public function removePermissionsFromUser(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|integer|exists:users,id',
+        'permissions' => 'nullable|array', // Permissions array is optional
+        'permissions.*.name' => 'required|string|exists:permissions,name',
+        'sub_sector_ids' => 'nullable|array', // Sub-sector IDs array is optional
+        'sub_sector_ids.*' => 'required|integer|exists:t_sub_sector,id',
+    ]);
+
+    try {
+        $user = User::findOrFail($request->user_id);
+
+        // Handle permissions removal if provided
+        if (!empty($request->permissions)) {
+            foreach ($request->permissions as $permissionData) {
+                $permission = Permission::where('name', $permissionData['name'])->first();
+                
+                if ($permission) {
+                    // Revoke permission from user
+                    $user->revokePermissionTo($permission);
+
+                    // Remove validity details from model_has_permissions
+                    \DB::table('model_has_permissions')->where([
+                        'model_id' => $user->id,
+                        'model_type' => get_class($user),
+                        'permission_id' => $permission->id,
+                    ])->delete();
+                }
+            }
+        }
+
+        // Handle sub-sector access removal if provided
+        if (!empty($request->sub_sector_ids)) {
+            // Decode existing sub-sector and sector access
+            $existingSubSectors = json_decode($user->sub_sector_access_id, true) ?? [];
+            $existingSectors = json_decode($user->sector_access_id, true) ?? [];
+
+            // Filter out the sub-sector IDs to be removed
+            $updatedSubSectors = array_diff($existingSubSectors, $request->sub_sector_ids);
+
+            // Fetch the remaining sector IDs based on updated sub-sectors
+            $updatedSectors = \DB::table('t_sub_sector')
+                ->whereIn('id', $updatedSubSectors)
+                ->distinct()
+                ->pluck('sector_id')
+                ->toArray();
+
+            // Update the user's sector and sub-sector access
+            $user->update([
+                'sector_access_id' => json_encode($updatedSectors),
+                'sub_sector_access_id' => json_encode($updatedSubSectors),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Permissions and sector/sub-sector access removed successfully.',
+            'user_id' => $user->id,
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred while removing permissions.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 }
