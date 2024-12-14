@@ -113,7 +113,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware('check-api-permission:sub_sector.delete');
     });
 
-    // Hubs
+    // Hubs->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
     Route::prefix('hub')->group(function () {
         Route::get('/', [MumeneenController::class, 'all_hub'])
             ->middleware(['check-api-permission:hub.view,hub.view_global,hub.export,hub.print']);
@@ -125,6 +125,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware(['check-api-permission:hub.delete']);
     });
     Route::get('/family_hub_details/{family_id}',[MumeneenController::class,'familyHubDetails']) ->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
+    Route::post('/get_family_user', [MumeneenController::class, 'usersByFamily'])->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
+
 
     // Receipts
     Route::prefix('receipts')->group(function () {
