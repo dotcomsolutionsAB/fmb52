@@ -246,7 +246,7 @@ class DashboardController extends Controller
             ->select('sector_id', DB::raw('SUM(amount) as cash'))
             ->where('mode', 'cash')
             ->where('year', $defaultYear)
-            ->whereIn('sector_id', $sectorFilter) // Updated to sector_id
+            ->whereIn('sector_id', $sectorFilter)
             ->groupBy('sector_id')
             ->get();
     
@@ -255,7 +255,7 @@ class DashboardController extends Controller
             ->select('sector_id', DB::raw('SUM(amount) as deposited'))
             ->where('mode', 'cash')
             ->where('year', $defaultYear)
-            ->whereIn('sector_id', $sectorFilter) // Updated to sector_id
+            ->whereIn('sector_id', $sectorFilter)
             ->groupBy('sector_id')
             ->get();
     
@@ -287,10 +287,25 @@ class DashboardController extends Controller
         // Combine results
         $finalSummary = $summary->concat($additionalSectors);
     
-        // Step 4: Return response
+        // Step 4: Add sector names
+        $sectorNames = DB::table('t_sectors')
+            ->whereIn('id', $finalSummary->pluck('sector_id')->toArray())
+            ->pluck('name', 'id'); // Get sector names as an associative array
+    
+        $finalSummaryWithNames = $finalSummary->map(function ($item) use ($sectorNames) {
+            return [
+                'sector_id' => $item['sector_id'],
+                'sector_name' => $sectorNames[$item['sector_id']] ?? 'Unknown',
+                'cash' => $item['cash'],
+                'deposited' => $item['deposited'],
+                'in_hand' => $item['in_hand'],
+            ];
+        });
+    
+        // Step 5: Return response
         return response()->json([
             'success' => true,
-            'data' => $finalSummary,
+            'data' => $finalSummaryWithNames,
         ]);
     }
     
