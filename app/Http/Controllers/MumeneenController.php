@@ -1033,9 +1033,17 @@ class MumeneenController extends Controller
         }
     
         // Fetch sub-sectors within the permitted sector
-        $subSectors = SubSectorModel::select('jamiat_id', 'name', 'notes', 'log_user')
-            ->where('sector_id', $sector)
-            ->get();
+        $subSectors = SubSectorModel::select(
+            't_sub_sector.id', 
+            't_sub_sector.jamiat_id', 
+            't_sub_sector.name as sub_sector_name', 
+            't_sub_sector.notes', 
+            't_sub_sector.log_user', 
+            't_sector.name as sector_name'
+        )
+        ->join('t_sector', 't_sector.id', '=', 't_sub_sector.sector_id') // Join with t_sector table
+        ->where('t_sub_sector.sector_id', $sector)
+        ->get();
     
         return $subSectors->isNotEmpty()
             ? response()->json([
