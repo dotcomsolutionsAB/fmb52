@@ -999,7 +999,7 @@ class MumeneenController extends Controller
     
         // Fetch sub-sectors within the permitted sectors
         $get_all_sub_sector = SubSectorModel::select(
-            't_sub_sector.jamiat_id', 
+            't_sub_sector.id', 
             't_sub_sector.sector_id', 
             't_sub_sector.name as sub_sector_name', 
             't_sub_sector.notes', 
