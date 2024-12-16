@@ -288,7 +288,7 @@ class DashboardController extends Controller
         $finalSummary = $summary->concat($additionalSectors);
     
         // Step 4: Add sector names
-        $sectorNames = DB::table('t_sectors')
+        $sectorNames = DB::table('t_sector')
             ->whereIn('id', $finalSummary->pluck('sector_id')->toArray())
             ->pluck('name', 'id'); // Get sector names as an associative array
     
