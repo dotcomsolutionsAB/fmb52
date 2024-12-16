@@ -192,7 +192,7 @@ class MumeneenController extends Controller
     // Handle "all" for sector and sub-sector
     $requestedSectors = $request->input('sector', []);
     if (in_array('all', $requestedSectors)) {
-        $requestedSectors = DB::table('t_sectors')->pluck('id')->toArray(); // Replace "all" with all sector IDs
+        $requestedSectors = DB::table('t_sector')->pluck('id')->toArray(); // Replace "all" with all sector IDs
     }
 
     $requestedSubSectors = $request->input('sub_sector', []);

@@ -37,7 +37,7 @@ class DashboardController extends Controller
     
         // Handle "all" for sector and sub-sector inputs
         if (in_array('all', $requestedSectors)) {
-            $requestedSectors = DB::table('t_sectors')->pluck('id')->toArray(); // Replace "all" with all sector IDs
+            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray(); // Replace "all" with all sector IDs
         }
         if (in_array('all', $requestedSubSectors)) {
             $requestedSubSectors = DB::table('t_sub_sector')
@@ -72,7 +72,7 @@ class DashboardController extends Controller
         }
     
         // Count total accessible sectors and sub-sectors
-        $totalSectorsCount = DB::table('t_sectors')
+        $totalSectorsCount = DB::table('t_sector')
             ->whereIn('id', $accessibleSectors)
             ->count();
     
