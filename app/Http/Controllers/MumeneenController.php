@@ -178,6 +178,38 @@ class MumeneenController extends Controller
             return response()->json(['message' => 'You do not have access to any sub-sectors.'], 403);
         }
     
+        // Fetch requested sector and sub-sector
+        $requestedSectors = $request->input('sector', []);
+        $requestedSubSectors = $request->input('sub_sector', []);
+    
+        // Validation
+        $request->validate([
+            'sector' => 'required|array',
+            'sector.*' => ['required', 'integer'],
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or the string 'all'.");
+                }
+            }],
+        ]);
+    
+        // Handle "all" sub-sector logic for the specified sectors
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = DB::table('t_sub_sector')
+                ->whereIn('sector_id', $requestedSectors)
+                ->whereIn('id', $permittedSubSectorIds) // Ensure access is restricted to permitted sub-sectors
+                ->pluck('id')
+                ->toArray();
+        }
+    
+        // Ensure the requested sub-sectors match the user's permissions
+        $finalSubSectors = array_intersect($requestedSubSectors, $permittedSubSectorIds);
+    
+        if (empty($finalSubSectors)) {
+            return response()->json(['message' => 'Access denied for the requested sub-sectors.'], 403);
+        }
+    
         // Fetch users belonging to the permitted sub-sectors
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
@@ -188,7 +220,7 @@ class MumeneenController extends Controller
             ->where('jamiat_id', $jamiat_id)
             ->where('mumeneen_type', 'HOF')
             ->where('status', 'active')
-            ->whereIn('sub_sector_id', $permittedSubSectorIds)
+            ->whereIn('sub_sector_id', $finalSubSectors)
             ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
             ->orderBy('sub_sector_id') // Sort by sub-sector ID
             ->orderBy('folio_no') // Then sort by folio number
