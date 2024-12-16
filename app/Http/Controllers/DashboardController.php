@@ -35,16 +35,15 @@ class DashboardController extends Controller
             }],
         ]);
     
-        // Handle "all" for sub-sector and sector inputs
-        if (in_array('all', $requestedSubSectors)) {
-            $requestedSubSectors = $userSubSectorAccess; // Replace "all" with user's accessible sub-sectors
-        }
+        // Handle "all" for sector and sub-sector inputs
         if (in_array('all', $requestedSectors)) {
-            $requestedSectors = DB::table('t_sub_sector')
-                ->whereIn('id', $userSubSectorAccess)
-                ->distinct()
-                ->pluck('sector_id')
-                ->toArray(); // Replace "all" with sectors linked to user's accessible sub-sectors
+            $requestedSectors = DB::table('t_sectors')->pluck('id')->toArray(); // Replace "all" with all sector IDs
+        }
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = DB::table('t_sub_sector')
+                ->whereIn('sector_id', $requestedSectors) // Fetch sub-sectors for the specified sectors
+                ->pluck('id')
+                ->toArray();
         }
     
         // Ensure the requested sub-sectors match the user's access
@@ -73,7 +72,7 @@ class DashboardController extends Controller
         }
     
         // Count total accessible sectors and sub-sectors
-        $totalSectorsCount = DB::table('t_sector')
+        $totalSectorsCount = DB::table('t_sectors')
             ->whereIn('id', $accessibleSectors)
             ->count();
     

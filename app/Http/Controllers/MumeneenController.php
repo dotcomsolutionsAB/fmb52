@@ -148,67 +148,67 @@ class MumeneenController extends Controller
     }
     
     public function usersWithHubData(Request $request, $year = 0)
-    {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
-    
-        $jamiat_id = $user->jamiat_id;
-    
-        // Determine the year
-        if ($year !== 0) {
-            $yearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('id', $year)->first();
-            $year = $yearRecord->year ?? date('Y');
-        } else {
-            $currentYearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('is_current', '1')->first();
-            $year = $currentYearRecord->year ?? date('Y');
-        }
-    
-        // Fetch sub-sector permissions from authenticated user
-        $permittedSubSectorIds = $user->sub_sector_access_id ?? [];
-    
-        // Ensure sub-sector access IDs are an array
-        if (!is_array($permittedSubSectorIds)) {
-            $permittedSubSectorIds = json_decode($permittedSubSectorIds, true) ?? [];
-        }
-    
-        // Return forbidden if no sub-sector permissions
-        if (empty($permittedSubSectorIds)) {
-            return response()->json(['message' => 'You do not have access to any sub-sectors.'], 403);
-        }
-    
-        // Fetch requested sector and sub-sector
-        $requestedSectors = $request->input('sector', []);
-        $requestedSubSectors = $request->input('sub_sector', []);
-    
-        // Validation
-        $request->validate([
-            'sector' => 'required|array',
-            'sector.*' => ['required', 'integer'],
-            'sub_sector' => 'required|array',
-            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
-                if ($value !== 'all' && !is_numeric($value)) {
-                    $fail("The $attribute field must be an integer or the string 'all'.");
-                }
-            }],
-        ]);
-    
-        // Handle "all" sub-sector logic for the specified sectors
-        if (in_array('all', $requestedSubSectors)) {
-            $requestedSubSectors = DB::table('t_sub_sector')
-                ->whereIn('sector_id', $requestedSectors)
-                ->whereIn('id', $permittedSubSectorIds) // Ensure access is restricted to permitted sub-sectors
-                ->pluck('id')
-                ->toArray();
-        }
-    
-        // Ensure the requested sub-sectors match the user's permissions
-        $finalSubSectors = array_intersect($requestedSubSectors, $permittedSubSectorIds);
-    
-        if (empty($finalSubSectors)) {
-            return response()->json(['message' => 'Access denied for the requested sub-sectors.'], 403);
-        }
+{
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized.'], 403);
+    }
+
+    $jamiat_id = $user->jamiat_id;
+
+    // Determine the year
+    if ($year !== 0) {
+        $yearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('id', $year)->first();
+        $year = $yearRecord->year ?? date('Y');
+    } else {
+        $currentYearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('is_current', '1')->first();
+        $year = $currentYearRecord->year ?? date('Y');
+    }
+
+    // Fetch sub-sector permissions from authenticated user
+    $permittedSubSectorIds = $user->sub_sector_access_id ?? [];
+
+    // Ensure sub-sector access IDs are an array
+    if (!is_array($permittedSubSectorIds)) {
+        $permittedSubSectorIds = json_decode($permittedSubSectorIds, true) ?? [];
+    }
+
+    // Validation
+    $request->validate([
+        'sector' => 'required|array',
+        'sector.*' => ['required', function ($attribute, $value, $fail) {
+            if ($value !== 'all' && !is_numeric($value)) {
+                $fail("The $attribute field must be an integer or the string 'all'.");
+            }
+        }],
+        'sub_sector' => 'required|array',
+        'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+            if ($value !== 'all' && !is_numeric($value)) {
+                $fail("The $attribute field must be an integer or the string 'all'.");
+            }
+        }],
+    ]);
+
+    // Handle "all" for sector and sub-sector
+    $requestedSectors = $request->input('sector', []);
+    if (in_array('all', $requestedSectors)) {
+        $requestedSectors = DB::table('t_sectors')->pluck('id')->toArray(); // Replace "all" with all sector IDs
+    }
+
+    $requestedSubSectors = $request->input('sub_sector', []);
+    if (in_array('all', $requestedSubSectors)) {
+        $requestedSubSectors = DB::table('t_sub_sector')
+            ->whereIn('sector_id', $requestedSectors) // Fetch sub-sectors for the specified sectors
+            ->pluck('id')
+            ->toArray();
+    }
+
+    // Ensure the requested sub-sectors match the user's permissions
+    $finalSubSectors = array_intersect($requestedSubSectors, $permittedSubSectorIds);
+
+    if (empty($finalSubSectors)) {
+        return response()->json(['message' => 'Access denied for the requested sub-sectors.'], 403);
+    }
     
         // Fetch users belonging to the permitted sub-sectors
         $get_all_users = User::select(
