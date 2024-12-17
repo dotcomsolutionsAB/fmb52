@@ -1697,4 +1697,67 @@ class MumeneenController extends Controller
 
     return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
 }
+public function createYearAndHubEntries(Request $request)
+{
+    // Validate input to ensure a year is provided
+    $request->validate([
+        'year' => 'required|string|max:10',
+        'jamiat_id' => 'required|integer'
+    ]);
+
+    $year = $request->input('year');
+    $jamiatId = $request->input('jamiat_id');
+
+    DB::beginTransaction();
+
+    try {
+        // Step 1: Create new year entry in t_year table
+        $newYear = YearModel::create([
+            'year' => $year,
+            'jamiat_id' => $jamiatId,
+            'is_current' => '1', // Assuming '1' marks it as current
+        ]);
+
+        // Step 2: Get all unique family_ids from users table
+        $uniqueFamilyIds = User::select('family_id')
+            ->distinct()
+            ->whereNotNull('family_id')
+            ->pluck('family_id');
+
+        // Step 3: Insert entries into t_hub table for each family_id
+        $hubEntries = [];
+        foreach ($uniqueFamilyIds as $familyId) {
+            $hubEntries[] = [
+                'jamiat_id' => $jamiatId,
+                'family_id' => $familyId,
+                'year' => $year,
+                'hub_amount' => 0, // Default value, update as needed
+                'paid_amount' => 0,
+                'due_amount' => 0,
+                'log_user' => auth()->user()->name ?? 'system', // Assuming user is logged in
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        // Batch insert into t_hub table
+        if (!empty($hubEntries)) {
+            HubModel::insert($hubEntries);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'New year and hub entries created successfully!',
+            'year_id' => $newYear->id
+        ], 201);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error occurred: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

@@ -54,6 +54,8 @@ Route::post('/whatsapp-queue/process', [WhatsAppQueueController::class, 'process
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::post('/create-year', [MumeneenController::class, 'createYearAndHubEntries']);
+
     // Dashboard
     Route::prefix('dashboard')->group(function () {
        
