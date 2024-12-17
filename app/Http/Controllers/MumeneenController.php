@@ -216,15 +216,19 @@ class MumeneenController extends Controller
             'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
             'building', 'sector_id', 'sub_sector_id', 'status', 'thali_status', 'role', 'username', 'photo_id'
         )
-            ->with(['photo:id,file_url'])
-            ->where('jamiat_id', $jamiat_id)
-            ->where('mumeneen_type', 'HOF')
-            ->where('status', 'active')
-            ->whereIn('sub_sector_id', $finalSubSectors)
-            ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
-            ->orderBy('sub_sector_id') // Sort by sub-sector ID
-            ->orderBy('folio_no') // Then sort by folio number
-            ->get();
+        ->with([
+            'photo:id,file_url', // Existing relationship
+            'sector:id,name',     // Eager load sector name
+            'subSector:id,name'   // Eager load sub-sector name
+        ])
+        ->where('jamiat_id', $jamiat_id)
+        ->where('mumeneen_type', 'HOF')
+        ->where('status', 'active')
+        ->whereIn('sub_sector_id', $finalSubSectors)
+        ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
+        ->orderBy('sub_sector_id') // Sort by sub-sector ID
+        ->orderBy('folio_no') // Then sort by folio number
+        ->get();
     
         if ($get_all_users->isNotEmpty()) {
             $family_ids = $get_all_users->pluck('family_id')->toArray();

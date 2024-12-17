@@ -83,7 +83,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::post('/create-year', [MumeneenController::class, 'createYearAndHubEntries']);
+   
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {
@@ -105,6 +105,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     
     //Year
+   
     Route::post('/create-year', [MumeneenController::class, 'createYearAndHubEntries']);
     Route::get('/year', [MumeneenController::class, 'all_years']);
     Route::post('/update_year/{id}', [MumeneenController::class, 'update_year']);
