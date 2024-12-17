@@ -50,7 +50,7 @@ class AuthController extends Controller
             if($store_otp)
             {
                 $templateParams = [
-                    'name' => 'otp', // Replace with your WhatsApp template name
+                    'name' => 'fmb_otp', // Replace with your WhatsApp template name
                     'language' => ['code' => 'en'],
                     'components' => [
                         [
