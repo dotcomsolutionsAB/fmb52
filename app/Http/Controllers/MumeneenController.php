@@ -222,7 +222,7 @@ class MumeneenController extends Controller
             'subSector:id,name'   // Eager load sub-sector name
         ])
         ->where('jamiat_id', $jamiat_id)
-        ->where('mumeneen_type', 'HOF')
+       // ->where('mumeneen_type', 'HOF')
         ->where('status', 'active')
         ->whereIn('sub_sector_id', $finalSubSectors)
         ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
