@@ -1201,26 +1201,7 @@ class MumeneenController extends Controller
     }
 
     // create
-    public function register_year(Request $request)
-    {
-        $request->validate([
-            'year' => 'required|string|max:10',
-            'jamiat_id' => 'required|integer',
-            'is_current' => 'required|in:0,1',
-        ]);
-
-        $register_year = YearModel::create([
-            'year' => $request->input('year'),
-            'jamiat_id' => $request->input('jamiat_id'),
-            'is_current' => $request->input('is_current'),
-        ]);
-
-        unset($register_year['id'], $register_year['created_at'], $register_year['updated_at']);
-
-        return $register_year
-            ? response()->json(['message' => 'Year created successfully!', 'data' => $register_year], 201)
-            : response()->json(['message' => 'Failed to create year!'], 400);
-    }
+   
 
     // view
     public function all_years()
@@ -1270,100 +1251,7 @@ class MumeneenController extends Controller
 
 
     // create
-    public function register_menu(Request $request)
-    {
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'nullable|integer',
-            'date' => 'required|date',
-            'menu' => 'required|string|max:255',
-            'addons' => 'required|string|max:255',
-            'niaz_by' => 'required|string|max:255',
-            'year' => 'required|string|max:10',
-            'slip_names' => 'required|string|max:255',
-            'category' => 'required|in:chicken,mutton,veg,dal,zabihat',
-            'status' => 'required|string|max:255',
-        ]);
-
-        $register_menu = MenuModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'date' => $request->input('date'),
-            'menu' => $request->input('menu'),
-            'addons' => $request->input('addons'),
-            'niaz_by' => $request->input('niaz_by'),
-            'year' => $request->input('year'),
-            'slip_names' => $request->input('slip_names'),
-            'category' => $request->input('category'),
-            'status' => $request->input('status'),
-        ]);
-
-        unset($register_menu['id'], $register_menu['created_at'], $register_menu['updated_at']);
-
-        return $register_menu
-            ? response()->json(['message' => 'Menu created successfully!', 'data' => $register_menu], 201)
-            : response()->json(['message' => 'Failed to create menu!'], 400);
-    }
-
-    // view
-    public function all_menu()
-    {
-        $get_all_menus = MenuModel::select('jamiat_id', 'family_id', 'date', 'menu', 'addons', 'niaz_by', 'year', 'slip_names', 'category', 'status')->get();
-
-        return $get_all_menus->isNotEmpty()
-            ? response()->json(['message' => 'Menus fetched successfully!', 'data' => $get_all_menus], 200)
-            : response()->json(['message' => 'No menu records found!'], 404);
-    }
-
-    // update
-    public function update_menu(Request $request, $id)
-    {
-        $get_menu = MenuModel::find($id);
-
-        if (!$get_menu) {
-            return response()->json(['message' => 'Menu record not found!'], 404);
-        }
-
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'nullable|integer',
-            'date' => 'required|date',
-            'menu' => 'required|string|max:255',
-            'addons' => 'required|string|max:255',
-            'niaz_by' => 'required|string|max:255',
-            'year' => 'required|string|max:10',
-            'slip_names' => 'required|string|max:255',
-            'category' => 'required|in:chicken,mutton,veg,dal,zabihat',
-            'status' => 'required|string|max:255',
-        ]);
-
-        $update_menu_record = $get_menu->update([
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'date' => $request->input('date'),
-            'menu' => $request->input('menu'),
-            'addons' => $request->input('addons'),
-            'niaz_by' => $request->input('niaz_by'),
-            'year' => $request->input('year'),
-            'slip_names' => $request->input('slip_names'),
-            'category' => $request->input('category'),
-            'status' => $request->input('status'),
-        ]);
-
-        return ($update_menu_record == 1)
-            ? response()->json(['message' => 'Menu updated successfully!', 'data' => $update_menu_record], 200)
-            : response()->json(['No changes detected!'], 304);
-    }
-
-    // delete
-    public function delete_menu($id)
-    {
-        $delete_menu = MenuModel::where('id', $id)->delete();
-
-        return $delete_menu
-            ? response()->json(['message' => 'Menu record deleted successfully!'], 200)
-            : response()->json(['message' => 'Menu record not found!'], 404);
-    }
+ 
 
     // create
     public function register_fcm(Request $request)
@@ -1524,93 +1412,7 @@ class MumeneenController extends Controller
     }
 
     // create
-    public function register_zabihat(Request $request)
-    {
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'required|string|max:255',
-            'year' => 'required|string|max:10',
-            'zabihat_count' => 'required|integer',
-            'hub_amount' => 'required|numeric',
-            'paid_amount' => 'required|numeric',
-            'due_amount' => 'required|numeric',
-            'log_user' => 'required|string|max:100',
-        ]);
-
-        $register_zabihat = ZabihatModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'year' => $request->input('year'),
-            'zabihat_count' => $request->input('zabihat_count'),
-            'hub_amount' => $request->input('hub_amount'),
-            'paid_amount' => $request->input('paid_amount'),
-            'due_amount' => $request->input('due_amount'),
-            'log_user' => $request->input('log_user'),
-        ]);
-
-        unset($register_zabihat['id'], $register_zabihat['created_at'], $register_zabihat['updated_at']);
-
-        return $register_zabihat
-            ? response()->json(['message' => 'Zabihat record created successfully!', 'data' => $register_zabihat], 201)
-            : response()->json(['message' => 'Failed to create zabihat record!'], 400);
-    }
-
-    // view
-    public function all_zabihat()
-    {
-        $get_all_zabihats = ZabihatModel::select('jamiat_id', 'family_id', 'year', 'zabihat_count', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')->get();
-
-        return $get_all_zabihats->isNotEmpty()
-            ? response()->json(['message' => 'Zabihat records fetched successfully!', 'data' => $get_all_zabihats], 200)
-            : response()->json(['message' => 'No zabihat records found!'], 404);
-    }
-
-    // update
-    public function update_zabihat(Request $request, $id)
-    {
-        $get_zabihat = ZabihatModel::find($id);
-
-        if (!$get_zabihat) {
-            return response()->json(['message' => 'Zabihat record not found!'], 404);
-        }
-
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'required|string|max:255',
-            'year' => 'required|string|max:10',
-            'zabihat_count' => 'required|integer',
-            'hub_amount' => 'required|numeric',
-            'paid_amount' => 'required|numeric',
-            'due_amount' => 'required|numeric',
-            'log_user' => 'required|string|max:100',
-        ]);
-
-        $update_zabihat_record = $get_zabihat->update([
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'year' => $request->input('year'),
-            'zabihat_count' => $request->input('zabihat_count'),
-            'hub_amount' => $request->input('hub_amount'),
-            'paid_amount' => $request->input('paid_amount'),
-            'due_amount' => $request->input('due_amount'),
-            'log_user' => $request->input('log_user'),
-        ]);
-
-        return ($update_zabihat_record == 1)
-            ? response()->json(['message' => 'Zabihat record updated successfully!', 'data' => $update_zabihat_record], 200)
-            : response()->json(['No changes detected!'], 304);
-    }
-
-    // delete
-    public function delete_zabihat($id)
-    {
-        $delete_zabihat = ZabihatModel::where('id', $id)->delete();
-
-        return $delete_zabihat
-            ? response()->json(['message' => 'Zabihat record deleted successfully!'], 200)
-            : response()->json(['message' => 'Zabihat record not found!'], 404);
-    }
-
+   
     // users by family
     public function usersByFamily(Request $request)
     {
