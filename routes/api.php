@@ -166,7 +166,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/all', [PermissionRoleController::class, 'getAllRoles']);
         Route::get('/{roleName}/permissions', [PermissionRoleController::class, 'getRolePermissions']);
     });
-    });
+   
 
     Route::prefix('sub_sector')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [MumeneenController::class, 'register_sub_sector'])
