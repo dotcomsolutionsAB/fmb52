@@ -323,4 +323,16 @@ class PermissionRoleController extends Controller
         ], 500);
     }
 }
+public function getAllPermissions(Request $request)
+{
+    // Fetch all permissions, optionally paginate
+    $permissions = Permission::all(); // You can replace `all` with `paginate($perPage)` if needed.
+
+    // Return response
+    return response()->json([
+        'success' => true,
+        'permissions' => $permissions
+    ], 200);
+}
+
 }
