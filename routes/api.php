@@ -134,7 +134,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/year/{id}', [MumeneenController::class, 'delete_year']);
 
    // getDistinctFamilyCountUnderAge14
-    Route::get('/child', [MumeneenController::class, ' getDistinctFamilyCountUnderAge14']);
+    Route::get('/child', [MumeneenController::class, 'getDistinctFamilyCountUnderAge14']);
 
     
     // User Management

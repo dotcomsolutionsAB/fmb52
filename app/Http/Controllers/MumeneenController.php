@@ -45,6 +45,7 @@ class MumeneenController extends Controller
 
     
     //register user
+    
     public function register_users(Request $request)
     {
         $request->validate([
