@@ -1372,38 +1372,40 @@ class MumeneenController extends Controller
     }
 
     // update
-    public function update_hub(Request $request, $id)
-    {
-        $get_hub = HubModel::find($id);
+    
+    public function update_hub(Request $request, $family_id)
+{
+    // Find the hub record by family_id
+    $get_hub = HubModel::where('family_id', $family_id)->first();
 
-        if (!$get_hub) {
-            return response()->json(['message' => 'Hub record not found!'], 404);
-        }
-
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'required|string|max:10',
-            'year' => 'required|string|max:10',
-            'hub_amount' => 'required|numeric',
-            'paid_amount' => 'nullable|numeric',
-            'due_amount' => 'nullable|numeric',
-            'log_user' => 'required|string|max:100',
-        ]);
-
-        $update_hub_record = $get_hub->update([
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'year' => $request->input('year'),
-            'hub_amount' => $request->input('hub_amount'),
-            'paid_amount' => $request->input('paid_amount'),
-            'due_amount' => $request->input('due_amount'),
-            'log_user' => $request->input('log_user'),
-        ]);
-
-        return ($update_hub_record == 1)
-            ? response()->json(['message' => 'Hub record updated successfully!', 'data' => $update_hub_record], 200)
-            : response()->json(['No changes detected!'], 304);
+    // Check if the hub record exists
+    if (!$get_hub) {
+        return response()->json(['message' => 'Hub record not found!'], 404);
     }
+
+    // Validate only the required fields
+    $request->validate([
+        'family_id' => 'required|string|max:10', // Ensure it's the same family_id
+        'year' => 'required|string|max:10',
+        'hub_amount' => 'required|numeric',
+    ]);
+
+    // Update the hub record fields with the provided input
+    $get_hub->year = $request->input('year');
+    $get_hub->hub_amount = $request->input('hub_amount');
+
+    // Save the updated record
+    $get_hub->save();
+
+    // Return a success response
+    return response()->json([
+        'message' => 'Hub record updated successfully!',
+        'data' => $get_hub
+    ], 200);
+}
+
+
+      
 
     // delete
     public function delete_hub($id)
