@@ -230,7 +230,7 @@ class PermissionRoleController extends Controller
     public function getRolePermissions($roleName)
     {
         // Fetch the role by name
-        $role = Role::where('name', $roleName)->first();
+        $role = Role::where('id', $roleName)->first();
     
         // If the role is not found, return a 404 error
         if (!$role) {
