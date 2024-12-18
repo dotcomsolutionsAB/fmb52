@@ -237,24 +237,22 @@ class PermissionRoleController extends Controller
      */
     public function getRolePermissions($roleName)
     {
+        // Fetch the role by name
         $role = Role::where('name', $roleName)->first();
-
+    
+        // If the role is not found, return a 404 error
         if (!$role) {
             return response()->json(['message' => 'Role not found'], 404);
         }
-
-        $permissions = $role->permissions()
-            ->where(function ($query) {
-                $query->whereNull('valid_from')
-                      ->orWhere('valid_from', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('valid_to')
-                      ->orWhere('valid_to', '>=', now());
-            })
-            ->get();
-
-        return response()->json(['role' => $role, 'permissions' => $permissions], 200);
+    
+        // Retrieve all permissions associated with the role
+        $permissions = $role->permissions()->get();
+    
+        // Return the role and permissions in the response
+        return response()->json([
+            'role' => $role,
+            'permissions' => $permissions
+        ], 200);
     }
 
     public function removePermissionsFromUser(Request $request)
