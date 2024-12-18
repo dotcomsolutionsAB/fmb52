@@ -56,7 +56,7 @@ class SyncController extends Controller
             'name' => $fm->name, // Name from t_its_data
             'email' => $fm->email ?? null, // Email if available
             'jamiat_id' => $hof->jamiat_id, // Inherit from HOF
-            'family_id' => $hof->its_family_id, // Inherit from HOF
+            'family_id' => $hof->family_id, // Inherit from HOF
             'mobile' => $fm->mobile ?? null, // Mobile number
             'its' => $fm->its, // ITS ID
             'hof_its' => $fm->hof_its, // HOF ITS
