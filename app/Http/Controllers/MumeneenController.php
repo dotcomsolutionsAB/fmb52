@@ -1373,36 +1373,8 @@ class MumeneenController extends Controller
 
     // update
     
-    public function update_hub(Request $request, $family_id)
-{
-    // Find the hub record by family_id
-    $get_hub = HubModel::where('family_id', $family_id)->first();
-
-    // Check if the hub record exists
-    if (!$get_hub) {
-        return response()->json(['message' => 'Hub record not found!'], 404);
-    }
-
-    // Validate only the required fields
-    $request->validate([
-        'family_id' => 'required|string|max:10', // Ensure it's the same family_id
-        'year' => 'required|string|max:10',
-        'hub_amount' => 'required|numeric',
-    ]);
-
-    // Update the hub record fields with the provided input
-    $get_hub->year = $request->input('year');
-    $get_hub->hub_amount = $request->input('hub_amount');
-
-    // Save the updated record
-    $get_hub->save();
-
-    // Return a success response
-    return response()->json([
-        'message' => 'Hub record updated successfully!',
-        'data' => $get_hub
-    ], 200);
-}public function update_hub(Request $request, $family_id)
+   
+public function update_hub(Request $request, $family_id)
 {
     // Validate required fields
     $request->validate([
