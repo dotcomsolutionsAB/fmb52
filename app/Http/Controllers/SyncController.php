@@ -139,11 +139,11 @@ class SyncController extends Controller
     {
         $roleMismatches = DB::table('users')
             ->join('t_its_data', 'users.its', '=', 't_its_data.its')
-            ->where('users.role', 'fm')
-            ->whereColumn('t_its_data.its', 't_its_data.hof_its')
-            ->select('users.its', 'users.name', 'users.role as current_role', 't_its_data.hof_its')
+            ->where('users.mumeneen_type', 'FM') // Check mumeneen_type in users
+            ->whereColumn('t_its_data.its', 't_its_data.hof_its') // Check HOF in t_its_data
+            ->select('users.its', 'users.name', 'users.mumeneen_type as current_type', 't_its_data.hof_its')
             ->get();
-
+    
         return response()->json([
             'message' => 'HOF marked as FM in users detected.',
             'data' => $roleMismatches
@@ -159,12 +159,12 @@ class SyncController extends Controller
             'its_list' => 'required|array',
             'its_list.*.its' => 'required|string',
         ]);
-
+    
         foreach ($validated['its_list'] as $record) {
-            DB::table('users')->where('its', $record['its'])->update(['role' => 'hof']);
+            DB::table('users')->where('its', $record['its'])->update(['mumeneen_type' => 'HOF']);
         }
-
-        return response()->json(['message' => 'Role updated to HOF successfully!']);
+    
+        return response()->json(['message' => 'Mumeneen type updated to HOF successfully!']);
     }
 
     /**
@@ -174,11 +174,11 @@ class SyncController extends Controller
     {
         $roleMismatches = DB::table('users')
             ->join('t_its_data', 'users.its', '=', 't_its_data.its')
-            ->where('users.role', 'hof')
-            ->whereColumn('t_its_data.hof_its', '!=', 't_its_data.its')
-            ->select('users.its', 'users.name', 'users.role as current_role', 't_its_data.hof_its')
+            ->where('users.mumeneen_type', 'HOF') // Check HOF in users
+            ->whereColumn('t_its_data.hof_its', '!=', 't_its_data.its') // Check FM in t_its_data
+            ->select('users.its', 'users.name', 'users.mumeneen_type as current_type', 't_its_data.hof_its')
             ->get();
-
+    
         return response()->json([
             'message' => 'HOF in users but marked as FM in t_its_data detected.',
             'data' => $roleMismatches
@@ -194,12 +194,12 @@ class SyncController extends Controller
             'its_list' => 'required|array',
             'its_list.*.its' => 'required|string',
         ]);
-
+    
         foreach ($validated['its_list'] as $record) {
-            DB::table('users')->where('its', $record['its'])->update(['role' => 'fm']);
+            DB::table('users')->where('its', $record['its'])->update(['mumeneen_type' => 'FM']);
         }
-
-        return response()->json(['message' => 'Role updated to FM successfully!']);
+    
+        return response()->json(['message' => 'Mumeneen type updated to FM successfully!']);
     }
 
     /**
