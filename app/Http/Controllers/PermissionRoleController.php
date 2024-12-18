@@ -334,5 +334,16 @@ public function getAllPermissions(Request $request)
         'permissions' => $permissions
     ], 200);
 }
+public function getAllRoles(Request $request)
+{
+    // Fetch all permissions, optionally paginate
+    $permissions = Role::all(); // You can replace `all` with `paginate($perPage)` if needed.
+
+    // Return response
+    return response()->json([
+        'success' => true,
+        'permissions' => $permissions
+    ], 200);
+}
 
 }
