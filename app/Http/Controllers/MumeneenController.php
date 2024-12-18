@@ -1571,16 +1571,23 @@ public function createYearAndHubEntries(Request $request)
         ], 500);
     }
 }
-public function getDistinctFamilyCountUnderAge14(Request $request) 
-{
-    $count = DB::table('users')
-        ->where('age', '<', 15)
-        ->distinct('family_id')
-        ->count('family_id');
+public function getDistinctFamilyCountUnderAge14()
+    {
+        // Count distinct family IDs where users are under age 14
+        $distinctFamilyCount = DB::table('users')
+            ->where('age', '<', 14)
+            ->distinct('family_id')
+            ->count('family_id');
 
-    return response()->json([
-        'message' => 'Number of distinct families with users under age 14',
-        'distinct_family_count' => $count,
-    ]);
-}
+        // Count total number of children under age 14
+        $totalChildrenCount = DB::table('users')
+            ->where('age', '<', 14)
+            ->count();
+
+        return response()->json([
+            'message' => 'Number of distinct families and total children under age 14',
+            'distinct_family_count' => $distinctFamilyCount,
+            'total_children_count' => $totalChildrenCount,
+        ]);
+    }
 }
