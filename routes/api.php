@@ -164,6 +164,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createRole']);
         Route::post('/add-permissions', [PermissionRoleController::class, 'addPermissionsToRole']);
         Route::get('/all', [PermissionRoleController::class, 'getAllRoles']);
+        Route::get('/{roleName}/permissions', [PermissionRoleController::class, 'getRolePermissions']);
+    });
     });
 
     Route::prefix('sub_sector')->middleware(['auth:sanctum'])->group(function () {
