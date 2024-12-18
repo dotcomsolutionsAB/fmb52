@@ -29,69 +29,63 @@ class SyncController extends Controller
     /**
      * Scenario 2: Confirm and add missing Family Members from t_its_data to users.
      */
-    public function confirmFmFromItsData(Request $request)
-    {
-        // Validate the incoming request
-        $validated = $request->validate([
-            'its_list' => 'required|array',
-            'its_list.*.its' => 'required|string|exists:t_its_data,its',
-        ]);
-    
-        foreach ($validated['its_list'] as $record) {
-            // Fetch the missing FM details from t_its_data
-            $fm = DB::table('t_its_data')->where('its', $record['its'])->first();
-    
-            if (!$fm) {
-                continue; // Skip if the ITS is not found
-            }
-    
-            // Fetch the HOF details for the current family
-            $hof = DB::table('users')
-                ->where('its', $fm->hof_its)
-                ->where('mumeneen_type', 'HOF')
-                ->first();
-    
-            if (!$hof) {
-                continue; // Skip if no HOF is found in users
-            }
-    
-            // Insert the new FM into the users table
-            DB::table('users')->insert([
-                'username' => $fm->its, // ITS as username
-                'role' => 'mumeneen', // Default role for members
-                'name' => $fm->name, // Name from t_its_data
-                'email' => $fm->email ?? null, // Email if available
-                'jamiat_id' => $hof->jamiat_id, // Inherit from HOF
-                'family_id' => $hof->its_family_id, // Inherit from HOF
-                'mobile' => $fm->mobile ?? null, // Mobile number
-                'its' => $fm->its, // ITS ID
-                'hof_its' => $fm->hof_its, // HOF ITS
-                'its_family_id' => $fm->its_family_id, // ITS Family ID from t_its_data
-                'folio_no' => $hof->folio_no, // Folio number from HOF
-                'mumeneen_type' => 'FM', // Family Member
-                'title' => $fm->title ?? null, // Title if available
-                'gender' => $fm->gender ?? null, // Gender if available
-                'age' => $fm->age ?? null, // Age if available
-                'building' => $fm->building ?? null, // Building if available
-                'status' => $hof->status, // Status from HOF
-                'thali_status' => $hof->thali_status, // Thali status from HOF
-                'otp' => null, // Default value
-                'expires_at' => null, // Default value
-                'email_verified_at' => null, // Default value
-                'password' => bcrypt('default_password'), // Default password
-                'joint_with' => null, // Default value
-                'photo_id' => null, // Default value
-                'sector_access_id' => null, // Default value
-                'sub_sector_access_id' => null, // Default value
-                'sector_id' => $hof->sector_id ?? null, // Inherit from HOF
-                'sub_sector_id' => $hof->sub_sector_id ?? null, // Inherit from HOF
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+    public function confirmFmFromItsData()
+{
+    // Fetch ITS numbers for Family Members (FMs) that are in t_its_data but missing in users
+    $missingFms = DB::table('t_its_data')
+        ->leftJoin('users', 't_its_data.its', '=', 'users.its')
+        ->whereNull('users.its') // Ensure the ITS is not present in users
+        ->select('t_its_data.*') // Select all columns from t_its_data
+        ->get();
+
+    foreach ($missingFms as $fm) {
+        // Skip if there is no HOF for the FM in the users table
+        $hof = DB::table('users')
+            ->where('its', $fm->hof_its)
+            ->where('mumeneen_type', 'HOF')
+            ->first();
+
+        if (!$hof) {
+            continue; // Skip if no HOF is found
         }
-    
-        return response()->json(['message' => 'Missing Family Members have been added successfully!']);
+
+        // Insert the new FM into the users table
+        DB::table('users')->insert([
+            'username' => $fm->its, // ITS as username
+            'role' => 'mumeneen', // Default role for members
+            'name' => $fm->name, // Name from t_its_data
+            'email' => $fm->email ?? null, // Email if available
+            'jamiat_id' => $hof->jamiat_id, // Inherit from HOF
+            'family_id' => $hof->its_family_id, // Inherit from HOF
+            'mobile' => $fm->mobile ?? null, // Mobile number
+            'its' => $fm->its, // ITS ID
+            'hof_its' => $fm->hof_its, // HOF ITS
+            'its_family_id' => $fm->its_family_id, // ITS Family ID from t_its_data
+            'folio_no' => $hof->folio_no, // Folio number from HOF
+            'mumeneen_type' => 'FM', // Family Member
+            'title' => $fm->title ?? null, // Title if available
+            'gender' => $fm->gender ?? null, // Gender if available
+            'age' => $fm->age ?? null, // Age if available
+            'building' => $fm->building ?? null, // Building if available
+            'status' => $hof->status, // Status from HOF
+            'thali_status' => $hof->thali_status, // Thali status from HOF
+            'otp' => null, // Default value
+            'expires_at' => null, // Default value
+            'email_verified_at' => null, // Default value
+            'password' => bcrypt('default_password'), // Default password
+            'joint_with' => null, // Default value
+            'photo_id' => null, // Default value
+            'sector_access_id' => null, // Default value
+            'sub_sector_access_id' => null, // Default value
+            'sector_id' => $hof->sector_id ?? null, // Inherit from HOF
+            'sub_sector_id' => $hof->sub_sector_id ?? null, // Inherit from HOF
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
+
+    return response()->json(['message' => 'Missing Family Members have been added successfully!']);
+}
     /**
      * Scenario 3: Detect HOF present in users but not in t_its_data.
      */
