@@ -127,8 +127,9 @@ class DashboardController extends Controller
         // Thaali-Taking Query
         $thaaliTakingCount = DB::table('users')
             ->where('jamiat_id', $jamiatId)
-            ->where('role', 'mumeneen') // Include only mumeneen users
+            ->where('mumeneen_type', 'HOF') // Include only mumeneen users
             ->where('thali_status', 'taking')
+            ->where('status', 'active')
             ->whereIn('sub_sector_id', $subSectorFilter)
             ->distinct('family_id')
             ->count('family_id');
@@ -144,6 +145,7 @@ class DashboardController extends Controller
                 SUM(CASE WHEN age < 13 THEN 1 ELSE 0 END) AS total_children
             ")
             ->where('jamiat_id', $jamiatId)
+            ->where('status', 'active')
             ->where('role', 'mumeneen') // Include only mumeneen users
             ->whereIn('sub_sector_id', $subSectorFilter)
             ->first();
