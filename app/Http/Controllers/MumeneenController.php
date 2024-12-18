@@ -1570,7 +1570,7 @@ public function createYearAndHubEntries(Request $request)
         ], 500);
     }
 }
-public function getDistinctFamilyCountUnderAge14()
+public function getDistinctFamilyCountUnderAge14(Request $request) 
 {
     $count = DB::table('users')
         ->where('age', '<', 15)
