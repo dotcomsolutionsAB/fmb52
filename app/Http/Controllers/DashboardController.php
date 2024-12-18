@@ -152,26 +152,26 @@ class DashboardController extends Controller
     
         // Prepare response data
         $response = [
-            'year' => $year,
-            'sectors' => $sectorFilter,
-            'sub-sectors' => $subSectorFilter,
-            'total_sectors_count' => $totalSectorsCount,
-            'total_sub_sectors_count' => $totalSubSectorsCount,
-            'total_houses' => number_format($summaryData->total_houses, 0, '.', ','),
-            'hub_not_set' => number_format($summaryData->hub_not_set, 0, '.', ','),
-            'hub_due' => number_format($summaryData->hub_due, 0, '.', ','),
-            'total_hub_amount' => number_format($summaryData->total_hub_amount, 0, '.', ','),
-            'total_paid_amount' => number_format($summaryData->total_paid_amount, 0, '.', ','),
-            'total_due_amount' => number_format($summaryData->total_due_amount, 0, '.', ','),
-            'thaali_taking' => number_format($thaaliTakingCount, 0, '.', ','),
-            'total_users' => number_format($userStats->total_users, 0, '.', ','),
-            'total_hof' => number_format($userStats->total_hof, 0, '.', ','),
-            'total_fm' => number_format($userStats->total_fm, 0, '.', ','),
-            'total_males' => number_format($userStats->total_males, 0, '.', ','),
-            'total_females' => number_format($userStats->total_females, 0, '.', ','),
-            'total_children' => number_format($userStats->total_children, 0, '.', ','),
-            'payment_breakdown' => $paymentBreakdown,
-        ];
+                'year' => $year,
+                'sectors' => $sectorFilter,
+                'sub-sectors' => $subSectorFilter,
+                'total_sectors_count' => $totalSectorsCount,
+                'total_sub_sectors_count' => $totalSubSectorsCount,
+                'total_houses' => $summaryData->total_houses,
+                'hub_not_set' => $summaryData->hub_not_set,
+                'hub_due' => $summaryData->hub_due,
+                'total_hub_amount' => $summaryData->total_hub_amount,
+                'total_paid_amount' => $summaryData->total_paid_amount,
+                'total_due_amount' => $summaryData->total_due_amount,
+                'thaali_taking' => $thaaliTakingCount,
+                'total_users' => $userStats->total_users,
+                'total_hof' => $userStats->total_hof,
+                'total_fm' => $userStats->total_fm,
+                'total_males' => $userStats->total_males,
+                'total_females' => $userStats->total_females,
+                'total_children' => $userStats->total_children,
+                'payment_breakdown' => $paymentBreakdown,
+            ];
     
         return response()->json($response);
     }
