@@ -74,15 +74,13 @@ class PermissionRoleController extends Controller
     {
         $request->validate([
             'name' => 'required|string|unique:roles,name',
-            'valid_from' => 'nullable|date',
-            'valid_to' => 'nullable|date|after_or_equal:valid_from',
+           
         ]);
 
         $role = Role::create([
             'name' => $request->name,
             'guard_name' => 'sanctum',
-            'valid_from' => $request->valid_from,
-            'valid_to' => $request->valid_to,
+           
         ]);
 
         return response()->json(['message' => 'Role created successfully', 'role' => $role], 201);
@@ -110,13 +108,7 @@ class PermissionRoleController extends Controller
             $role->givePermissionTo($permission);
 
             // Attach validity to the pivot table
-            $role->permissions()->updateExistingPivot(
-                $permission->id,
-                [
-                    'valid_from' => $request->valid_from,
-                    'valid_to' => $request->valid_to,
-                ]
-            );
+           
         }
 
         return response()->json(['message' => 'Permissions added to role successfully', 'role' => $role], 200);
