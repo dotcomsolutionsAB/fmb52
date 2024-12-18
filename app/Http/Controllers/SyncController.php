@@ -63,7 +63,7 @@ class SyncController extends Controller
             'its_family_id' => $fm->its_family_id, // ITS Family ID from t_its_data
             'folio_no' => $hof->folio_no, // Folio number from HOF
             'mumeneen_type' => 'FM', // Family Member
-            'title' => $fm->title ?? null, // Title if available
+            'title' => in_array($fm->title, ['Shaikh', 'Mulla']) ? $fm->title : null, // Validate title
             'gender' => $fm->gender ?? null, // Gender if available
             'age' => $fm->age ?? null, // Age if available
             'building' => $fm->building ?? null, // Building if available
