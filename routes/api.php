@@ -31,12 +31,34 @@ Route::get('/sector', [MumeneenController::class, 'all_sector'])
     ]);
 
 // Sync Routes
-Route::prefix('sync')->group(function () {
-    Route::get('/its-mismatches', [SyncController::class, 'findItsMismatches']);
-    Route::get('/its-mumeneen-type-mismatches', [SyncController::class, 'findItsAndMumeneenTypeMismatches']);
-    Route::get('/its-mobile-mismatches', [SyncController::class, 'findMobileMismatches']);
-    Route::get('/all', [SyncController::class, 'syncData']);
-});
+
+
+// Scenario 1: Detect Missing HOFs in users
+Route::get('/sync/detect-missing-hof', [SyncController::class, 'detectMissingHofInUsers']);
+
+// Scenario 2: Confirm and add missing Family Members (FM) from t_its_data
+Route::post('/sync/confirm-fm-from-its-data', [SyncController::class, 'confirmFmFromItsData']);
+
+// Scenario 3: Detect Invalid HOFs in users
+Route::get('/sync/detect-invalid-hof', [SyncController::class, 'detectInvalidHofInUsers']);
+
+// Scenario 4: Remove Family Members (FM) in users not present in t_its_data
+Route::post('/sync/remove-fm-not-in-its-data', [SyncController::class, 'removeFmNotInItsData']);
+
+// Scenario 5: Detect role mismatches - HOF marked as FM in users
+Route::get('/sync/detect-hof-marked-as-fm', [SyncController::class, 'detectHofMarkedAsFmInUsers']);
+
+// Scenario 5: Confirm role update - Mark FM in users as HOF
+Route::post('/sync/confirm-hof-role-update', [SyncController::class, 'confirmHofRoleUpdate']);
+
+// Scenario 6: Detect role mismatches - HOF marked as HOF in users but FM in t_its_data
+Route::get('/sync/detect-hof-as-fm-in-its-data', [SyncController::class, 'detectHofMarkedAsFmInItsData']);
+
+// Scenario 6: Confirm role update - Mark HOF in users as FM
+Route::post('/sync/confirm-fm-role-update', [SyncController::class, 'confirmFmRoleUpdate']);
+
+// Consolidated Sync: Run all scenarios sequentially
+Route::get('/sync/consolidated', [SyncController::class, 'consolidatedSync']);
 
 // Payment Routes
 Route::post('/payment/verify', [PaymentController::class, 'verifyPayment']);
