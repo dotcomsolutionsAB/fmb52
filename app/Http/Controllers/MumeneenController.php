@@ -1590,43 +1590,88 @@ public function getDistinctFamilyCountUnderAge14()
             'total_children_count' => $totalChildrenCount,
         ]);
     }
+
+
     public function getUsersBelowAge15WithHofDetails()
-{
-    // Fetch users below age 15 with their HOF details and group by sector
-    $users = DB::table('users as children')
-        ->select(
-            'children.name as child_name',
-            'children.age as child_age',
-            'children.its as child_its',
-            'children.family_id',
-            'sectors.name as sector_name',
-            'hof.name as hof_name',
-            'hof.its as hof_its'
-        )
-        ->leftJoin('users as hof', function ($join) {
-            $join->on('children.family_id', '=', 'hof.family_id')
-                 ->where('hof.mumeneen_type', '=', 'HOF');
-        })
-        ->leftJoin('sectors', 'children.sector_id', '=', 'sectors.id')
-        ->where('children.age', '<', 15)
-        ->orderBy('sectors.name') // Sort by sector
-        ->orderBy('hof.name') // Sort by HOF name within each sector
-        ->get();
-
-    // Count the number of children per sector
-    $sectorCounts = DB::table('users as children')
-        ->select('sectors.name as sector_name', DB::raw('COUNT(children.id) as children_count'))
-        ->leftJoin('sectors', 'children.sector_id', '=', 'sectors.id')
-        ->where('children.age', '<', 15)
-        ->groupBy('sectors.name')
-        ->get();
-
-    return response()->json([
-        'message' => 'Users below age 15 with HOF details and sector counts',
-        'data' => [
-            'users' => $users,
-            'sector_counts' => $sectorCounts,
-        ],
-    ]);
-}
+    {
+        // Fetch users below age 15 with their HOF details grouped by HOF and sector
+        $users = DB::table('users as children')
+            ->select(
+                'hof.name as hof_name',
+                'hof.its as hof_its',
+                'children.name as child_name',
+                'children.age as child_age',
+                'children.its as child_its',
+                'children.family_id',
+                't_sector.name as sector_name'
+            )
+            ->leftJoin('users as hof', function ($join) {
+                $join->on('children.family_id', '=', 'hof.family_id')
+                     ->where('hof.mumeneen_type', '=', 'HOF');
+            })
+            ->leftJoin('t_sector', 'children.sector_id', '=', 't_sector.id')
+            ->where('children.age', '<', 15)
+            ->where('children.mumeneen_type', '=', 'FM') // Include only Family Members
+            ->orderBy('hof.name') // Group by HOF
+            ->orderBy('t_sector.name') // Then group by sector
+            ->orderBy('children.name') // Sort by child name within groups
+            ->get();
+    
+        // Count the number of children per sector grouped by HOF
+        $sectorCounts = DB::table('users as children')
+            ->select(
+                'hof.name as hof_name',
+                'hof.its as hof_its',
+                't_sector.name as sector_name',
+                DB::raw('COUNT(children.id) as children_count')
+            )
+            ->leftJoin('users as hof', function ($join) {
+                $join->on('children.family_id', '=', 'hof.family_id')
+                     ->where('hof.mumeneen_type', '=', 'HOF');
+            })
+            ->leftJoin('t_sector', 'children.sector_id', '=', 't_sector.id')
+            ->where('children.age', '<', 15)
+            ->where('children.mumeneen_type', '=', 'FM') // Include only Family Members
+            ->groupBy('hof.name', 'hof.its', 't_sector.name')
+            ->orderBy('t_sector.name')
+            ->get();
+    
+        // Count children grouped only by sector
+        $totalSectorCounts = DB::table('users as children')
+            ->select(
+                't_sector.name as sector_name',
+                DB::raw('COUNT(children.id) as total_children_count')
+            )
+            ->leftJoin('t_sector', 'children.sector_id', '=', 't_sector.id')
+            ->where('children.age', '<', 15)
+            ->groupBy('t_sector.name')
+            ->orderBy('t_sector.name')
+            ->get();
+    
+        // Count children grouped only by HOF
+        $totalHofCounts = DB::table('users as children')
+            ->select(
+                'hof.name as hof_name',
+                'hof.its as hof_its',
+                DB::raw('COUNT(children.id) as total_children_count')
+            )
+            ->leftJoin('users as hof', function ($join) {
+                $join->on('children.family_id', '=', 'hof.family_id')
+                     ->where('hof.mumeneen_type', '=', 'HOF');
+            })
+            ->where('children.age', '<', 15)
+            ->groupBy('hof.name', 'hof.its')
+            ->orderBy('hof.name')
+            ->get();
+    
+        return response()->json([
+            'message' => 'Users below age 15 grouped by HOF and sector',
+            'data' => [
+                'users' => $users,
+                'sector_counts' => $sectorCounts,
+                'total_sector_counts' => $totalSectorCounts,
+                'total_hof_counts' => $totalHofCounts,
+            ],
+        ]);
+    }
 }
