@@ -169,6 +169,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/add-permissions', [PermissionRoleController::class, 'addPermissionsToRole']);
         Route::get('/all', [PermissionRoleController::class, 'getAllRoles']);
         Route::get('/{roleName}/permissions', [PermissionRoleController::class, 'getRolePermissions']);
+        Route::post('/create-with-permissions', [PermissionRoleController::class, 'createRoleWithPermissions']);
     });
    
 

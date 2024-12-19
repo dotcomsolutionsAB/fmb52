@@ -335,5 +335,46 @@ public function getAllRoles(Request $request)
         'roles' => $roles
     ], 200);
 }
+public function createRoleWithPermissions(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|unique:roles,name',
+        'permissions' => 'nullable|array',
+        'valid_from' => 'nullable|date',
+        'valid_to' => 'nullable|date|after_or_equal:valid_from',
+        'remarks' => 'nullable|string|max:255',
+    ]);
 
+    // Retrieve jamiat_id from the authenticated user
+    $jamiatId = auth()->user()->jamiat_id;
+
+    // Create the role
+    $role = Role::create([
+        'name' => $request->name,
+        'guard_name' => 'sanctum',
+        'jamiat_id' => $jamiatId,
+        'remarks' => $request->remarks,
+    ]);
+
+    // Add permissions if provided
+    if (!empty($request->permissions)) {
+        foreach ($request->permissions as $permissionName) {
+            $permission = Permission::firstOrCreate(['name' => $permissionName]);
+            $role->givePermissionTo($permission);
+
+            // Handle validity if provided
+            if ($request->valid_from || $request->valid_to) {
+                $role->permissions()->updateExistingPivot($permission->id, [
+                    'valid_from' => $request->valid_from,
+                    'valid_to' => $request->valid_to,
+                ]);
+            }
+        }
+    }
+
+    return response()->json([
+        'message' => 'Role created successfully with permissions',
+        'role' => $role,
+    ], 201);
+}
 }
