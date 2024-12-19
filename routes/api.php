@@ -73,7 +73,7 @@ Route::post('/whatsapp-queue', [WhatsAppQueueController::class, 'addToQueue']);
 Route::post('/whatsapp-queue/process', [WhatsAppQueueController::class, 'processQueue']);
 
 // Register New Jamaat
-Route::post('/register_jamaat', [JamiatController::class, 'register_jamaat']);
+  Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
 Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
   // jamiat
