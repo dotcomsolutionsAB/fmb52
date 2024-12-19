@@ -135,6 +135,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
    // getDistinctFamilyCountUnderAge14
     Route::get('/child', [MumeneenController::class, 'getDistinctFamilyCountUnderAge14']);
+    Route::get('/users/below-age-15', [MumeneenController::class, 'getUsersBelowAge15WithHofDetails']);
 
     
     // User Management

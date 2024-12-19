@@ -1590,4 +1590,43 @@ public function getDistinctFamilyCountUnderAge14()
             'total_children_count' => $totalChildrenCount,
         ]);
     }
+    public function getUsersBelowAge15WithHofDetails()
+{
+    // Fetch users below age 15 with their HOF details and group by sector
+    $users = DB::table('users as children')
+        ->select(
+            'children.name as child_name',
+            'children.age as child_age',
+            'children.its as child_its',
+            'children.family_id',
+            'sectors.name as sector_name',
+            'hof.name as hof_name',
+            'hof.its as hof_its'
+        )
+        ->leftJoin('users as hof', function ($join) {
+            $join->on('children.family_id', '=', 'hof.family_id')
+                 ->where('hof.mumeneen_type', '=', 'HOF');
+        })
+        ->leftJoin('sectors', 'children.sector_id', '=', 'sectors.id')
+        ->where('children.age', '<', 15)
+        ->orderBy('sectors.name') // Sort by sector
+        ->orderBy('hof.name') // Sort by HOF name within each sector
+        ->get();
+
+    // Count the number of children per sector
+    $sectorCounts = DB::table('users as children')
+        ->select('sectors.name as sector_name', DB::raw('COUNT(children.id) as children_count'))
+        ->leftJoin('sectors', 'children.sector_id', '=', 'sectors.id')
+        ->where('children.age', '<', 15)
+        ->groupBy('sectors.name')
+        ->get();
+
+    return response()->json([
+        'message' => 'Users below age 15 with HOF details and sector counts',
+        'data' => [
+            'users' => $users,
+            'sector_counts' => $sectorCounts,
+        ],
+    ]);
+}
 }
