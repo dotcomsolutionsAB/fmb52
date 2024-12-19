@@ -363,12 +363,7 @@ public function createRoleWithPermissions(Request $request)
             $role->givePermissionTo($permission);
 
             // Handle validity if provided
-            if ($request->valid_from || $request->valid_to) {
-                $role->permissions()->updateExistingPivot($permission->id, [
-                    'valid_from' => $request->valid_from,
-                    'valid_to' => $request->valid_to,
-                ]);
-            }
+           
         }
     }
 
