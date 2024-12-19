@@ -1599,7 +1599,8 @@ public function getDistinctFamilyCountUnderAge14()
             ->select(
                 'hof.name as hof_name',
                 'hof.its as hof_its',
-                'children.name as child_name',
+                'hof.mobile as hof_mobile', // HOF mobile
+                'children.name as child_name', // Child name
                 'children.age as child_age',
                 'children.its as child_its',
                 'children.family_id',
@@ -1622,6 +1623,7 @@ public function getDistinctFamilyCountUnderAge14()
             ->select(
                 'hof.name as hof_name',
                 'hof.its as hof_its',
+                'hof.mobile as hof_mobile', // HOF mobile
                 't_sector.name as sector_name',
                 DB::raw('COUNT(children.id) as children_count')
             )
@@ -1632,7 +1634,7 @@ public function getDistinctFamilyCountUnderAge14()
             ->leftJoin('t_sector', 'children.sector_id', '=', 't_sector.id')
             ->where('children.age', '<', 15)
             ->where('children.mumeneen_type', '=', 'FM') // Include only Family Members
-            ->groupBy('hof.name', 'hof.its', 't_sector.name')
+            ->groupBy('hof.name', 'hof.its', 'hof.mobile', 't_sector.name')
             ->orderBy('t_sector.name')
             ->get();
     
@@ -1653,6 +1655,7 @@ public function getDistinctFamilyCountUnderAge14()
             ->select(
                 'hof.name as hof_name',
                 'hof.its as hof_its',
+                'hof.mobile as hof_mobile', // HOF mobile
                 DB::raw('COUNT(children.id) as total_children_count')
             )
             ->leftJoin('users as hof', function ($join) {
@@ -1660,7 +1663,7 @@ public function getDistinctFamilyCountUnderAge14()
                      ->where('hof.mumeneen_type', '=', 'HOF');
             })
             ->where('children.age', '<', 15)
-            ->groupBy('hof.name', 'hof.its')
+            ->groupBy('hof.name', 'hof.its', 'hof.mobile')
             ->orderBy('hof.name')
             ->get();
     
