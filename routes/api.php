@@ -99,6 +99,8 @@ Route::post('/verify_email', [JamiatController::class, 'verify_email']);
   Route::post('/update_super_admin_counter/{id}', [JamiatController::class, 'update_super_admin_counter']);
   Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_super_admin_counter']);
 
+  Route::get('/currencies', [AccountsController::class, 'fetchCurrencies']);
+
 
 // Middleware-protected routes
 Route::middleware(['auth:sanctum'])->group(function () {

@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\WhatsAppQueue;
 use App\Models\WhatsappQueueModel;
 use Auth;
+use App\Models\CurrencyModel;
 class AccountsController extends Controller
 {
     public function user()
@@ -784,5 +785,27 @@ class AccountsController extends Controller
             'created_at' => now(), // Current timestamp for creation
             'updated_at' => now(), // Current timestamp for updates
         ]);
+    }
+    public function fetchCurrencies(Request $request)
+    {
+        // Fetch all currencies, optionally filter by country_name or currency_code
+        $currencies = CurrencyModel::query();
+
+        // Apply filters if provided
+        if ($request->has('country_name')) {
+            $currencies->where('country_name', 'LIKE', '%' . $request->country_name . '%');
+        }
+
+        if ($request->has('currency_code')) {
+            $currencies->where('currency_code', $request->currency_code);
+        }
+
+        // Paginate or fetch all currencies
+        $result = $currencies->get();
+
+        return response()->json([
+            'message' => 'Currencies fetched successfully',
+            'data' => $result,
+        ], 200);
     }
 }

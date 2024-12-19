@@ -206,8 +206,15 @@ class AuthController extends Controller
                     User::where('username', $request->username)
                         ->update(['otp' => null, 'expires_at' => null]);
     
-                    // Retrieve the user
+                    // Retrieve the user and currency details
                     $user = User::where('username', $request->username)->first();
+                    $currency = $user->jamiat_id 
+                        ? \DB::table('t_jamiat')
+                            ->join('currencies', 't_jamiat.currency_id', '=', 'currencies.id')
+                            ->where('t_jamiat.id', $user->jamiat_id)
+                            ->select('currencies.currency_name', 'currencies.currency_symbol', 'currencies.currency_code')
+                            ->first()
+                        : null;
     
                     // Generate a Sanctum token
                     $generated_token = $user->createToken('API TOKEN')->plainTextToken;
@@ -224,9 +231,10 @@ class AuthController extends Controller
                             'id' => $user->id,
                             'jamiat_id' => $user->jamiat_id,
                             'permissions' => $permissions,
-                            'sector_access_id' => $user->sector_access_id, // Added sector_access_id
-                            'sub_sector_access_id' => $user->sub_sector_access_id, // Added sub_sector_access_id
+                            'sector_access_id' => $user->sector_access_id,
+                            'sub_sector_access_id' => $user->sub_sector_access_id,
                             'photo' => $user->photo ? $user->photo->file_url : null,
+                            'currency' => $currency,
                         ],
                         'message' => 'User logged in successfully!',
                     ], 200);
@@ -249,6 +257,15 @@ class AuthController extends Controller
             if (Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
                 $user = Auth::user();
     
+                // Retrieve currency details based on jamiat_id
+                $currency = $user->jamiat_id 
+                    ? \DB::table('t_jamiat')
+                        ->join('currencies', 't_jamiat.currency_id', '=', 'currencies.id')
+                        ->where('t_jamiat.id', $user->jamiat_id)
+                        ->select('currencies.currency_name', 'currencies.currency_symbol', 'currencies.currency_code')
+                        ->first()
+                    : null;
+    
                 // Generate a Sanctum token
                 $generated_token = $user->createToken('API TOKEN')->plainTextToken;
     
@@ -264,9 +281,10 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'jamiat_id' => $user->jamiat_id,
                         'permissions' => $permissions,
-                        'sector_access_id' => $user->sector_access_id, // Added sector_access_id
-                        'sub_sector_access_id' => $user->sub_sector_access_id, // Added sub_sector_access_id
+                        'sector_access_id' => $user->sector_access_id,
+                        'sub_sector_access_id' => $user->sub_sector_access_id,
                         'photo' => $user->photo ? $user->photo->file_url : null,
+                        'currency' => $currency,
                     ],
                     'message' => 'User logged in successfully!',
                 ], 200);

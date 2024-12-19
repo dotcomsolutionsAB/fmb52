@@ -340,8 +340,7 @@ public function createRoleWithPermissions(Request $request)
     $request->validate([
         'name' => 'required|string|unique:roles,name',
         'permissions' => 'nullable|array',
-        'valid_from' => 'nullable|date',
-        'valid_to' => 'nullable|date|after_or_equal:valid_from',
+        
         'remarks' => 'nullable|string|max:255',
     ]);
 
