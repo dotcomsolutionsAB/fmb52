@@ -372,7 +372,7 @@ public function createRoleWithPermissions(Request $request)
         'role' => $role,
     ], 201);
 }
-public function getUsersWithPermissionsGrouped()
+public function getUsersWithPermissions()
 {
     $users = DB::table('users')
         ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
