@@ -154,6 +154,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/details/{id}', [MumeneenController::class, 'get_user']);
         Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
         Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
+        Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
            });
 
            Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);

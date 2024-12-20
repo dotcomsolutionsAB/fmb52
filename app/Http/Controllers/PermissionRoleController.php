@@ -371,4 +371,26 @@ public function createRoleWithPermissions(Request $request)
         'role' => $role,
     ], 201);
 }
+public function getUsersWithPermissions()
+{
+    $users = DB::table('users')
+        ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
+        ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+        ->select(
+            'users.id as user_id',
+            'users.name as user_name',
+            'users.email as user_email',
+            'users.role as user_role',
+            'users.jamiat_id',
+            'permissions.name as permission_name'
+        )
+        ->distinct()
+        ->orderBy('users.name', 'asc') // Optional: Order by user name
+        ->get();
+
+    return response()->json([
+        'message' => 'Users with permissions retrieved successfully.',
+        'data' => $users,
+    ], 200);
+}
 }
