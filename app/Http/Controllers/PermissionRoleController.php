@@ -372,7 +372,7 @@ public function createRoleWithPermissions(Request $request)
         'role' => $role,
     ], 201);
 }
-public function getUsersWithPermissions()
+public function getUsersWithPermissionsGrouped()
 {
     $users = DB::table('users')
         ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
@@ -385,13 +385,25 @@ public function getUsersWithPermissions()
             'users.jamiat_id',
             'permissions.name as permission_name'
         )
-        ->distinct()
-        ->orderBy('users.name', 'asc') // Optional: Order by user name
+        ->orderBy('users.name', 'asc')
         ->get();
 
+    // Group permissions by user
+    $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
+        $user = $userGroup->first(); // Get user details
+        return [
+            'user_id' => $user->user_id,
+            'user_name' => $user->user_name,
+            'user_email' => $user->user_email,
+            'user_role' => $user->user_role,
+            'jamiat_id' => $user->jamiat_id,
+            'permissions' => $userGroup->pluck('permission_name')->unique()->values(),
+        ];
+    })->values();
+
     return response()->json([
-        'message' => 'Users with permissions retrieved successfully.',
-        'data' => $users,
+        'message' => 'Users with grouped permissions retrieved successfully.',
+        'data' => $groupedUsers,
     ], 200);
 }
 }
