@@ -121,7 +121,7 @@ class DashboardController extends Controller
     
         // Process Payment Modes
         $paymentBreakdown = $paymentModes->mapWithKeys(function ($item) {
-            return [$item->mode => number_format($item->total_amount, 0, '.', ',')];
+            return [$item->mode => $item->total_amount];
         });
     
         // Thaali-Taking Query
