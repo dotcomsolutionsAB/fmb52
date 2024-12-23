@@ -383,7 +383,8 @@ public function getUsersWithPermissions()
             'users.email as user_email',
             'users.role as user_role',
             'users.jamiat_id',
-            'permissions.name as permission_name'
+            'permissions.name as permission_name',
+            'permissions.valid_to as validity'
         )
         ->orderBy('users.name', 'asc')
         ->get();
@@ -397,7 +398,9 @@ public function getUsersWithPermissions()
             'user_email' => $user->user_email,
             'user_role' => $user->user_role,
             'jamiat_id' => $user->jamiat_id,
+         
             'permissions' => $userGroup->pluck('permission_name')->unique()->values(),
+            'valid_to' => $user->validity,
         ];
     })->values();
 
