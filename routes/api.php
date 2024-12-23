@@ -127,6 +127,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
 
+    Route::post('/sector_registor', [MumeneenController::class, 'register_sector']);
     
     //Year
    
