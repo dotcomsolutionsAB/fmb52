@@ -105,6 +105,9 @@ Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 // Middleware-protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
 
+    //Upload ITS_DATA
+    Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
    

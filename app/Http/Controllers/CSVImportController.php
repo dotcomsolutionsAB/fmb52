@@ -8,6 +8,9 @@ use League\Csv\Reader;
 use League\Csv\Statement;
 use App\Models\ReceiptsModel;
 use App\Models\PaymentsModel;
+use App\Imports\ItsDataImport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class CSVImportController extends Controller
 {
@@ -209,6 +212,38 @@ class CSVImportController extends Controller
             return $formattedDate;
         } catch (\Exception $e) {
             return '2021-12-12'; // Default valid date if parsing fails
+        }
+    }
+
+    public function uploadExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+        ]);
+
+        // Get logged-in user's jamiat_id
+        $jamiat_id = auth()->user()->jamiat_id;
+
+        if (!$jamiat_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jamiat ID is required for uploading data.',
+            ], 400);
+        }
+
+        try {
+            // Process the uploaded file
+            Excel::import(new ItsDataImport($jamiat_id), $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data imported successfully!',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error importing data: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }
