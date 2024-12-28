@@ -378,15 +378,24 @@ class JamiatController extends Controller
     // delete
     public function delete_jamiat($id)
     {
+        // Find the Jamiat by ID
         $jamiat = JamiatModel::find($id);
-
+    
+        // Check if the Jamiat exists
         if (!$jamiat) {
             return response()->json(['message' => 'Jamiat not found!'], 404);
         }
-
+    
+        // Delete all users associated with this Jamiat
+        $jamiatId = $jamiat->id;
+    
+        // Using the DB facade to delete users
+        \DB::table('users')->where('jamiat_id', $jamiatId)->delete();
+    
+        // Delete the Jamiat
         $jamiat->delete();
-
-        return response()->json(['message' => 'Jamiat deleted successfully!'], 200);
+    
+        return response()->json(['message' => 'Jamiat and associated users deleted successfully!'], 200);
     }
 
 
