@@ -202,7 +202,7 @@ class JamiatController extends Controller
                 $recipientEmail = $register_user->email;
                 $subject = 'Welcome to FMB 52!';
                 $body = view('emails.jamaat_registration', [
-                    'admin_name' => $register_user->name,
+                    'admin_name' => $register_user->email,
                     'password' => $password,
                     'validity' => $jamiat->validity,
                 ])->render();
