@@ -274,7 +274,7 @@ class AuthController extends Controller
             $permissions = $user->getAllPermissions()->pluck('name');
 
             // Check if user is jamiat_admin and count HOFs
-            $hof_count = 0;
+            $hof_count = "nil";
             if ($user->role === 'jamiat_admin') {
                 $hof_count = User::where('jamiat_id', $user->jamiat_id)
                     ->where('mumeneen_type', 'HOF')
