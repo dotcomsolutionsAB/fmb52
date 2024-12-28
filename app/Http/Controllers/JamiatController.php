@@ -178,7 +178,7 @@ class JamiatController extends Controller
     // view
     public function view_jamiats()
     {
-        $jamiats = JamiatModel::select('name', 'mobile', 'email', 'package', 'billing_address', 'billing_contact', 'billing_email', 'billing_phone', 'last_payment_date', 'last_payment_amount', 'payment_due_date', 'validity', 'notes', 'logs')->get();
+        $jamiats = JamiatModel::select('id','name', 'mobile', 'email', 'package', 'billing_address', 'billing_contact', 'billing_email', 'billing_phone', 'last_payment_date', 'last_payment_amount', 'payment_due_date', 'validity', 'notes', 'logs')->get();
 
         return $jamiats->isNotEmpty()
             ? response()->json(['message' => 'Jamiats fetched successfully!', 'data' => $jamiats], 200)
