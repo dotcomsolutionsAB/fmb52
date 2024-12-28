@@ -119,18 +119,21 @@ class JamiatController extends Controller
             'email' => 'required|string|email|max:150',
             'currency_id' => 'required|exists:currencies,id', // Validate currency_id
         ]);
+
         $existsInTjamiat = DB::table('t_jamiat')->where('email', $request->email)->exists();
         $existsInUsers = DB::table('users')->where('email', $request->email)->exists();
-    
+
         if ($existsInTjamiat || $existsInUsers) {
             return response()->json([
                 'status' => false,
                 'message' => 'The email is already taken.',
             ], 200);
         }
-    
-    
+
         try {
+            // Generate a random 6-digit password
+            $password = random_int(100000, 999999);
+
             // Create Jamiat with required fields and currency_id
             $jamiat = JamiatModel::create([
                 'name' => $request->input('name'),
@@ -149,19 +152,19 @@ class JamiatController extends Controller
                 'notes' => null,
                 'logs' => null,
             ]);
-    
+
             if (!$jamiat) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to register Jamaat. Please try again!',
                 ], 500);
             }
-    
+
             // Create a new user associated with the created Jamiat
             $register_user = User::create([
                 'name' => strtolower($request->input('admin_name')),
                 'email' => strtolower($request->input('email')),
-                'password' => bcrypt('fmb52#'),
+                'password' => bcrypt($password),
                 'jamiat_id' => $jamiat->id,
                 'family_id' => null,
                 'its' => null,
@@ -179,7 +182,21 @@ class JamiatController extends Controller
                 'status' => 'active',
                 'username' => strtolower($request->input('email')),
             ]);
-    
+
+            // Call email function asynchronously
+            dispatch(function () use ($register_user, $password, $jamiat) {
+                $recipientEmail = $register_user->email;
+                $subject = 'Welcome to FMB 52!';
+                $body = view('emails.jamaat_registration', [
+                    'admin_name' => $register_user->name,
+                    'password' => $password,
+                    'validity' => $jamiat->validity,
+                ])->render();
+
+                // Assuming you have a mail service to send emails
+                app('mailService')->sendMail($recipientEmail, $subject, $body);
+            });
+
             return response()->json([
                 'status' => true,
                 'message' => 'Jamaat registered successfully!',
@@ -188,12 +205,7 @@ class JamiatController extends Controller
                     'user' => $register_user,
                 ],
             ], 200);
-    
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'The email has already been registered.',
-            ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -202,7 +214,7 @@ class JamiatController extends Controller
             ], 500);
         }
     }
-    
+
 
     // view
     public function view_jamiats()
