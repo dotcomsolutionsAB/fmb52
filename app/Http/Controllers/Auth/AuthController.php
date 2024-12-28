@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Utils\sendWhatsAppUtility;
 use App\Models\User;
 use App\Services\MailService;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -276,7 +277,7 @@ class AuthController extends Controller
             $hof_count = 0;
             if ($user->role === 'jamiat_admin') {
                 $hof_count = User::where('jamiat_id', $user->jamiat_id)
-                    ->where('role', 'HOF')
+                    ->where('mumeneen_type', 'HOF')
                     ->count();
             }
 
