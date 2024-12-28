@@ -652,6 +652,7 @@ class ComposerStaticInit54f54d17752bcd65cf7cbc86bbabda03
         'App\\Models\\AdvanceReceiptModel' => __DIR__ . '/../..' . '/app/Models/AdvanceReceiptModel.php',
         'App\\Models\\BuildingModel' => __DIR__ . '/../..' . '/app/Models/BuildingModel.php',
         'App\\Models\\CounterModel' => __DIR__ . '/../..' . '/app/Models/CounterModel.php',
+        'App\\Models\\CurrencyModel' => __DIR__ . '/../..' . '/app/Models/CurrencyModel.php',
         'App\\Models\\DamageLostModel' => __DIR__ . '/../..' . '/app/Models/DamageLostModel.php',
         'App\\Models\\DishItemsModel' => __DIR__ . '/../..' . '/app/Models/DishItemsModel.php',
         'App\\Models\\DishModel' => __DIR__ . '/../..' . '/app/Models/DishModel.php',

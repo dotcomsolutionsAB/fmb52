@@ -40,6 +40,7 @@ return array(
     'App\\Models\\AdvanceReceiptModel' => $baseDir . '/app/Models/AdvanceReceiptModel.php',
     'App\\Models\\BuildingModel' => $baseDir . '/app/Models/BuildingModel.php',
     'App\\Models\\CounterModel' => $baseDir . '/app/Models/CounterModel.php',
+    'App\\Models\\CurrencyModel' => $baseDir . '/app/Models/CurrencyModel.php',
     'App\\Models\\DamageLostModel' => $baseDir . '/app/Models/DamageLostModel.php',
     'App\\Models\\DishItemsModel' => $baseDir . '/app/Models/DishItemsModel.php',
     'App\\Models\\DishModel' => $baseDir . '/app/Models/DishModel.php',
