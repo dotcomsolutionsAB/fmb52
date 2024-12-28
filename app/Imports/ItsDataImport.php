@@ -1,5 +1,6 @@
 
 <?php
+
 use App\Models\ItsModel;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
