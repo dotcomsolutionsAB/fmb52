@@ -12,10 +12,13 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      */
-    public function register(): void
+    public function register()
     {
-        //
+        $this->app->singleton('mailService', function ($app) {
+            return new \App\Services\MailService(); // Replace with your actual service class
+        });
     }
+
 
     /**
      * Bootstrap any application services.
