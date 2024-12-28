@@ -8,9 +8,9 @@ use League\Csv\Reader;
 use League\Csv\Statement;
 use App\Models\ReceiptsModel;
 use App\Models\PaymentsModel;
-
+use App\Imports\ItsDataImport;
 use Maatwebsite\Excel\Facades\Excel;
-use ItsDataImport;
+
 
 class CSVImportController extends Controller
 {
