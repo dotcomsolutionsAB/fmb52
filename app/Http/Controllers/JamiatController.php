@@ -194,7 +194,7 @@ class JamiatController extends Controller
                 ])->render();
 
                 // Assuming you have a mail service to send emails
-                app('mailService')->sendMail($recipientEmail, $subject, $body);
+                $this->mailService->sendMail($recipientEmail, $subject, $body);
             });
 
             return response()->json([
