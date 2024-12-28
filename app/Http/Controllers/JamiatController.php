@@ -131,7 +131,7 @@ class JamiatController extends Controller
         if ($jamiat) {
             // Create a new user associated with the created Jamiat
             $register_user = User::create([
-                'name' => $request->input('name'),
+                'name' =>  strtolower($request->input('email')),
                 'email' => strtolower($request->input('email')),
                 'password' => bcrypt('fmb52#'),
                 'jamiat_id' => $jamiat->id,
