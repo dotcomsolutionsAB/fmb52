@@ -106,7 +106,7 @@ class JamiatController extends Controller
 
         $response = $this->mailService->sendMail($recipientEmail, $subject, $body);
 
-        return response()->json(['message' => $response, 'code' => $code]);
+        return response()->json(['status' => true, 'message' => $response, 'code' => $code]);
     }
 
     // create
