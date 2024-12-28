@@ -2,7 +2,6 @@
 namespace App\Imports;
 
 use App\Models\ItsModel;
-
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
@@ -17,11 +16,16 @@ class ItsDataImport implements ToModel, WithHeadingRow
 
     public function model(array $row)
     {
-        // Check and update or create a record
-        ItsModel::updateOrCreate(
-            // Condition to find an existing record
+        // Log the row data for debugging
+        \Log::info('Processing row: ', $row);
+
+        // Handle missing ITS_ID gracefully
+        if (!isset($row['ITS_ID'])) {
+            throw new \Exception('Missing ITS_ID in row: ' . json_encode($row));
+        }
+
+        return ItsModel::updateOrCreate(
             ['its' => $row['ITS_ID']],
-            // Fields to update or insert
             [
                 'jamiat_id' => $this->jamiat_id,
                 'hof_its' => $row['HOF_ID'] ?? null,
