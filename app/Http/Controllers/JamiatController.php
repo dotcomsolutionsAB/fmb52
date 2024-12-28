@@ -184,21 +184,7 @@ class JamiatController extends Controller
             ]);
 
             // Call email function asynchronously
-            // dispatch(function () use ($register_user, $password, $jamiat) {
-            //     $recipientEmail = $register_user->email;
-            //     $subject = 'Welcome to FMB 52!';
-            //     $body = view('emails.jamaat_registration', [
-            //         'admin_name' => $register_user->name,
-            //         'password' => $password,
-            //         'validity' => $jamiat->validity,
-            //     ])->render();
-
-            //     // Assuming you have a mail service to send emails
-            //     $this->mailService->sendMail($recipientEmail, $subject, $body);
-            // });
-
-            try {
-                // Directly send the email synchronously
+            dispatch(function () use ($register_user, $password, $jamiat) {
                 $recipientEmail = $register_user->email;
                 $subject = 'Welcome to FMB 52!';
                 $body = view('emails.jamaat_registration', [
@@ -206,36 +192,10 @@ class JamiatController extends Controller
                     'password' => $password,
                     'validity' => $jamiat->validity,
                 ])->render();
-            
+
                 // Assuming you have a mail service to send emails
-                $result = app('mailService')->sendMail($recipientEmail, $subject, $body);
-            
-                if (!$result) {
-                    // Log the error or handle it if the mail service fails
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Failed to send email. Please try again later.',
-                    ], 500);
-                }
-            
-                // Continue with your response logic
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Jamaat registered successfully, and email sent!',
-                    'data' => [
-                        'jamiat' => $jamiat,
-                        'user' => $register_user,
-                    ],
-                ], 200);
-            } catch (\Exception $e) {
-                // Catch email-specific errors
-                return response()->json([
-                    'status' => false,
-                    'message' => 'An error occurred while sending the email.',
-                    'error' => $e->getMessage(),
-                ], 500);
-            }
-            
+                $this->mailService->sendMail($recipientEmail, $subject, $body);
+            });            
 
             return response()->json([
                 'status' => true,
