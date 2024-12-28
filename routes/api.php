@@ -107,6 +107,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     //Upload ITS_DATA
     Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
+   
+
+    Route::delete('/t-its-data/jamiat/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
 

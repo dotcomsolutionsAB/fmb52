@@ -246,4 +246,32 @@ class CSVImportController extends Controller
             ], 500);
         }
     }
+    public function deleteByJamiatId($jamiatId)
+{
+    try {
+        // Validate that the Jamiat ID exists
+        $count = DB::table('t_its_data')->where('jamiat_id', $jamiatId)->count();
+
+        if ($count === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "No records found for Jamiat ID: {$jamiatId}.",
+            ], 404);
+        }
+
+        // Delete all records for the given Jamiat ID
+        DB::table('t_its_data')->where('jamiat_id', $jamiatId)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "All records for Jamiat ID: {$jamiatId} have been deleted successfully.",
+        ], 200);
+    } catch (\Exception $e) {
+        // Handle any exceptions
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while deleting records: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 }
