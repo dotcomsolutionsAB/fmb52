@@ -107,7 +107,7 @@ class JamiatController extends Controller
             'email' => 'required|string|email|max:150|unique:t_jamiat,email',
             'currency_id' => 'required|exists:currencies,id', // Validate currency_id
         ]);
-
+    
         try {
             // Create Jamiat with required fields and currency_id
             $jamiat = JamiatModel::create([
@@ -127,44 +127,50 @@ class JamiatController extends Controller
                 'notes' => null,
                 'logs' => null,
             ]);
-
-            if ($jamiat) {
-                // Create a new user associated with the created Jamiat
-                $register_user = User::create([
-                    'name' =>  strtolower($request->input('email')),
-                    'email' => strtolower($request->input('email')),
-                    'password' => bcrypt('fmb52#'),
-                    'jamiat_id' => $jamiat->id,
-                    'family_id' => null,
-                    'its' => null,
-                    'hof_its' => null,
-                    'its_family_id' => null,
-                    'mobile' => $request->input('mobile'),
-                    'title' => null,
-                    'gender' => null,
-                    'age' => null,
-                    'building' => null,
-                    'folio_no' => null,
-                    'sector_id' => null,
-                    'sub_sector_id' => null,
-                    'role' => 'jamiat_admin',
-                    'status' => 'active',
-                    'username' => strtolower($request->input('email')),
-                ]);
-
+    
+            if (!$jamiat) {
                 return response()->json([
-                    'status' => true,
-                    'message' => 'Jamaat registered successfully!',
-                    'data' => [
-                        'jamiat' => $jamiat,
-                        'user' => $register_user,
-                    ],
-                ], 200);
+                    'status' => false,
+                    'message' => 'Failed to register Jamaat. Please try again!',
+                ], 500);
             }
-
+    
+            // Create a new user associated with the created Jamiat
+            $register_user = User::create([
+                'name' => strtolower($request->input('email')),
+                'email' => strtolower($request->input('email')),
+                'password' => bcrypt('fmb52#'),
+                'jamiat_id' => $jamiat->id,
+                'family_id' => null,
+                'its' => null,
+                'hof_its' => null,
+                'its_family_id' => null,
+                'mobile' => $request->input('mobile'),
+                'title' => null,
+                'gender' => null,
+                'age' => null,
+                'building' => null,
+                'folio_no' => null,
+                'sector_id' => null,
+                'sub_sector_id' => null,
+                'role' => 'jamiat_admin',
+                'status' => 'active',
+                'username' => strtolower($request->input('email')),
+            ]);
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Jamaat registered successfully!',
+                'data' => [
+                    'jamiat' => $jamiat,
+                    'user' => $register_user,
+                ],
+            ], 200);
+    
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to create user for the Jamiat!',
+                'message' => 'The email has already been registered.',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -174,6 +180,7 @@ class JamiatController extends Controller
             ], 500);
         }
     }
+    
 
     // view
     public function view_jamiats()
