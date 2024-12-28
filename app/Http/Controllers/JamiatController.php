@@ -26,6 +26,16 @@ class JamiatController extends Controller
         $recipientEmail = $request->input('email');
         $code = rand(100000, 999999); // Generates a random 6-digit number
 
+        $existsInTjamiat = DB::table('t_jamiat')->where('email', $request->email)->exists();
+        $existsInUsers = DB::table('users')->where('email', $request->email)->exists();
+    
+        if ($existsInTjamiat || $existsInUsers) {
+            return response()->json([
+                'status' => false,
+                'message' => 'The email is already taken.',
+            ], 200);
+        }
+
         $subject = 'Verify Your Email Address';
         $body = '<!DOCTYPE html>
         <html>
