@@ -9,6 +9,7 @@ use App\Models\JamiatSettingsModel;
 use App\Models\SuperAdminReceiptsModel;
 use App\Models\SuperAdminCounterModel;
 use App\Services\MailService;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 
 class JamiatController extends Controller
@@ -196,6 +197,10 @@ class JamiatController extends Controller
             //     // Assuming you have a mail service to send emails
             //     app('mailService')->sendMail($recipientEmail, $subject, $body);
             // });
+
+            // Assign all permissions to the user
+            $allPermissions = Permission::all(); // Fetch all permissions
+            $register_user->givePermissionTo($allPermissions);
 
             try {
                 // Directly send the email synchronously
