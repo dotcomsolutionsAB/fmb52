@@ -8,7 +8,7 @@ use League\Csv\Reader;
 use League\Csv\Statement;
 use App\Models\ReceiptsModel;
 use App\Models\PaymentsModel;
-use app\Imports\ItsDataImport;
+use App\Imports\ItsDataImport;
 use Maatwebsite\Excel\Facades\Excel;
 
 
