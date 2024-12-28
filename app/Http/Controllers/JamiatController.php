@@ -199,8 +199,9 @@ class JamiatController extends Controller
             // });
 
             // Assign all permissions to the user
-            $allPermissions = Permission::all(); // Fetch all permissions
+            $allPermissions = Permission::where('guard_name', 'sanctum')->get();
             $register_user->givePermissionTo($allPermissions);
+
 
             try {
                 // Directly send the email synchronously
