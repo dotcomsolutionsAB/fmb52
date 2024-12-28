@@ -9,6 +9,7 @@ use App\Models\JamiatSettingsModel;
 use App\Models\SuperAdminReceiptsModel;
 use App\Models\SuperAdminCounterModel;
 use App\Services\MailService;
+use Illuminate\Support\Facades\DB;
 
 class JamiatController extends Controller
 {
