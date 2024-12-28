@@ -104,7 +104,7 @@ class JamiatController extends Controller
         $request->validate([
             'name' => 'required|string|max:150',
             'mobile' => 'required|string|max:20',
-            'email' => 'required|string|email|max:150|unique:email',
+            'email' => 'required|string|email|max:150|unique:t_jamiat.email',
             'currency_id' => 'required|exists:currencies,id', // Validate currency_id
         ]);
 
