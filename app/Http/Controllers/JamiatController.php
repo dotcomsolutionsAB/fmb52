@@ -104,6 +104,7 @@ class JamiatController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:150',
+            'admin_name' => 'required|string|max:150',
             'mobile' => 'required|string|max:20',
             'email' => 'required|string|email|max:150',
             'currency_id' => 'required|exists:currencies,id', // Validate currency_id
@@ -113,7 +114,7 @@ class JamiatController extends Controller
     
         if ($existsInTjamiat || $existsInUsers) {
             return response()->json([
-                'success' => false,
+                'status' => false,
                 'message' => 'The email is already taken.',
             ], 200);
         }
@@ -148,7 +149,7 @@ class JamiatController extends Controller
     
             // Create a new user associated with the created Jamiat
             $register_user = User::create([
-                'name' => strtolower($request->input('email')),
+                'name' => strtolower($request->input('admin_name')),
                 'email' => strtolower($request->input('email')),
                 'password' => bcrypt('fmb52#'),
                 'jamiat_id' => $jamiat->id,
