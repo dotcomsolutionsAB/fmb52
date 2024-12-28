@@ -180,84 +180,33 @@ class AuthController extends Controller
 
     // user `login`
     public function login(Request $request, $otp = null)
-    {
-        if ($otp) {
-            $request->validate([
-                'username' => ['required', 'string'],
-            ]);
-    
-            $otpRecord = User::select('otp', 'expires_at')
-                ->where('username', $request->username)
-                ->first();
-    
-            if ($otpRecord) {
-                if (!$otpRecord || $otpRecord->otp != $otp) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid OTP Entered',
-                    ], 200);
-                } elseif ($otpRecord->expires_at < now()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'OTP has expired!',
-                    ], 200);
-                } else {
-                    // Remove OTP record after successful validation
-                    User::where('username', $request->username)
-                        ->update(['otp' => null, 'expires_at' => null]);
-    
-                    // Retrieve the user and currency details
-                    $user = User::where('username', $request->username)->first();
-                    $currency = $user->jamiat_id 
-                        ? \DB::table('t_jamiat')
-                            ->join('currencies', 't_jamiat.currency_id', '=', 'currencies.id')
-                            ->where('t_jamiat.id', $user->jamiat_id)
-                            ->select('currencies.currency_name', 'currencies.currency_symbol', 'currencies.currency_code')
-                            ->first()
-                        : null;
-    
-                    // Generate a Sanctum token
-                    $generated_token = $user->createToken('API TOKEN')->plainTextToken;
-    
-                    // Retrieve user permissions
-                    $permissions = $user->getAllPermissions()->pluck('name');
-    
-                    return response()->json([
-                        'success' => true,
-                        'data' => [
-                            'token' => $generated_token,
-                            'name' => $user->name,
-                            'role' => $user->role,
-                            'id' => $user->id,
-                            'jamiat_id' => $user->jamiat_id,
-                            'permissions' => $permissions,
-                            'sector_access_id' => $user->sector_access_id,
-                            'sub_sector_access_id' => $user->sub_sector_access_id,
-                            'photo' => $user->photo ? $user->photo->file_url : null,
-                            'currency' => $currency,
-                        ],
-                        'message' => 'User logged in successfully!',
-                    ], 200);
-                }
-            } else {
+{
+    if ($otp) {
+        $request->validate([
+            'username' => ['required', 'string'],
+        ]);
+
+        $otpRecord = User::select('otp', 'expires_at')
+            ->where('username', $request->username)
+            ->first();
+
+        if ($otpRecord) {
+            if (!$otpRecord || $otpRecord->otp != $otp) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Username is not valid.',
+                    'message' => 'Invalid OTP Entered',
                 ], 200);
-            }
-        } else {
-            $request->validate([
-                'username' => ['required', 'string'],
-                'password' => 'required',
-            ]);
-    
-            // Find the user by username
-            $user = User::where('username', $request->username)->first();
-    
-            if (Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
-                $user = Auth::user();
-    
-                // Retrieve currency details based on jamiat_id
+            } elseif ($otpRecord->expires_at < now()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OTP has expired!',
+                ], 200);
+            } else {
+                // Clear OTP record
+                User::where('username', $request->username)
+                    ->update(['otp' => null, 'expires_at' => null]);
+
+                $user = User::where('username', $request->username)->first();
                 $currency = $user->jamiat_id 
                     ? \DB::table('t_jamiat')
                         ->join('currencies', 't_jamiat.currency_id', '=', 'currencies.id')
@@ -265,13 +214,18 @@ class AuthController extends Controller
                         ->select('currencies.currency_name', 'currencies.currency_symbol', 'currencies.currency_code')
                         ->first()
                     : null;
-    
-                // Generate a Sanctum token
+
                 $generated_token = $user->createToken('API TOKEN')->plainTextToken;
-    
-                // Retrieve user permissions
                 $permissions = $user->getAllPermissions()->pluck('name');
-    
+
+                // Check if user is jamiat_admin and count HOFs
+                $hof_count = 0;
+                if ($user->role === 'jamiat_admin') {
+                    $hof_count = User::where('jamiat_id', $user->jamiat_id)
+                        ->where('role', 'HOF')
+                        ->count();
+                }
+
                 return response()->json([
                     'success' => true,
                     'data' => [
@@ -285,17 +239,72 @@ class AuthController extends Controller
                         'sub_sector_access_id' => $user->sub_sector_access_id,
                         'photo' => $user->photo ? $user->photo->file_url : null,
                         'currency' => $currency,
+                        'hof_count' => $hof_count, // Include HOF count
                     ],
                     'message' => 'User logged in successfully!',
                 ], 200);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid username or password.',
-                ], 200);
             }
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username is not valid.',
+            ], 200);
+        }
+    } else {
+        $request->validate([
+            'username' => ['required', 'string'],
+            'password' => 'required',
+        ]);
+
+        $user = User::where('username', $request->username)->first();
+
+        if (Auth::attempt(['username' => $request->username, 'password' => $request->password])) {
+            $user = Auth::user();
+
+            $currency = $user->jamiat_id 
+                ? \DB::table('t_jamiat')
+                    ->join('currencies', 't_jamiat.currency_id', '=', 'currencies.id')
+                    ->where('t_jamiat.id', $user->jamiat_id)
+                    ->select('currencies.currency_name', 'currencies.currency_symbol', 'currencies.currency_code')
+                    ->first()
+                : null;
+
+            $generated_token = $user->createToken('API TOKEN')->plainTextToken;
+            $permissions = $user->getAllPermissions()->pluck('name');
+
+            // Check if user is jamiat_admin and count HOFs
+            $hof_count = 0;
+            if ($user->role === 'jamiat_admin') {
+                $hof_count = User::where('jamiat_id', $user->jamiat_id)
+                    ->where('role', 'HOF')
+                    ->count();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'token' => $generated_token,
+                    'name' => $user->name,
+                    'role' => $user->role,
+                    'id' => $user->id,
+                    'jamiat_id' => $user->jamiat_id,
+                    'permissions' => $permissions,
+                    'sector_access_id' => $user->sector_access_id,
+                    'sub_sector_access_id' => $user->sub_sector_access_id,
+                    'photo' => $user->photo ? $user->photo->file_url : null,
+                    'currency' => $currency,
+                    'hof_count' => $hof_count, // Include HOF count
+                ],
+                'message' => 'User logged in successfully!',
+            ], 200);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid username or password.',
+            ], 200);
         }
     }
+}
     
 
 
