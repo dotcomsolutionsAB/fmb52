@@ -73,33 +73,34 @@ Route::post('/whatsapp-queue', [WhatsAppQueueController::class, 'addToQueue']);
 Route::post('/whatsapp-queue/process', [WhatsAppQueueController::class, 'processQueue']);
 
 // Register New Jamaat
-  Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
+Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
+Route::post('/forgot_password', [JamiatController::class, 'forgot_password']);
 Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
-  // jamiat
-  Route::get('/jamiat', [JamiatController::class, 'view_jamiats']);
-  Route::post('/update_jamiat/{id}', [JamiatController::class, 'update_jamiat']);
-  Route::delete('/jamiat/{id}', [JamiatController::class, 'delete_jamiat']);
+// jamiat
+Route::get('/jamiat', [JamiatController::class, 'view_jamiats']);
+Route::post('/update_jamiat/{id}', [JamiatController::class, 'update_jamiat']);
+Route::delete('/jamiat/{id}', [JamiatController::class, 'delete_jamiat']);
 
-  // jamiat_settings
-  Route::post('/jamiat_settings', [JamiatController::class, 'register_jamiat_settings']);
-  Route::get('/jamiat_settings', [JamiatController::class, 'view_jamiat_settings']);
-  Route::post('/update_jamiat_settings/{id}', [JamiatController::class, 'update_jamiat_settings']);
-  Route::delete('/jamiat_settings/{id}', [JamiatController::class, 'delete_jamiat_settings']);
+// jamiat_settings
+Route::post('/jamiat_settings', [JamiatController::class, 'register_jamiat_settings']);
+Route::get('/jamiat_settings', [JamiatController::class, 'view_jamiat_settings']);
+Route::post('/update_jamiat_settings/{id}', [JamiatController::class, 'update_jamiat_settings']);
+Route::delete('/jamiat_settings/{id}', [JamiatController::class, 'delete_jamiat_settings']);
 
-  // super_admin_receipt
-  Route::post('/super_admin_receipt', [JamiatController::class, 'register_super_admin_receipts']);
-  Route::get('/super_admin_receipt', [JamiatController::class, 'view_super_admin_receipts']);
-  Route::post('/update_super_admin_receipt/{id}', [JamiatController::class, 'update_super_admin_receipt']);
-  Route::delete('/super_admin_receipt/{id}', [JamiatController::class, 'delete_super_admin_receipt']);
+// super_admin_receipt
+Route::post('/super_admin_receipt', [JamiatController::class, 'register_super_admin_receipts']);
+Route::get('/super_admin_receipt', [JamiatController::class, 'view_super_admin_receipts']);
+Route::post('/update_super_admin_receipt/{id}', [JamiatController::class, 'update_super_admin_receipt']);
+Route::delete('/super_admin_receipt/{id}', [JamiatController::class, 'delete_super_admin_receipt']);
 
-  // super_admin_counter
-  Route::post('/super_admin_counter', [JamiatController::class, 'register_super_admin_counter']);
-  Route::get('/super_admin_counter', [JamiatController::class, 'view_super_admin_counters']);
-  Route::post('/update_super_admin_counter/{id}', [JamiatController::class, 'update_super_admin_counter']);
-  Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_super_admin_counter']);
+// super_admin_counter
+Route::post('/super_admin_counter', [JamiatController::class, 'register_super_admin_counter']);
+Route::get('/super_admin_counter', [JamiatController::class, 'view_super_admin_counters']);
+Route::post('/update_super_admin_counter/{id}', [JamiatController::class, 'update_super_admin_counter']);
+Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_super_admin_counter']);
 
-  Route::get('/currencies', [AccountsController::class, 'fetchCurrencies']);
+Route::get('/currencies', [AccountsController::class, 'fetchCurrencies']);
 
 
 // Middleware-protected routes

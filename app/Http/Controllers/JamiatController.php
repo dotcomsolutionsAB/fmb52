@@ -261,6 +261,62 @@ class JamiatController extends Controller
         }
     }
 
+    public function forgot_password(Request $request)
+    {
+        $request->validate([
+            'username' => 'required|string',
+        ]);
+
+        // Check if user exists by username
+        $user = User::where('username', $request->input('username'))->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid username',
+            ], 200);
+        }
+
+        try {
+            // Generate a new 6-digit password
+            $newPassword = random_int(100000, 999999);
+
+            // Update the user's password in the database
+            $user->password = bcrypt($newPassword);
+            $user->save();
+
+            // Prepare email details
+            $recipientEmail = $user->email;
+            $subject = 'Password Reset Notification';
+            $body = view('emails.forgot_password', [
+                'name' => $user->name,
+                'new_password' => $newPassword,
+            ])->render();
+
+            // Send email synchronously
+            $result = app('mailService')->sendMail($recipientEmail, $subject, $body);
+
+            if (!$result) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Failed to send email. Please try again later.',
+                ], 500);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password reset successfully. Check your email for the new password.',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while resetting the password.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
     // view
     public function view_jamiats()
