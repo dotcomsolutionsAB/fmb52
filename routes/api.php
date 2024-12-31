@@ -20,6 +20,7 @@ use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PDFController;
 use App\Http\Controllers\WhatsAppQueueController;
+use App\Http\Controllers\NiyazController;
 
 // Public Routes
 Route::post('/register', [MumeneenController::class, 'register_users']);
@@ -248,4 +249,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])
             ->middleware(['check-api-permission:feedback.delete']);
     });
+
+    //Niyaz
+    Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
+
+
+
 });

@@ -4,12 +4,37 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\NiyazModel;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 class NiyazController extends Controller
 {
     /**
      * Get all Niyaz records.
      */
+
+     public function getHubSlabs()
+     {
+         // Get the authenticated user's jamiat_id
+         $jamiatId = Auth::user()->jamiat_id;
+     
+         // Fetch hub slabs for the user's jamiat_id
+         $hubSlabs = DB::table('t_hub_slab')
+             ->where('jamiat_id', $jamiatId)
+             ->select('id', 'name', 'amount')
+             ->get();
+     
+         if ($hubSlabs->isEmpty()) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'No hub slabs found for your Jamaat.',
+             ], 404);
+         }
+     
+         return response()->json([
+             'success' => true,
+             'data' => $hubSlabs,
+         ], 200);
+     }
     public function index()
     {
         $niyaz = NiyazModel::all();
