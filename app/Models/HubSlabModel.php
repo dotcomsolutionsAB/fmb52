@@ -20,6 +20,7 @@ class HubSlabModel extends Model
         'jamiat_id',
         'name',
         'amount',
+        'minimum_count'
     ];
 
     /**
