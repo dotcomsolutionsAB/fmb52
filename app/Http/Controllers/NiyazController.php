@@ -6,35 +6,118 @@ use Illuminate\Http\Request;
 use App\Models\NiyazModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+
 class NiyazController extends Controller
 {
     /**
      * Get all Niyaz records.
      */
 
-     public function getHubSlabs()
-     {
-         // Get the authenticated user's jamiat_id
-         $jamiatId = Auth::user()->jamiat_id;
-     
-         // Fetch hub slabs for the user's jamiat_id
-         $hubSlabs = DB::table('t_hub_slab')
-             ->where('jamiat_id', $jamiatId)
-             ->select('id', 'name', 'amount')
-             ->get();
-     
-         if ($hubSlabs->isEmpty()) {
-             return response()->json([
-                 'success' => false,
-                 'message' => 'No hub slabs found for your Jamaat.',
-             ], 404);
-         }
-     
-         return response()->json([
-             'success' => true,
-             'data' => $hubSlabs,
-         ], 200);
-     }
+    public function getHubSlabs()
+    {
+        // Get the authenticated user's jamiat_id
+        $jamiatId = Auth::user()->jamiat_id;
+
+        // Fetch hub slabs for the user's jamiat_id
+        $hubSlabs = DB::table('t_hub_slab')
+            ->where('jamiat_id', $jamiatId)
+            ->select('id', 'name', 'amount')
+            ->get();
+
+        if ($hubSlabs->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hub slabs found for your Jamaat.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $hubSlabs,
+        ], 200);
+    }
+
+    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Facades\DB;
+
+    public function getUsersBySlabId($hubSlabId)
+    {
+        // Get authenticated user's jamiat_id
+        $jamiatId = Auth::user()->jamiat_id;
+
+        // Fetch the hub slab details using the provided ID and authenticated user's jamiat_id
+        $hubSlab = DB::table('t_hub_slab')
+            ->where('id', $hubSlabId)
+            ->where('jamiat_id', $jamiatId)
+            ->first();
+
+        if (!$hubSlab) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hub Slab not found for your Jamaat.',
+            ], 404);
+        }
+
+        // Fetch the current year for the authenticated user's jamiat_id
+        $currentYear = DB::table('t_year')
+            ->where('jamiat_id', $jamiatId)
+            ->where('is_current', 1)
+            ->value('year');
+
+        if (!$currentYear) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Current year not set for your Jamaat.',
+            ], 404);
+        }
+
+        // Fetch matching records from t_hub table where the amount matches and year is current
+        $hubs = DB::table('t_hub')
+            ->where('amount', $hubSlab->amount)
+            ->where('year', $currentYear)
+            ->get();
+
+        if ($hubs->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No matching records found in t_hub table for the current year.',
+            ], 404);
+        }
+
+        // Retrieve the associated user details for each family_id in t_hub
+        $users = [];
+        foreach ($hubs as $hub) {
+            // Fetch user where mumeneen_type is 'HOF' and jamiat_id matches
+            $user = DB::table('users')
+                ->where('family_id', $hub->family_id)
+                ->where('mumeneen_type', 'HOF')
+                ->where('jamiat_id', $jamiatId)
+                ->first();
+
+            if ($user) {
+                $users[] = [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'its_id' => $user->its,
+                    'family_id' => $user->family_id,
+                    'hub_amount' => $hub->amount,
+                ];
+            }
+        }
+
+        if (empty($users)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No users found for the matching hubs.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $users,
+        ], 200);
+    }
+
     public function index()
     {
         $niyaz = NiyazModel::all();
