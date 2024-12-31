@@ -252,6 +252,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     //Niyaz
     Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
+    Route::get('/users-by-slab/{hubSlabId}', [NiyazController::class, 'getUsersBySlabId']);
 
 
 
