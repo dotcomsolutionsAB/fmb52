@@ -72,9 +72,10 @@ class NiyazController extends Controller
 
         // Fetch matching records from t_hub table where the amount matches and year is current
         $hubs = DB::table('t_hub')
-            ->where('hub_amount', $hubSlab->amount)
-            ->where('year', $currentYear)
-            ->get();
+        ->where('hub_amount', $hubSlab->amount) // Correctly references hub_amount
+        ->where('year', $currentYear)
+        ->where('jamiat_id', $jamiatId) // Ensure jamiat_id matches the authenticated user's jamiat_id
+        ->get();
 
         if ($hubs->isEmpty()) {
             return response()->json([
