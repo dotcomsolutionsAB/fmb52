@@ -100,7 +100,7 @@ class NiyazController extends Controller
                     'name' => $user->name,
                     'its_id' => $user->its,
                     'family_id' => $user->family_id,
-                    'hub_amount' => $hub->amount,
+                    'hub_amount' => $hub->hub_amount,
                 ];
             }
         }
