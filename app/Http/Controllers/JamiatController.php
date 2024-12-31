@@ -386,7 +386,7 @@ class JamiatController extends Controller
             return response()->json(['message' => 'Jamiat not found!'], 404);
         }
     
-        // Delete all users associated with this Jamiat
+        // Delete all users associated with this Jamiatgit commit
         $jamiatId = $jamiat->id;
     
         // Using the DB facade to delete users
