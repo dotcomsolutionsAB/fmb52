@@ -60,7 +60,7 @@ class NiyazController extends Controller
         // Fetch the current year for the authenticated user's jamiat_id
         $currentYear = DB::table('t_year')
             ->where('jamiat_id', $jamiatId)
-            ->where('is_current', 1)
+            ->where('is_current', '1')
             ->value('year');
 
         if (!$currentYear) {
@@ -72,7 +72,7 @@ class NiyazController extends Controller
 
         // Fetch matching records from t_hub table where the amount matches and year is current
         $hubs = DB::table('t_hub')
-            ->where('amount', $hubSlab->amount)
+            ->where('hub_amount', $hubSlab->amount)
             ->where('year', $currentYear)
             ->get();
 
