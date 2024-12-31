@@ -37,8 +37,7 @@ class NiyazController extends Controller
         ], 200);
     }
 
-    use Illuminate\Support\Facades\Auth;
-    use Illuminate\Support\Facades\DB;
+    
 
     public function getUsersBySlabId($hubSlabId)
     {
