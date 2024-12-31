@@ -112,155 +112,139 @@ class JamiatController extends Controller
 
     // create
     public function register_jamaat(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:150',
-            'admin_name' => 'required|string|max:150',
-            'mobile' => 'required|string|max:20',
-            'email' => 'required|string|email|max:150',
-            'currency_id' => 'required|exists:currencies,id', // Validate currency_id
+{
+    $request->validate([
+        'name' => 'required|string|max:150',
+        'admin_name' => 'required|string|max:150',
+        'mobile' => 'required|string|max:20',
+        'email' => 'required|string|email|max:150',
+        'currency_id' => 'required|exists:currencies,id', // Validate currency_id
+    ]);
+
+    $existsInTjamiat = DB::table('t_jamiat')->where('email', $request->email)->exists();
+    $existsInUsers = DB::table('users')->where('email', $request->email)->exists();
+
+    if ($existsInTjamiat || $existsInUsers) {
+        return response()->json([
+            'status' => false,
+            'message' => 'The email is already taken.',
+        ], 200);
+    }
+
+    try {
+        // Generate a random 6-digit password
+        $password = random_int(100000, 999999);
+
+        // Create Jamiat with required fields and currency_id
+        $jamiat = JamiatModel::create([
+            'name' => $request->input('name'),
+            'mobile' => $request->input('mobile'),
+            'email' => $request->input('email'),
+            'currency_id' => $request->input('currency_id'), // Save currency_id
+            'package' => 0,
+            'validity' => now()->addDays(30)->format('Y-m-d'),
+            'billing_address' => null,
+            'billing_contact' => null,
+            'billing_email' => null,
+            'billing_phone' => null,
+            'last_payment_date' => null,
+            'last_payment_amount' => null,
+            'payment_due_date' => null,
+            'notes' => null,
+            'logs' => null,
         ]);
 
-        $existsInTjamiat = DB::table('t_jamiat')->where('email', $request->email)->exists();
-        $existsInUsers = DB::table('users')->where('email', $request->email)->exists();
-
-        if ($existsInTjamiat || $existsInUsers) {
+        if (!$jamiat) {
             return response()->json([
                 'status' => false,
-                'message' => 'The email is already taken.',
-            ], 200);
+                'message' => 'Failed to register Jamaat. Please try again!',
+            ], 500);
         }
 
-        try {
-            // Generate a random 6-digit password
-            $password = random_int(100000, 999999);
+        // Insert new year into t_year table
+        DB::transaction(function () use ($jamiat) {
+            // Set all existing years for the Jamaat to is_current = 0
+            DB::table('t_year')->where('jamiat_id', $jamiat->id)->update(['is_current' => 0]);
 
-            // Create Jamiat with required fields and currency_id
-            $jamiat = JamiatModel::create([
-                'name' => $request->input('name'),
-                'mobile' => $request->input('mobile'),
-                'email' => $request->input('email'),
-                'currency_id' => $request->input('currency_id'), // Save currency_id
-                'package' => 0,
-                'validity' => now()->addDays(30)->format('Y-m-d'),
-                'billing_address' => null,
-                'billing_contact' => null,
-                'billing_email' => null,
-                'billing_phone' => null,
-                'last_payment_date' => null,
-                'last_payment_amount' => null,
-                'payment_due_date' => null,
-                'notes' => null,
-                'logs' => null,
-            ]);
-
-            if (!$jamiat) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Failed to register Jamaat. Please try again!',
-                ], 500);
-            }
-
-            // Create a new user associated with the created Jamiat
-            $register_user = User::create([
-                'name' => strtolower($request->input('admin_name')),
-                'email' => strtolower($request->input('email')),
-                'password' => bcrypt($password),
+            // Insert the new year with is_current = 1
+            DB::table('t_year')->insert([
+                'year' => '1446-1447',
                 'jamiat_id' => $jamiat->id,
-                'family_id' => null,
-                'its' => null,
-                'hof_its' => null,
-                'its_family_id' => null,
-                'mobile' => $request->input('mobile'),
-                'title' => null,
-                'gender' => null,
-                'age' => null,
-                'building' => null,
-                'folio_no' => null,
-                'sector_id' => null,
-                'sub_sector_id' => null,
-                'role' => 'jamiat_admin',
-                'status' => 'active',
-                'username' => strtolower($request->input('email')),
+                'is_current' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
+        });
 
-            // Call email function asynchronously
-            // dispatch(function () use ($register_user, $password, $jamiat) {
-            //     $recipientEmail = $register_user->email;
-            //     $subject = 'Welcome to FMB 52!';
-            //     $body = view('emails.jamaat_registration', [
-            //         'admin_name' => $register_user->name,
-            //         'password' => $password,
-            //         'validity' => $jamiat->validity,
-            //     ])->render();
+        // Create a new user associated with the created Jamiat
+        $register_user = User::create([
+            'name' => strtolower($request->input('admin_name')),
+            'email' => strtolower($request->input('email')),
+            'password' => bcrypt($password),
+            'jamiat_id' => $jamiat->id,
+            'family_id' => null,
+            'its' => null,
+            'hof_its' => null,
+            'its_family_id' => null,
+            'mobile' => $request->input('mobile'),
+            'title' => null,
+            'gender' => null,
+            'age' => null,
+            'building' => null,
+            'folio_no' => null,
+            'sector_id' => null,
+            'sub_sector_id' => null,
+            'role' => 'jamiat_admin',
+            'status' => 'active',
+            'username' => strtolower($request->input('email')),
+        ]);
 
-            //     // Assuming you have a mail service to send emails
-            //     app('mailService')->sendMail($recipientEmail, $subject, $body);
-            // });
+        // Assign all permissions to the user
+        $allPermissions = Permission::where('guard_name', 'sanctum')->get();
+        $register_user->givePermissionTo($allPermissions);
 
-            // Assign all permissions to the user
-            $allPermissions = Permission::where('guard_name', 'sanctum')->get();
-            $register_user->givePermissionTo($allPermissions);
+        // Send email to the new user
+        try {
+            $recipientEmail = $register_user->email;
+            $subject = 'Welcome to FMB 52!';
+            $body = view('emails.jamaat_registration', [
+                'admin_name' => $register_user->email,
+                'password' => $password,
+                'validity' => $jamiat->validity,
+            ])->render();
 
+            $result = app('mailService')->sendMail($recipientEmail, $subject, $body);
 
-            try {
-                // Directly send the email synchronously
-                $recipientEmail = $register_user->email;
-                $subject = 'Welcome to FMB 52!';
-                $body = view('emails.jamaat_registration', [
-                    'admin_name' => $register_user->email,
-                    'password' => $password,
-                    'validity' => $jamiat->validity,
-                ])->render();
-            
-                // Assuming you have a mail service to send emails
-                $result = app('mailService')->sendMail($recipientEmail, $subject, $body);
-            
-                if (!$result) {
-                    // Log the error or handle it if the mail service fails
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Failed to send email. Please try again later.',
-                    ], 500);
-                }
-            
-                // Continue with your response logic
-                return response()->json([
-                    'status' => true,
-                    'message' => 'Jamaat registered successfully, and email sent!',
-                    'data' => [
-                        'jamiat' => $jamiat,
-                        'user' => $register_user,
-                    ],
-                ], 200);
-            } catch (\Exception $e) {
-                // Catch email-specific errors
+            if (!$result) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'An error occurred while sending the email.',
-                    'error' => $e->getMessage(),
+                    'message' => 'Failed to send email. Please try again later.',
                 ], 500);
             }
-            
 
             return response()->json([
                 'status' => true,
-                'message' => 'Jamaat registered successfully!',
+                'message' => 'Jamaat registered successfully, and email sent!',
                 'data' => [
                     'jamiat' => $jamiat,
                     'user' => $register_user,
                 ],
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Some error occurred!',
+                'message' => 'An error occurred while sending the email.',
                 'error' => $e->getMessage(),
             ], 500);
         }
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Some error occurred!',
+            'error' => $e->getMessage(),
+        ], 500);
     }
-
+}
     public function forgot_password(Request $request)
     {
         $request->validate([
