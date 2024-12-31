@@ -170,7 +170,7 @@ class JamiatController extends Controller
             DB::table('t_year')->insert([
                 'year' => '1446-1447',
                 'jamiat_id' => $jamiat->id,
-                'is_current' => 1,
+                'is_current' => '1',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
