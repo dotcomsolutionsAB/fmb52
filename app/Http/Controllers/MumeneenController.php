@@ -1211,12 +1211,24 @@ class MumeneenController extends Controller
     // view
     public function all_years()
     {
-        $get_all_years = YearModel::select('year', 'jamiat_id', 'is_current')->get();
+        $user = Auth::user(); // Get the authenticated user
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $jamiatId = $user->jamiat_id; // Get the user's jamiat_id
+
+        // Fetch years only for the logged-in user's jamiat_id
+        $get_all_years = YearModel::select('year', 'jamiat_id', 'is_current')
+            ->where('jamiat_id', $jamiatId)
+            ->get();
 
         return $get_all_years->isNotEmpty()
             ? response()->json(['message' => 'Year records fetched successfully!', 'data' => $get_all_years], 200)
             : response()->json(['message' => 'No year records found!'], 404);
     }
+
 
     // update
     public function update_year(Request $request, $id)
