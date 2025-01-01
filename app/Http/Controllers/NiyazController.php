@@ -169,7 +169,7 @@ class NiyazController extends Controller
                 'date' => $date,
                 'menu' => 'Niyaz Menu Example', // Replace with actual menu if applicable
                 'total_amount' => $totalHubAmount,
-                'hub_slab_id' => $hubSlabId,
+               
                 'created_at' => $date,
                 'updated_at' => $date,
             ];
