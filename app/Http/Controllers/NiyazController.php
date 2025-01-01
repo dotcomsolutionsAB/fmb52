@@ -37,7 +37,7 @@ class NiyazController extends Controller
         ], 200);
     }
 
-    
+
 
     public function getUsersBySlabId($hubSlabId)
     {
@@ -72,10 +72,10 @@ class NiyazController extends Controller
 
         // Fetch matching records from t_hub table where the amount matches and year is current
         $hubs = DB::table('t_hub')
-        ->where('hub_amount', $hubSlab->amount) // Correctly references hub_amount
-        ->where('year', $currentYear)
-        ->where('jamiat_id', $jamiatId) // Ensure jamiat_id matches the authenticated user's jamiat_id
-        ->get();
+            ->where('hub_amount', $hubSlab->amount) // Correctly references hub_amount
+            ->where('year', $currentYear)
+            ->where('jamiat_id', $jamiatId) // Ensure jamiat_id matches the authenticated user's jamiat_id
+            ->get();
 
         if ($hubs->isEmpty()) {
             return response()->json([
@@ -118,6 +118,83 @@ class NiyazController extends Controller
         ], 200);
     }
 
+    public function addNiyaz(Request $request)
+    {
+        // Validate the incoming request
+        $request->validate([
+            'hub_slab_id' => 'required|exists:t_hub_slab,id',
+            'family_ids' => 'required|array|min:1', // Accept multiple family IDs
+            'family_ids.*' => 'exists:users,family_id', // Validate each family ID
+        ]);
+
+        $hubSlabId = $request->input('hub_slab_id');
+        $familyIds = $request->input('family_ids');
+
+        // Fetch the hub slab details
+        $hubSlab = DB::table('t_hub_slab')->where('id', $hubSlabId)->first();
+
+        if (!$hubSlab) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hub Slab not found.',
+            ], 404);
+        }
+
+        // Calculate the total hub amount for the provided family IDs
+        $totalHubAmount = DB::table('t_hub')
+            ->whereIn('family_id', $familyIds)
+            ->sum('hub_amount');
+
+        // Check the number of family IDs
+        $familyCount = count($familyIds);
+
+        // Ensure either minimum_count is met or total hub amount >= 172000
+        if ($familyCount < $hubSlab->minimum_count && $totalHubAmount < 172000) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Minimum requirements not met: either minimum number of families or total hub amount must satisfy the conditions.',
+            ], 400);
+        }
+
+        // Generate a unique niyaz_id for the batch
+        $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
+
+        // Prepare the data for insertion
+        $data = [];
+        $date = now();
+        foreach ($familyIds as $familyId) {
+            $data[] = [
+                'niyaz_id' => $niyazId,
+                'family_id' => $familyId,
+                'date' => $date,
+                'menu' => 'Niyaz Menu Example', // Replace with actual menu if applicable
+                'total_amount' => $totalHubAmount,
+                'hub_slab_id' => $hubSlabId,
+                'created_at' => $date,
+                'updated_at' => $date,
+            ];
+        }
+
+        // Insert all entries into t_niyaz table
+        $inserted = DB::table('t_niyaz')->insert($data);
+
+        if (!$inserted) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add Niyaz.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Niyaz added successfully.',
+            'data' => [
+                'niyaz_id' => $niyazId,
+                'family_ids' => $familyIds,
+                'total_amount' => $totalHubAmount,
+            ],
+        ], 201);
+    }
     public function index()
     {
         $niyaz = NiyazModel::all();
