@@ -54,7 +54,7 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
                 'mobile' => $row['mobile'] ?? null,
                 'gender' => strtolower($row['gender'] ?? 'unknown'),
                 'age' => $row['age'] ?? null,
-                'address' => $row['building'] ?? $row['address'] ?? 'N/A',
+                'building' => $row['building'] ?? $row['address'] ?? 'N/A',
                 'sector_id' => $sector_id,
                 'sub_sector_id' => $sub_sector_id,
                 'password' => Hash::make($row['its_id']), // Default password as ITS number
