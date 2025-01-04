@@ -1394,6 +1394,13 @@ class MumeneenController extends Controller
             return response()->json(['message' => 'Hub Slab not found!'], 404);
         }
     
+        // Get jamiat_id from authenticated user
+        $jamiat_id = auth()->user()->jamiat_id;
+    
+        if (!$jamiat_id) {
+            return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
+        }
+    
         // Find or create the hub record
         $get_hub = HubModel::firstOrCreate(
             [
@@ -1401,7 +1408,7 @@ class MumeneenController extends Controller
                 'year' => $request->input('year'),
             ],
             [
-                'jamiat_id' => auth()->user()->jamiat_id,
+                'jamiat_id' => $jamiat_id,
                 'hub_amount' => $hubSlab->amount,
                 'paid_amount' => 0,
                 'due_amount' => $hubSlab->amount,
@@ -1419,7 +1426,7 @@ class MumeneenController extends Controller
         }
     
         // Generate Niyaz entries based on the hub slab count
-        $this->addNiyazEntries($family_id, $hubSlab);
+        $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab);
     
         // Return a success response
         return response()->json([
@@ -1431,7 +1438,7 @@ class MumeneenController extends Controller
         ], 200);
     }
     
-    private function addNiyazEntries($family_id, $hubSlab)
+    private function addNiyazEntries($family_id, $jamiat_id, $hubSlab)
     {
         // Generate a unique niyaz_id for the batch
         $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
@@ -1444,6 +1451,7 @@ class MumeneenController extends Controller
         for ($i = 0; $i < $entryCount; $i++) {
             $data[] = [
                 'niyaz_id' => $niyazId + $i, // Ensure unique niyaz_id per entry
+                'jamiat_id' => $jamiat_id,
                 'family_id' => $family_id,
                 'date' => $date,
                 'menu' => $hubSlab->name ?? 'Niyaz Menu Example', // Use slab name as menu
