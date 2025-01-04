@@ -12,7 +12,7 @@ class SubSectorModel extends Model
     protected $table = 't_sub_sector';
 
     protected $fillable = [
-        'jamiat_id', 'sector', 'name', 'notes', 'log_user',
+        'jamiat_id', 'sector_id', 'name', 'notes', 'log_user',
     ];
 
     // Define the relationship with the Sector model
