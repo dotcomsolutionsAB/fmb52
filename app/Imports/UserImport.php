@@ -16,6 +16,7 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
+
 class UserImport implements ToModel, WithHeadingRow, WithValidation
 {
     protected $jamiat_id;

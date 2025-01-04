@@ -3,11 +3,13 @@
 namespace App\Imports;
 
 use App\Models\SectorModel;
+use App\Models\User;
 use App\Models\SubSectorModel;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+
 
 class SectorSubsectorImport implements ToModel, WithHeadingRow, WithValidation
 {
@@ -22,7 +24,7 @@ class SectorSubsectorImport implements ToModel, WithHeadingRow, WithValidation
                 'message' => 'Jamiat ID is required and missing for the authenticated user.',
             ], 400);
         }
-        
+
         // Skip rows where sector_name is missing
         if (empty($row['sector'])) {
             return null;

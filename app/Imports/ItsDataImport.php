@@ -4,6 +4,7 @@ namespace App\Imports;
 
 
 use App\Models\ItsModel;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
