@@ -21,14 +21,14 @@ class SectorSubsectorImport implements ToModel, WithHeadingRow, WithValidation
     public function model(array $row)
     {
         // Skip rows where sector_name is missing
-        if (empty($row['sector_name'])) {
+        if (empty($row['sector'])) {
             return null;
         }
 
         try {
             // Update or create the sector
             $sector = SectorModel::firstOrCreate(
-                ['jamiat_id' => $this->jamiat_id, 'name' => $row['sector_name']],
+                ['jamiat_id' => $this->jamiat_id, 'name' => $row['Sector']],
                 [
                     'notes' => $row['sector_notes'] ?? 'Added by Excel upload',
                     'log_user' => auth()->user()->username ?? 'system',
@@ -37,9 +37,9 @@ class SectorSubsectorImport implements ToModel, WithHeadingRow, WithValidation
             );
 
             // Update or create the subsector if provided
-            if (!empty($row['subsector_name'])) {
+            if (!empty($row['Sub_Sector'])) {
                 SubSectorModel::firstOrCreate(
-                    ['jamiat_id' => $this->jamiat_id, 'sector_id' => $sector->id, 'name' => $row['subsector_name']],
+                    ['jamiat_id' => $this->jamiat_id, 'sector_id' => $sector->id, 'name' => $row['Sub_Sector']],
                     [
                         'notes' => $row['subsector_notes'] ?? 'Added by Excel upload',
                         'log_user' => auth()->user()->username ?? 'system',

@@ -220,23 +220,30 @@ class CSVImportController extends Controller
    
 
     
-    public function uploadExcel(Request $request, $jamiat_id)
+    public function uploadExcel(Request $request)
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
         ]);
     
         try {
+            // Get jamiat_id from the authenticated user
+            $jamiat_id = auth()->user()->jamiat_id;
+    
+            if (!$jamiat_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jamiat ID is required and missing for the authenticated user.',
+                ], 400);
+            }
+    
             // Check if `t_sector` and `t_sub_sector` tables have data for the given Jamiat ID
             $sectorExists = DB::table('t_sector')->where('jamiat_id', $jamiat_id)->exists();
-            $userExists = DB::table('users')
-                ->where('jamiat_id', $jamiat_id)
-                ->where('role', 'mumeneen')
-                ->exists();
+            $userExists = DB::table('users')->where('jamiat_id', $jamiat_id)->where('role', 'mumeneen')->exists();
     
             // Import Sectors and Subsectors only if they don't already exist
             if (!$sectorExists) {
-                Excel::import(new SectorSubsectorImport($jamiat_id), $request->file('file'));
+                Excel::import(new SectorSubsectorImport(), $request->file('file'));
                 Log::info("Sectors and Subsectors imported for Jamiat ID: {$jamiat_id}");
             } else {
                 Log::info("Sectors and Subsectors already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
