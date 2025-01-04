@@ -252,31 +252,50 @@ class CSVImportController extends Controller
         }
     }
     public function deleteByJamiatId($jamiatId)
-{
-    try {
-        // Validate that the Jamiat ID exists
-        $count = DB::table('t_its_data')->where('jamiat_id', $jamiatId)->count();
-
-        if ($count === 0) {
+    {
+        try {
+            // Check if any record exists for the given Jamiat ID
+            $existsInItsData = DB::table('t_its_data')->where('jamiat_id', $jamiatId)->exists();
+            $existsInSectors = DB::table('t_sector')->where('jamiat_id', $jamiatId)->exists();
+            $existsInUsers = DB::table('users')->where('jamiat_id', $jamiatId)->exists();
+    
+            if (!$existsInItsData && !$existsInSectors && !$existsInUsers) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "No records found for Jamiat ID: {$jamiatId}.",
+                ], 404);
+            }
+    
+            // Start a transaction for safe deletion
+            DB::beginTransaction();
+    
+            // Delete from users table
+            DB::table('users')->where('jamiat_id', $jamiatId)->delete();
+    
+            // Delete from t_sub_sector table
+            DB::table('t_sub_sector')->where('jamiat_id', $jamiatId)->delete();
+    
+            // Delete from t_sector table
+            DB::table('t_sector')->where('jamiat_id', $jamiatId)->delete();
+    
+            // Delete from t_its_data table
+            DB::table('t_its_data')->where('jamiat_id', $jamiatId)->delete();
+    
+            // Commit the transaction
+            DB::commit();
+    
+            return response()->json([
+                'success' => true,
+                'message' => "All records for Jamiat ID: {$jamiatId} have been deleted successfully.",
+            ], 200);
+        } catch (\Exception $e) {
+            // Rollback the transaction in case of an error
+            DB::rollBack();
+    
             return response()->json([
                 'success' => false,
-                'message' => "No records found for Jamiat ID: {$jamiatId}.",
-            ], 404);
+                'message' => 'An error occurred while deleting records: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Delete all records for the given Jamiat ID
-        DB::table('t_its_data')->where('jamiat_id', $jamiatId)->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => "All records for Jamiat ID: {$jamiatId} have been deleted successfully.",
-        ], 200);
-    } catch (\Exception $e) {
-        // Handle any exceptions
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while deleting records: ' . $e->getMessage(),
-        ], 500);
     }
-}
 }
