@@ -254,7 +254,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
     Route::get('/users-by-slab/{hubSlabId}', [NiyazController::class, 'getUsersBySlabId']);
     Route::post('/niyaz/add', [NiyazController::class, 'addNiyaz']);
-    Route::post('/view_all', [NiyazController::class, 'show']);
+    Route::get('/view_all', [NiyazController::class, 'show']);
 
 
 
