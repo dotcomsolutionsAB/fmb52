@@ -302,6 +302,7 @@ class CSVImportController extends Controller
             DB::table('t_its_data')->where('jamiat_id', $jamiatId)->delete();
     
             DB::table('t_hub')->where('jamiat_id', $jamiatId)->delete();
+            
     
             // Commit the transaction
             DB::commit();
