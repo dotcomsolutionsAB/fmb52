@@ -11,15 +11,18 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 
 class SectorSubsectorImport implements ToModel, WithHeadingRow, WithValidation
 {
-    protected $jamiat_id;
-
-    public function __construct($jamiat_id)
-    {
-        $this->jamiat_id = $jamiat_id;
-    }
-
+   
     public function model(array $row)
     {
+        $jamiat_id = auth()->user()->jamiat_id;
+    
+        if (!$jamiat_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jamiat ID is required and missing for the authenticated user.',
+            ], 400);
+        }
+        
         // Skip rows where sector_name is missing
         if (empty($row['sector'])) {
             return null;
