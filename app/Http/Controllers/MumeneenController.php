@@ -297,58 +297,50 @@ class MumeneenController extends Controller
     public function update_record(Request $request, $id)
     {
         // Fetch the record by ID
-        $get_user = User::where('id', $id)->first();
-
+        $get_user = User::find($id);
+    
         // Check if the record exists
         if (!$get_user) {
             return response()->json([
                 'message' => 'Record not found!',
             ], 404);
         }
-
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|unique:users,email',
-            'password' => 'required|string',
-            'family_id' => 'required|string|max:10',
-            // 'its' => 'required|unique:users,its|max:8',
-            'hof_its' => 'required|string|max:8',
-            'its_family_id' => 'nullable|string|max:10',
-            'mobile' => ['required', 'string', 'min:12', 'max:20'],
-            'gender' => 'required|in:male,female',
-            'title' => 'nullable|in:Shaikh,Mulla',
-            'folio_no' => 'nullable|string|max:20',
-            'sector' => 'nullable|string|max:100',
-            'sub_sector' => 'nullable|string|max:100',
-            'building' => 'nullable|integer',
-            'age' => 'nullable|integer',
-            'role' => 'required|in:superadmin,jamiat_admin,mumeneen',
-            'status' => 'required|in:active,inactive',
-        ]);
-
-        $update_user_record = $get_user->update([
-            'name' => $request->input('name'),
-            'email' => strtolower($request->input('email')),
-            'password' => bcrypt($request->input('password')),
-            'family_id' => $request->input('family_id'),
-            // 'its' => $request->input('its'),
-            'hof_its' => $request->input('hof_its'),
-            'its_family_id' => $request->input('its_family_id'),
-            'mobile' => $request->input('mobile'),
-            'title' => $request->input('title'),
-            'gender' => $request->input('gender'),
-            'age' => $request->input('age'),
-            'building' => $request->input('building'),
-            'folio_no' => $request->input('folio_no'),
-            'sector' => $request->input('sector'),
-            'sub_sector' => $request->input('sub_sector'),
-            'role' => $request->input('role'),
-            'status' => $request->input('status'),
-        ]);
-
-        return ($update_user_record == 1)
-        ? response()->json(['message' => 'Record updated Successfully!', 'data' => $update_user_record], 200)
-        : response()->json(['No changes detected'], 304);
+    
+        // Define validation rules
+        $rules = [
+            'name' => 'sometimes|string',
+            'email' => 'sometimes|email|unique:users,email,' . $id,
+            'password' => 'sometimes|string',
+            'family_id' => 'sometimes|string|max:10',
+            'hof_its' => 'sometimes|string|max:8',
+            'its_family_id' => 'sometimes|nullable|string|max:10',
+            'mobile' => ['sometimes', 'string', 'min:12', 'max:20'],
+            'gender' => 'sometimes|in:male,female',
+            'title' => 'sometimes|nullable|in:Shaikh,Mulla',
+            'folio_no' => 'sometimes|nullable|string|max:20',
+            'sector' => 'sometimes|nullable|string|max:100',
+            'sub_sector' => 'sometimes|nullable|string|max:100',
+            'building' => 'sometimes|nullable|integer',
+            'age' => 'sometimes|nullable|integer',
+            'role' => 'sometimes|required|in:superadmin,jamiat_admin,mumeneen',
+            'status' => 'sometimes|required|in:active,inactive',
+        ];
+    
+        // Validate only the fields present in the request
+        $validatedData = $request->validate($rules);
+    
+        // Encrypt the password if provided
+        if (isset($validatedData['password'])) {
+            $validatedData['password'] = bcrypt($validatedData['password']);
+        }
+    
+        // Update only the fields provided in the request
+        $updated = $get_user->update($validatedData);
+    
+        // Return appropriate response
+        return $updated
+            ? response()->json(['message' => 'Record updated successfully!', 'data' => $get_user], 200)
+            : response()->json(['message' => 'No changes detected'], 304);
     }
 
     // split family
