@@ -236,16 +236,19 @@ class NiyazController extends Controller
      */
     public function show(Request $request)
     {
-        $request->validate([
-            'niyaz_ids' => 'required|array|min:1', // Ensure niyaz_ids is an array
-            'niyaz_ids.*' => 'integer',           // Each niyaz_id must be an integer
-        ]);
+        // Get jamiat_id from the authenticated user
+        $jamiat_id = auth()->user()->jamiat_id;
     
-        $niyazIds = $request->input('niyaz_ids');
+        if (!$jamiat_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jamiat ID is missing for the authenticated user.',
+            ], 400);
+        }
     
-        // Fetch grouped niyaz records
+        // Fetch grouped niyaz records for the logged-in jamiat
         $niyazRecords = DB::table('t_niyaz')
-            ->whereIn('niyaz_id', $niyazIds)
+            ->where('jamiat_id', $jamiat_id)
             ->select('niyaz_id', 'family_id', 'menu', 'fateha', 'comments', 'total_amount', 'date')
             ->get()
             ->groupBy('niyaz_id');
@@ -253,7 +256,7 @@ class NiyazController extends Controller
         if ($niyazRecords->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No Niyaz records found for the provided IDs.',
+                'message' => 'No Niyaz records found for the logged-in Jamiat.',
             ], 404);
         }
     
