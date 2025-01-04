@@ -238,9 +238,10 @@ class CSVImportController extends Controller
                 ], 400);
             }
     
-            // Check if `t_sector` and `t_sub_sector` tables have data for the given Jamiat ID
+            // Check if `t_sector`, `t_sub_sector`, and `t_its_data` tables have data for the given Jamiat ID
             $sectorExists = DB::table('t_sector')->where('jamiat_id', $jamiat_id)->exists();
             $userExists = DB::table('users')->where('jamiat_id', $jamiat_id)->where('role', 'mumeneen')->exists();
+            $itsExists = DB::table('t_its_data')->where('jamiat_id', $jamiat_id)->exists();
     
             // Import Sectors and Subsectors only if they don't already exist
             if (!$sectorExists) {
@@ -256,6 +257,14 @@ class CSVImportController extends Controller
                 Log::info("Users imported for Jamiat ID: {$jamiat_id}");
             } else {
                 Log::info("Users with role 'mumeneen' already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
+            }
+    
+            // Import ITS data only if it doesn't already exist
+            if (!$itsExists) {
+                Excel::import(new ItsImport($jamiat_id), $request->file('file'));
+                Log::info("ITS data imported for Jamiat ID: {$jamiat_id}");
+            } else {
+                Log::info("ITS data already exists for Jamiat ID: {$jamiat_id}. Import skipped.");
             }
     
             return response()->json([
