@@ -22,30 +22,33 @@ class SectorSubsectorImport implements ToModel, WithHeadingRow, WithValidation
     {
         // Skip rows where sector_name is missing
         if (empty($row['sector_name'])) {
-            Log::warning('Skipping row due to missing sector name: ', $row);
             return null;
         }
 
-        // Update or create the sector
-        $sector = SectorModel::updateOrCreate(
-            ['jamiat_id' => $this->jamiat_id, 'name' => $row['sector_name']],
-            [
-                'notes' => $row['sector_notes'] ?? 'Added by Excel upload',
-                'log_user' => auth()->user()->username ?? 'system',
-                'updated_at' => now(),
-            ]
-        );
-
-        // Update or create the subsector if provided
-        if (!empty($row['subsector_name'])) {
-            SubSectorModel::updateOrCreate(
-                ['jamiat_id' => $this->jamiat_id, 'sector_id' => $sector->id, 'name' => $row['subsector_name']],
+        try {
+            // Update or create the sector
+            $sector = SectorModel::firstOrCreate(
+                ['jamiat_id' => $this->jamiat_id, 'name' => $row['sector_name']],
                 [
-                    'notes' => $row['subsector_notes'] ?? 'Added by Excel upload',
+                    'notes' => $row['sector_notes'] ?? 'Added by Excel upload',
                     'log_user' => auth()->user()->username ?? 'system',
                     'updated_at' => now(),
                 ]
             );
+
+            // Update or create the subsector if provided
+            if (!empty($row['subsector_name'])) {
+                SubSectorModel::firstOrCreate(
+                    ['jamiat_id' => $this->jamiat_id, 'sector_id' => $sector->id, 'name' => $row['subsector_name']],
+                    [
+                        'notes' => $row['subsector_notes'] ?? 'Added by Excel upload',
+                        'log_user' => auth()->user()->username ?? 'system',
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+        } catch (\Exception $e) {
+            Log::error("Error processing row: " . $e->getMessage(), $row);
         }
     }
 

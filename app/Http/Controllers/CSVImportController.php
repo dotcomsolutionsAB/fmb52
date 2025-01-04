@@ -217,39 +217,49 @@ class CSVImportController extends Controller
         }
     }
 
-    public function uploadExcel(Request $request)
+   
+
+    
+    public function uploadExcel(Request $request, $jamiat_id)
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
         ]);
     
-        $jamiat_id = auth()->user()->jamiat_id;
-    
-        if (!$jamiat_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Jamiat ID is required for uploading data.',
-            ], 400);
-        }
-    
         try {
-            // ITS Data Import
-            Excel::import(new ItsDataImport($jamiat_id), $request->file('file'));
+            // Check if `t_sector` and `t_sub_sector` tables have data for the given Jamiat ID
+            $sectorExists = DB::table('t_sector')->where('jamiat_id', $jamiat_id)->exists();
+            $userExists = DB::table('users')
+                ->where('jamiat_id', $jamiat_id)
+                ->where('role', 'mumeneen')
+                ->exists();
     
-            // Sector and Subsector Import
-            Excel::import(new SectorSubsectorImport($jamiat_id), $request->file('file'));
+            // Import Sectors and Subsectors only if they don't already exist
+            if (!$sectorExists) {
+                Excel::import(new SectorSubsectorImport($jamiat_id), $request->file('file'));
+                Log::info("Sectors and Subsectors imported for Jamiat ID: {$jamiat_id}");
+            } else {
+                Log::info("Sectors and Subsectors already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
+            }
     
-            // User Data Import
-            Excel::import(new UserImport($jamiat_id), $request->file('file'));
+            // Import Users only if no mumeneen users exist
+            if (!$userExists) {
+                Excel::import(new UserImport($jamiat_id), $request->file('file'));
+                Log::info("Users imported for Jamiat ID: {$jamiat_id}");
+            } else {
+                Log::info("Users with role 'mumeneen' already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
+            }
     
             return response()->json([
                 'success' => true,
-                'message' => 'Data imported successfully!',
+                'message' => 'Import process completed.',
             ], 200);
         } catch (\Exception $e) {
+            Log::error("Error during import process: " . $e->getMessage());
+    
             return response()->json([
                 'success' => false,
-                'message' => 'Error importing data: ' . $e->getMessage(),
+                'message' => 'Error during import process: ' . $e->getMessage(),
             ], 500);
         }
     }
