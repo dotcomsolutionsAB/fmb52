@@ -36,7 +36,7 @@ class ItsDataImport implements ToModel, WithHeadingRow, WithValidation
         return ItsModel::updateOrCreate(
             ['its' => $row['its_id']], // Match by ITS_ID
             [
-                'jamiat_id' => $this->jamiat_id,
+                'jamiat_id' => $jamiat_id,
                 'hof_its' => $row['hof_id'],
                 'its_family_id' => $row['family_id'] ?? null,
                 'name' => $row['full_name'] ?? null,
