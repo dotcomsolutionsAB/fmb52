@@ -3,11 +3,15 @@
 namespace App\Imports;
 
 use App\Models\User;
-use App\Models\Sector;
-use App\Models\SubSector;
+
+use App\Models\SectorModel;
+
+use App\Models\SubSectorModel;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
@@ -35,7 +39,8 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
         $sector_id = $this->getSectorId($row['sector'] ?? null);
         $sub_sector_id = $this->getSubSectorId($sector_id, $row['sub_sector'] ?? null);
 
-        return User::updateOrCreate(
+        // Update or create the user
+        $user = User::updateOrCreate(
             ['its' => $row['its_id']],
             [
                 'username' => $row['its_id'],
@@ -58,6 +63,13 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
                 'log_user' => auth()->user()->username,
             ]
         );
+
+        // Add a zero entry in the t_hub table for new users
+        if ($user->wasRecentlyCreated) {
+            $this->addHubEntry($family_id);
+        }
+
+        return $user;
     }
 
     private function generateUniqueFamilyId()
@@ -76,7 +88,7 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
             return null;
         }
 
-        $sector = Sector::where('jamiat_id', $this->jamiat_id)
+        $sector = SectorModel::where('jamiat_id', $this->jamiat_id)
                         ->where('name', $sector_name)
                         ->first();
 
@@ -95,7 +107,7 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
             return null;
         }
 
-        $sub_sector = SubSector::where('jamiat_id', $this->jamiat_id)
+        $sub_sector = SubSectorModel::where('jamiat_id', $this->jamiat_id)
                                ->where('sector_id', $sector_id)
                                ->where('name', $sub_sector_name)
                                ->first();
@@ -106,6 +118,39 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
         }
 
         return $sub_sector->id;
+    }
+
+    private function addHubEntry($family_id)
+    {
+        try {
+            // Fetch the current year from the year table
+            $currentYear = DB::table('year')
+                ->where('jamiat_id', $this->jamiat_id)
+                ->where('is_current', 1)
+                ->value('year');
+    
+            if (!$currentYear) {
+                Log::error("No current year found for Jamiat ID: {$this->jamiat_id}");
+                return;
+            }
+    
+            // Add a new record to the t_hub table
+            DB::table('t_hub')->insert([
+                'jamiat_id' => $this->jamiat_id,
+                'family_id' => $family_id,
+                'year' => $currentYear,
+                'hub_amount' => 0,
+                'paid_amount' => 0,
+                'due_amount' => 0,
+                'log_user' => auth()->user()->username,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+    
+            Log::info("Hub entry added for Family ID: {$family_id}, Year: {$currentYear}");
+        } catch (\Exception $e) {
+            Log::error("Failed to add hub entry for Family ID: {$family_id}. Error: " . $e->getMessage());
+        }
     }
 
     public function rules(): array

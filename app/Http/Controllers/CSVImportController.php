@@ -9,6 +9,8 @@ use League\Csv\Statement;
 use App\Models\ReceiptsModel;
 use App\Models\PaymentsModel;
 use App\Imports\ItsDataImport;
+use App\Imports\SectorSubsectorImport;
+use App\Imports\UserImport;
 use Maatwebsite\Excel\Facades\Excel;
 
 
@@ -280,6 +282,8 @@ class CSVImportController extends Controller
     
             // Delete from t_its_data table
             DB::table('t_its_data')->where('jamiat_id', $jamiatId)->delete();
+    
+            DB::table('t_hub')->where('jamiat_id', $jamiatId)->delete();
     
             // Commit the transaction
             DB::commit();
