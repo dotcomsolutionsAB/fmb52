@@ -220,21 +220,26 @@ class CSVImportController extends Controller
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
         ]);
-
-        // Get logged-in user's jamiat_id
+    
         $jamiat_id = auth()->user()->jamiat_id;
-
+    
         if (!$jamiat_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Jamiat ID is required for uploading data.',
             ], 400);
         }
-
+    
         try {
-            // Process the uploaded file
+            // ITS Data Import
             Excel::import(new ItsDataImport($jamiat_id), $request->file('file'));
-
+    
+            // Sector and Subsector Import
+            Excel::import(new SectorSubsectorImport($jamiat_id), $request->file('file'));
+    
+            // User Data Import
+            Excel::import(new UserImport($jamiat_id), $request->file('file'));
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Data imported successfully!',
