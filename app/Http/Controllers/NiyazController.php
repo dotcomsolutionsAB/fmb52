@@ -234,23 +234,62 @@ class NiyazController extends Controller
     /**
      * Get a specific Niyaz record by ID.
      */
-    public function show($id)
+    public function show(Request $request)
     {
-        $niyaz = NiyazModel::find($id);
-
-        if (!$niyaz) {
+        $request->validate([
+            'niyaz_ids' => 'required|array|min:1', // Ensure niyaz_ids is an array
+            'niyaz_ids.*' => 'integer',           // Each niyaz_id must be an integer
+        ]);
+    
+        $niyazIds = $request->input('niyaz_ids');
+    
+        // Fetch grouped niyaz records
+        $niyazRecords = DB::table('t_niyaz')
+            ->whereIn('niyaz_id', $niyazIds)
+            ->select('niyaz_id', 'family_id', 'menu', 'fateha', 'comments', 'total_amount', 'date')
+            ->get()
+            ->groupBy('niyaz_id');
+    
+        if ($niyazRecords->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Niyaz record not found.',
+                'message' => 'No Niyaz records found for the provided IDs.',
             ], 404);
         }
-
+    
+        // Fetch HOF names for each family_id
+        $familyIds = $niyazRecords->flatMap(function ($group) {
+            return $group->pluck('family_id');
+        })->unique();
+    
+        $hofNames = DB::table('users')
+            ->whereIn('family_id', $familyIds)
+            ->where('mumeneen_type', 'HOF')
+            ->pluck('name', 'family_id'); // Key = family_id, Value = HOF name
+    
+        // Format response
+        $response = $niyazRecords->map(function ($group, $niyazId) use ($hofNames) {
+            return [
+                'niyaz_id' => $niyazId,
+                'records' => $group->map(function ($record) use ($hofNames) {
+                    return [
+                        'family_id' => $record->family_id,
+                        'hof_name' => $hofNames[$record->family_id] ?? 'Unknown', // Get HOF name or default
+                        'menu' => $record->menu,
+                        'fateha' => $record->fateha,
+                        'comments' => $record->comments,
+                        'total_amount' => $record->total_amount,
+                        'date' => $record->date,
+                    ];
+                }),
+            ];
+        })->values();
+    
         return response()->json([
             'success' => true,
-            'data' => $niyaz,
+            'data' => $response,
         ], 200);
     }
-
     /**
      * Update a specific Niyaz record.
      */

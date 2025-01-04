@@ -1380,91 +1380,93 @@ class MumeneenController extends Controller
     
    
     public function update_hub(Request $request, $family_id)
-    {
-        // Validate the incoming request
-        $request->validate([
-            'year' => 'required|string|max:10', // Ensure the year is provided
-            'hub_slab_id' => 'required|exists:t_hub_slab,id', // Ensure the hub slab ID exists
-        ]);
-    
-        // Fetch the hub slab details
-        $hubSlab = DB::table('t_hub_slab')->where('id', $request->input('hub_slab_id'))->first();
-    
-        if (!$hubSlab) {
-            return response()->json(['message' => 'Hub Slab not found!'], 404);
-        }
-    
-        // Get jamiat_id from authenticated user
-        $jamiat_id = auth()->user()->jamiat_id;
-    
-        if (!$jamiat_id) {
-            return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
-        }
-    
-        // Find or create the hub record
-        $get_hub = HubModel::firstOrCreate(
-            [
-                'family_id' => $family_id,
-                'year' => $request->input('year'),
-            ],
-            [
-                'jamiat_id' => $jamiat_id,
-                'hub_amount' => $hubSlab->amount,
-                'paid_amount' => 0,
-                'due_amount' => $hubSlab->amount,
-                'log_user' => auth()->user()->username,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
-    
-        // If the hub record exists, update the hub amount
-        if (!$get_hub->wasRecentlyCreated) {
-            $get_hub->hub_amount = $hubSlab->amount;
-            $get_hub->due_amount = $hubSlab->amount; // Reset due amount
-            $get_hub->save();
-        }
-    
-        // Generate Niyaz entries based on the hub slab count
-        $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab);
-    
-        // Return a success response
-        return response()->json([
-            'message' => 'Hub record updated successfully, and Niyaz entries were made!',
-            'data' => [
-                'hub' => $get_hub,
-                'niyaz_slab' => $hubSlab,
-            ],
-        ], 200);
-    }
-    
-    private function addNiyazEntries($family_id, $jamiat_id, $hubSlab)
-    {
-        // Generate a unique niyaz_id for the batch
-        $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
-    
-        // Prepare the data for insertion
-        $data = [];
-        $date = now();
-        $entryCount = $hubSlab->count ?? 1; // Number of entries to add based on slab count
-    
-        for ($i = 0; $i < $entryCount; $i++) {
-            $data[] = [
-                'niyaz_id' => $niyazId + $i, // Ensure unique niyaz_id per entry
-                'jamiat_id' => $jamiat_id,
-                'family_id' => $family_id,
-                'date' => $date,
-                'menu' => $hubSlab->name ?? 'Niyaz Menu Example', // Use slab name as menu
-                'total_amount' => $hubSlab->amount,
-                'created_at' => $date,
-                'updated_at' => $date,
-            ];
-        }
-    
-        // Insert all entries into t_niyaz table
-        DB::table('t_niyaz')->insert($data);
+{
+    // Validate the incoming request
+    $request->validate([
+        'year' => 'required|string|max:10', // Ensure the year is provided
+        'hub_slab_id' => 'required|exists:t_hub_slab,id', // Ensure the hub slab ID exists
+    ]);
+
+    // Fetch the hub slab details
+    $hubSlab = DB::table('t_hub_slab')->where('id', $request->input('hub_slab_id'))->first();
+
+    if (!$hubSlab) {
+        return response()->json(['message' => 'Hub Slab not found!'], 404);
     }
 
+    // Get jamiat_id from authenticated user
+    $jamiat_id = auth()->user()->jamiat_id;
+
+    if (!$jamiat_id) {
+        return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
+    }
+
+    // Find or create the hub record
+    $get_hub = HubModel::firstOrCreate(
+        [
+            'family_id' => $family_id,
+            'year' => $request->input('year'),
+        ],
+        [
+            'jamiat_id' => $jamiat_id,
+            'hub_amount' => $hubSlab->amount,
+            'paid_amount' => 0,
+            'due_amount' => $hubSlab->amount,
+            'log_user' => auth()->user()->username,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]
+    );
+
+    // If the hub record exists, update the hub amount
+    if (!$get_hub->wasRecentlyCreated) {
+        $get_hub->hub_amount = $hubSlab->amount;
+        $get_hub->due_amount = $hubSlab->amount; // Reset due amount
+        $get_hub->save();
+    }
+
+    // Generate Niyaz entries based on the hub slab count
+    $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab, $get_hub->hub_amount);
+
+    // Return a success response
+    return response()->json([
+        'message' => 'Hub record updated successfully, and Niyaz entries were made!',
+        'data' => [
+            'hub' => $get_hub,
+            'niyaz_slab' => $hubSlab,
+        ],
+    ], 200);
+}
+
+private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
+{
+    // Generate a unique niyaz_id for the batch
+    $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
+
+    // Prepare the data for insertion
+    $data = [];
+    $date = now();
+    $entryCount = $hubSlab->count ?? 1; // Number of entries to add based on slab count
+
+    // Calculate total amount per Niyaz entry
+    $niyazAmount = $entryCount > 0 ? $totalHubAmount / $entryCount : $totalHubAmount;
+
+    for ($i = 0; $i < $entryCount; $i++) {
+        $data[] = [
+            'niyaz_id' => $niyazId + $i, // Ensure unique niyaz_id per entry
+            'jamiat_id' => $jamiat_id,
+            'family_id' => $family_id,
+            'date' => $date,
+            'menu' => $hubSlab->name ?? 'Niyaz Menu Example', // Use slab name as menu
+            'total_amount' => $niyazAmount,
+            'created_at' => $date,
+            'updated_at' => $date,
+        ];
+    }
+
+    // Insert all entries into t_niyaz table
+    DB::table('t_niyaz')->insert($data);
+}
 
       
 
