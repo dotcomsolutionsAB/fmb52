@@ -158,13 +158,17 @@ class NiyazController extends Controller
             'message' => 'Hub Slab not found.',
         ], 404);
     }
-
-    $totalHubAmount=0;
-    // Calculate the total hub amount for the provided family IDs
     $totalHubAmount = DB::table('t_hub')
-        ->whereIn('family_id', $familyIds)
-        ->sum('hub_amount');
-
+    ->whereIn('family_id', array_unique($familyIds)) // Ensure unique family IDs
+    ->where('year', function ($query) {
+        $query->select('year')
+            ->from('t_year')
+            ->where('jamiat_id', auth()->user()->jamiat_id)
+            ->where('is_current', 1)
+            ->limit(1);
+    })
+    ->where('jamiat_id', auth()->user()->jamiat_id) // Ensure correct Jamiat ID
+    ->sum('hub_amount');
     // Check the number of family IDs
     $familyCount = count($familyIds);
 
