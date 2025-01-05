@@ -168,13 +168,13 @@ class NiyazController extends Controller
     $familyCount = count($familyIds);
 
     // Ensure the hub slab conditions are met
-    if ($familyCount < $hubSlab->minimum_count || $totalHubAmount < $hubSlab->amount) {
+    if ($familyCount < $hubSlab->minimum_count || $totalHubAmount < 172000) {
         return response()->json([
             'success' => false,
             'message' => 'Minimum requirements not met: either minimum number of families or total hub amount must satisfy the slab conditions.',
             'details' => [
                 'required_minimum_count' => $hubSlab->minimum_count,
-                'required_total_amount' => $hubSlab->amount,
+                'required_total_amount' => 172000,
                 'provided_family_count' => $familyCount,
                 'provided_total_amount' => $totalHubAmount,
             ]
