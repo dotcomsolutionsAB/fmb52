@@ -1440,16 +1440,21 @@ class MumeneenController extends Controller
 
 private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
 {
+    // Check if hub_slab count is valid (greater than or equal to 1)
+    if (empty($hubSlab->count) || $hubSlab->count < 1) {
+        return; // Exit the function if count is not valid
+    }
+
     // Generate a unique niyaz_id for the batch
     $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
 
     // Prepare the data for insertion
     $data = [];
     $date = now();
-    $entryCount = $hubSlab->count ?? 1; // Number of entries to add based on slab count
+    $entryCount = $hubSlab->count; // Number of entries to add based on slab count
 
     // Calculate total amount per Niyaz entry
-    $niyazAmount = $entryCount > 0 ? $totalHubAmount / $entryCount : $totalHubAmount;
+    $niyazAmount = $totalHubAmount / $entryCount;
 
     for ($i = 0; $i < $entryCount; $i++) {
         $data[] = [
