@@ -43,158 +43,183 @@ class NiyazController extends Controller
     {
         // Get authenticated user's jamiat_id
         $jamiatId = Auth::user()->jamiat_id;
-
+    
         // Fetch the hub slab details using the provided ID and authenticated user's jamiat_id
         $hubSlab = DB::table('t_hub_slab')
             ->where('id', $hubSlabId)
             ->where('jamiat_id', $jamiatId)
             ->first();
-
+    
         if (!$hubSlab) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hub Slab not found for your Jamaat.',
             ], 404);
         }
-
+    
         // Fetch the current year for the authenticated user's jamiat_id
         $currentYear = DB::table('t_year')
             ->where('jamiat_id', $jamiatId)
             ->where('is_current', '1')
             ->value('year');
-
+    
         if (!$currentYear) {
             return response()->json([
                 'success' => false,
                 'message' => 'Current year not set for your Jamaat.',
             ], 404);
         }
-
+    
         // Fetch matching records from t_hub table where the amount matches and year is current
         $hubs = DB::table('t_hub')
             ->where('hub_amount', $hubSlab->amount) // Correctly references hub_amount
             ->where('year', $currentYear)
             ->where('jamiat_id', $jamiatId) // Ensure jamiat_id matches the authenticated user's jamiat_id
-            ->get();
-
+            ->pluck('family_id');
+    
         if ($hubs->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No matching records found in t_hub table for the current year.',
             ], 404);
         }
-
-        // Retrieve the associated user details for each family_id in t_hub
-        $users = [];
-        foreach ($hubs as $hub) {
-            // Fetch user where mumeneen_type is 'HOF' and jamiat_id matches
-            $user = DB::table('users')
-                ->where('family_id', $hub->family_id)
-                ->where('mumeneen_type', 'HOF')
-                ->where('jamiat_id', $jamiatId)
-                ->first();
-
-            if ($user) {
-                $users[] = [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'its_id' => $user->its,
-                    'family_id' => $user->family_id,
-                    'hub_amount' => $hub->hub_amount,
-                ];
-            }
-        }
-
-        if (empty($users)) {
+    
+        // Exclude family IDs already present in the t_niyaz table
+        $excludedFamilyIds = DB::table('t_niyaz')
+            ->whereIn('family_id', $hubs)
+            ->pluck('family_id')
+            ->toArray();
+    
+        $remainingFamilyIds = $hubs->diff($excludedFamilyIds);
+    
+        if ($remainingFamilyIds->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No users found for the matching hubs.',
+                'message' => 'All matching family IDs are already in the Niyaz table.',
             ], 404);
         }
-
+    
+        // Retrieve the associated user details for each family_id in t_hub
+        $users = DB::table('users')
+            ->whereIn('family_id', $remainingFamilyIds)
+            ->where('mumeneen_type', 'HOF')
+            ->where('jamiat_id', $jamiatId)
+            ->get(['id', 'name', 'its', 'family_id']);
+    
+        if ($users->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No users found for the remaining family IDs.',
+            ], 404);
+        }
+    
+        // Include hub amount for each user
+        $usersWithHubAmount = $users->map(function ($user) use ($hubSlab) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'its_id' => $user->its,
+                'family_id' => $user->family_id,
+                'hub_amount' => $hubSlab->amount,
+            ];
+        });
+    
         return response()->json([
             'success' => true,
-            'data' => $users,
+            'data' => $usersWithHubAmount,
         ], 200);
     }
 
     public function addNiyaz(Request $request)
-    {
-        // Validate the incoming request
-        $request->validate([
-            'hub_slab_id' => 'required|exists:t_hub_slab,id',
-            'family_ids' => 'required|array|min:1', // Accept multiple family IDs
-            'family_ids.*' => 'exists:users,family_id', // Validate each family ID
-        ]);
+{
+    // Validate the incoming request
+    $request->validate([
+        'hub_slab_id' => 'required|exists:t_hub_slab,id',
+        'family_ids' => 'required|array|min:1', // Accept multiple family IDs
+        'family_ids.*' => 'exists:users,family_id', // Validate each family ID
+        'menu' => 'nullable|string|max:255',
+        'fateha' => 'nullable|string|max:255',
+        'comments' => 'nullable|string|max:500',
+    ]);
 
-        $hubSlabId = $request->input('hub_slab_id');
-        $familyIds = $request->input('family_ids');
+    $hubSlabId = $request->input('hub_slab_id');
+    $familyIds = $request->input('family_ids');
+    $menu = $request->input('menu', null); // Default to null if not provided
+    $fateha = $request->input('fateha', null); // Default to null if not provided
+    $comments = $request->input('comments', null); // Default to null if not provided
 
-        // Fetch the hub slab details
-        $hubSlab = DB::table('t_hub_slab')->where('id', $hubSlabId)->first();
+    // Fetch the hub slab details
+    $hubSlab = DB::table('t_hub_slab')->where('id', $hubSlabId)->first();
 
-        if (!$hubSlab) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hub Slab not found.',
-            ], 404);
-        }
-
-        // Calculate the total hub amount for the provided family IDs
-        $totalHubAmount = DB::table('t_hub')
-            ->whereIn('family_id', $familyIds)
-            ->sum('hub_amount');
-
-        // Check the number of family IDs
-        $familyCount = count($familyIds);
-
-        // Ensure either minimum_count is met or total hub amount >= 172000
-        if ($familyCount < $hubSlab->minimum_count && $totalHubAmount < 172000) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Minimum requirements not met: either minimum number of families or total hub amount must satisfy the conditions.',
-            ], 400);
-        }
-
-        // Generate a unique niyaz_id for the batch
-        $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
-
-        // Prepare the data for insertion
-        $data = [];
-        $date = now();
-        foreach ($familyIds as $familyId) {
-            $data[] = [
-                'niyaz_id' => $niyazId,
-                'family_id' => $familyId,
-                'date' => $date,
-                'menu' => 'Niyaz Menu Example', // Replace with actual menu if applicable
-                'total_amount' => $totalHubAmount,
-               
-                'created_at' => $date,
-                'updated_at' => $date,
-            ];
-        }
-
-        // Insert all entries into t_niyaz table
-        $inserted = DB::table('t_niyaz')->insert($data);
-
-        if (!$inserted) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to add Niyaz.',
-            ], 500);
-        }
-
+    if (!$hubSlab) {
         return response()->json([
-            'success' => true,
-            'message' => 'Niyaz added successfully.',
-            'data' => [
-                'niyaz_id' => $niyazId,
-                'family_ids' => $familyIds,
-                'total_amount' => $totalHubAmount,
-            ],
-        ], 201);
+            'success' => false,
+            'message' => 'Hub Slab not found.',
+        ], 404);
     }
+
+    // Calculate the total hub amount for the provided family IDs
+    $totalHubAmount = DB::table('t_hub')
+        ->whereIn('family_id', $familyIds)
+        ->sum('hub_amount');
+
+    // Check the number of family IDs
+    $familyCount = count($familyIds);
+
+    // Ensure either minimum_count is met or total hub amount >= 172000
+    if ($familyCount < $hubSlab->minimum_count && $totalHubAmount < 172000) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Minimum requirements not met: either minimum number of families or total hub amount must satisfy the conditions.',
+        ], 400);
+    }
+
+    // Generate a unique niyaz_id for the batch
+    $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
+
+    // Calculate total amount per family based on hub slab count
+    $totalAmountPerFamily = $totalHubAmount / $hubSlab->count;
+
+    // Prepare the data for insertion
+    $data = [];
+    $date = now();
+    foreach ($familyIds as $familyId) {
+        $data[] = [
+            'niyaz_id' => $niyazId,
+            'family_id' => $familyId,
+            'date' => $date,
+            'menu' => $menu,
+            'fateha' => $fateha,
+            'comments' => $comments,
+            'total_amount' => $totalAmountPerFamily,
+            'created_at' => $date,
+            'updated_at' => $date,
+        ];
+    }
+
+    // Insert all entries into t_niyaz table
+    $inserted = DB::table('t_niyaz')->insert($data);
+
+    if (!$inserted) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to add Niyaz.',
+        ], 500);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Niyaz added successfully.',
+        'data' => [
+            'niyaz_id' => $niyazId,
+            'family_ids' => $familyIds,
+            'menu' => $menu,
+            'fateha' => $fateha,
+            'comments' => $comments,
+            'total_amount_per_family' => $totalAmountPerFamily,
+        ],
+    ], 201);
+}
     public function index()
     {
         $niyaz = NiyazModel::all();
@@ -208,28 +233,123 @@ class NiyazController extends Controller
     /**
      * Create a new Niyaz record.
      */
-    public function store(Request $request)
+    public function getNiyazDetailsById($niyazId)
     {
-        $request->validate([
-            'family_id' => 'required|exists:users,family_id',
-            'date' => 'required|date',
-            'menu' => 'nullable|string',
-            'fateha' => 'nullable|string',
-            'comments' => 'nullable|string',
-            'type' => 'nullable|string',
-            'total_amount' => 'nullable|numeric',
-            'amount_due' => 'nullable|numeric',
-            'amount_paid' => 'nullable|numeric',
-        ]);
-
-        $niyaz = NiyazModel::create($request->all());
-
+        // Fetch the Niyaz details grouped by family_id
+        $niyazRecords = DB::table('t_niyaz')
+            ->where('niyaz_id', $niyazId)
+            ->select('family_id', 'menu', 'fateha', 'comments', 'total_amount', 'date', 'jamiat_id')
+            ->get();
+    
+        if ($niyazRecords->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Niyaz record not found.',
+            ], 404);
+        }
+    
+        // Extract unique family_ids from the Niyaz records
+        $familyIds = $niyazRecords->pluck('family_id')->unique();
+    
+        // Fetch HOF details for each family_id
+        $hofDetails = DB::table('users')
+            ->whereIn('family_id', $familyIds)
+            ->where('mumeneen_type', 'HOF')
+            ->pluck('name', 'family_id'); // Key = family_id, Value = HOF name
+    
+        // Format the response
+        $response = $niyazRecords->map(function ($record) use ($hofDetails) {
+            return [
+                'family_id' => $record->family_id,
+                'hof_name' => $hofDetails[$record->family_id] ?? 'Unknown', // Fallback if HOF name not found
+                'menu' => $record->menu,
+                'fateha' => $record->fateha,
+                'comments' => $record->comments,
+                'total_amount' => $record->total_amount,
+                'date' => $record->date,
+                'jamiat_id' => $record->jamiat_id,
+            ];
+        });
+    
         return response()->json([
             'success' => true,
-            'message' => 'Niyaz record created successfully.',
-            'data' => $niyaz,
-        ], 201);
+            'data' => $response,
+        ], 200);
     }
+
+    public function editNiyaz(Request $request, $niyazId)
+{
+    // Validate input fields (all fields except niyaz_id are optional)
+    $request->validate([
+        'menu' => 'nullable|string|max:255',
+        'fateha' => 'nullable|string|max:255',
+        'comments' => 'nullable|string|max:500',
+        'total_amount' => 'nullable|numeric|min:0',
+        'date' => 'nullable|date',
+        'family_ids' => 'nullable|array|min:1', // Validate family_ids as an array if provided
+        'family_ids.*' => 'exists:users,family_id', // Validate each family_id exists in the users table
+    ]);
+
+    // Fetch all instances of the niyaz_id
+    $niyazRecords = DB::table('t_niyaz')->where('niyaz_id', $niyazId);
+
+    // Check if the niyaz_id exists
+    if (!$niyazRecords->exists()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Niyaz record not found.',
+        ], 404);
+    }
+
+    // Prepare the fields to update
+    $updateData = [];
+    if ($request->has('menu')) {
+        $updateData['menu'] = $request->input('menu');
+    }
+    if ($request->has('fateha')) {
+        $updateData['fateha'] = $request->input('fateha');
+    }
+    if ($request->has('comments')) {
+        $updateData['comments'] = $request->input('comments');
+    }
+    if ($request->has('total_amount')) {
+        $updateData['total_amount'] = $request->input('total_amount');
+    }
+    if ($request->has('date')) {
+        $updateData['date'] = $request->input('date');
+    }
+    $updateData['updated_at'] = now();
+
+    // Update all instances of the niyaz_id for the non-family fields
+    $updatedRows = $niyazRecords->update($updateData);
+
+    // Update family_ids if provided
+    if ($request->has('family_ids')) {
+        // Delete existing records for the niyaz_id
+        DB::table('t_niyaz')->where('niyaz_id', $niyazId)->delete();
+
+        // Prepare new data for insertion
+        $newFamilyIds = $request->input('family_ids');
+        $newData = [];
+        foreach ($newFamilyIds as $familyId) {
+            $newData[] = array_merge($updateData, [
+                'niyaz_id' => $niyazId,
+                'family_id' => $familyId,
+                'created_at' => now(),
+            ]);
+        }
+
+        // Insert the updated records
+        DB::table('t_niyaz')->insert($newData);
+    }
+
+    // Return success response
+    return response()->json([
+        'success' => true,
+        'message' => "{$updatedRows} record(s) updated successfully.",
+        'updated_fields' => $updateData,
+    ], 200);
+}
 
     /**
      * Get a specific Niyaz record by ID.
