@@ -159,6 +159,7 @@ class NiyazController extends Controller
         ], 404);
     }
 
+    $totalHubAmount=0;
     // Calculate the total hub amount for the provided family IDs
     $totalHubAmount = DB::table('t_hub')
         ->whereIn('family_id', $familyIds)
