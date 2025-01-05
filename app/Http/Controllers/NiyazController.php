@@ -475,25 +475,28 @@ class NiyazController extends Controller
     /**
      * Delete a specific Niyaz record.
      */
-    public function destroy($id)
+    public function destroy($niyazId)
     {
-        $niyaz = NiyazModel::find($id);
-
-        if (!$niyaz) {
+        // Fetch all records associated with the given niyaz_id
+        $niyazRecords = NiyazModel::where('niyaz_id', $niyazId);
+    
+        // Check if there are any records for the provided niyaz_id
+        if (!$niyazRecords->exists()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Niyaz record not found.',
+                'message' => 'Niyaz records not found for the provided Niyaz ID.',
             ], 404);
         }
-
-        $niyaz->delete();
-
+    
+        // Delete all records for the provided niyaz_id
+        $deletedCount = $niyazRecords->delete();
+    
         return response()->json([
             'success' => true,
-            'message' => 'Niyaz record deleted successfully.',
+            'message' => "Niyaz records with Niyaz ID {$niyazId} deleted successfully.",
+            'deleted_count' => $deletedCount,
         ], 200);
     }
-
     /**
      * Get all Niyaz records for a specific family ID.
      */

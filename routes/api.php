@@ -257,6 +257,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/view-all', [NiyazController::class, 'show']);
     Route::post('/niyaz/edit/{niyaz_id}', [NiyazController::class, 'editNiyaz']);
     Route::get('/niyaz/{niyaz_id}', [NiyazController::class, 'getNiyazDetailsById']);
+    Route::post('/niyaz/delete/{niyaz_id}', [NiyazController::class, 'destroy']);
 
 
 
