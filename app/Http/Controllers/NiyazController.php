@@ -166,7 +166,7 @@ class NiyazController extends Controller
                 $query->select('year')
                     ->from('t_year')
                     ->where('jamiat_id', auth()->user()->jamiat_id)
-                    ->where('is_current', 1)
+                    ->where('is_current', '1')
                     ->limit(1);
             })
             ->where('jamiat_id', auth()->user()->jamiat_id)
