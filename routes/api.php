@@ -59,7 +59,7 @@ Route::get('/sync/detect-hof-as-fm-in-its-data', [SyncController::class, 'detect
 Route::post('/sync/confirm-fm-role-update', [SyncController::class, 'confirmFmRoleUpdate']);
 
 // Consolidated Sync: Run all scenarios sequentially
-Route::get('/sync/consolidated', [SyncController::class, 'consolidatedSync']);
+Route::get('/sync/all', [SyncController::class, 'consolidatedSync']);
 
 // Payment Routes
 Route::post('/payment/verify', [PaymentController::class, 'verifyPayment']);
