@@ -289,6 +289,7 @@ class AuthController extends Controller
                         'name' => $user->name,
                         'role' => $user->role,
                         'id' => $user->id,
+                        'family_id' => $user->family_id,
                         'jamiat_id' => $user->jamiat_id,
                         'permissions' => $permissions,
                         'sector_access_id' => $user->sector_access_id,
