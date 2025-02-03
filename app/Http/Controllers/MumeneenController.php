@@ -1419,7 +1419,7 @@ class MumeneenController extends Controller
         }
 
         // Generate Niyaz entries based on the hub slab count
-        $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab, $get_hub->hub_amount);
+        // $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab, $get_hub->hub_amount);
 
         // Return a success response
         return response()->json([
