@@ -1413,8 +1413,8 @@ class MumeneenController extends Controller
 
         // If the hub record exists, update the hub amount
         if (!$get_hub->wasRecentlyCreated) {
-            $get_hub->hub_amount = $hubSlab->amount;
-            $get_hub->due_amount = $hubSlab->amount; // Reset due amount
+            $get_hub->hub_amount = $request->input('hub_amount');
+            $get_hub->due_amount = $request->input('hub_amount'); // Reset due amount
             $get_hub->save();
         }
 
@@ -1426,7 +1426,6 @@ class MumeneenController extends Controller
             'message' => 'Hub record updated successfully, and Niyaz entries were made!',
             'data' => [
                 'hub' => $get_hub,
-                'niyaz_slab' => $hubSlab,
             ],
         ], 200);
     }
