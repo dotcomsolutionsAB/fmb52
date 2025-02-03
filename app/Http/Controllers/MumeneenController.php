@@ -1380,63 +1380,56 @@ class MumeneenController extends Controller
     
    
     public function update_hub(Request $request, $family_id)
-{
-    // Validate the incoming request
-    $request->validate([
-        'year' => 'required|string|max:10', // Ensure the year is provided
-        'hub_slab_id' => 'required|exists:t_hub_slab,id', // Ensure the hub slab ID exists
-    ]);
+    {
+        // Validate the incoming request
+        $request->validate([
+            'year' => 'required|string|max:10', // Ensure the year is provided
+            'hub_amount' => 'required', // Ensure the hub slab ID exists
+        ]);
 
-    // Fetch the hub slab details
-    $hubSlab = DB::table('t_hub_slab')->where('id', $request->input('hub_slab_id'))->first();
+        // Get jamiat_id from authenticated user
+        $jamiat_id = auth()->user()->jamiat_id;
 
-    if (!$hubSlab) {
-        return response()->json(['message' => 'Hub Slab not found!'], 404);
+        if (!$jamiat_id) {
+            return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
+        }
+
+        // Find or create the hub record
+        $get_hub = HubModel::firstOrCreate(
+            [
+                'family_id' => $family_id,
+                'year' => $request->input('year'),
+            ],
+            [
+                'jamiat_id' => $jamiat_id,
+                'hub_amount' => $request->input('hub_amount'),
+                'paid_amount' => 0,
+                'due_amount' => $request->input('hub_amount'),
+                'log_user' => auth()->user()->username,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        // If the hub record exists, update the hub amount
+        if (!$get_hub->wasRecentlyCreated) {
+            $get_hub->hub_amount = $hubSlab->amount;
+            $get_hub->due_amount = $hubSlab->amount; // Reset due amount
+            $get_hub->save();
+        }
+
+        // Generate Niyaz entries based on the hub slab count
+        $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab, $get_hub->hub_amount);
+
+        // Return a success response
+        return response()->json([
+            'message' => 'Hub record updated successfully, and Niyaz entries were made!',
+            'data' => [
+                'hub' => $get_hub,
+                'niyaz_slab' => $hubSlab,
+            ],
+        ], 200);
     }
-
-    // Get jamiat_id from authenticated user
-    $jamiat_id = auth()->user()->jamiat_id;
-
-    if (!$jamiat_id) {
-        return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
-    }
-
-    // Find or create the hub record
-    $get_hub = HubModel::firstOrCreate(
-        [
-            'family_id' => $family_id,
-            'year' => $request->input('year'),
-        ],
-        [
-            'jamiat_id' => $jamiat_id,
-            'hub_amount' => $hubSlab->amount,
-            'paid_amount' => 0,
-            'due_amount' => $hubSlab->amount,
-            'log_user' => auth()->user()->username,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]
-    );
-
-    // If the hub record exists, update the hub amount
-    if (!$get_hub->wasRecentlyCreated) {
-        $get_hub->hub_amount = $hubSlab->amount;
-        $get_hub->due_amount = $hubSlab->amount; // Reset due amount
-        $get_hub->save();
-    }
-
-    // Generate Niyaz entries based on the hub slab count
-    $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab, $get_hub->hub_amount);
-
-    // Return a success response
-    return response()->json([
-        'message' => 'Hub record updated successfully, and Niyaz entries were made!',
-        'data' => [
-            'hub' => $get_hub,
-            'niyaz_slab' => $hubSlab,
-        ],
-    ], 200);
-}
 
 private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
 {
