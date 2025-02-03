@@ -1426,6 +1426,7 @@ class MumeneenController extends Controller
             'message' => 'Hub record updated successfully, and Niyaz entries were made!',
             'data' => [
                 'hub' => $get_hub,
+                'hub_amount' => $request->input('hub_amount'),
             ],
         ], 200);
     }
