@@ -202,7 +202,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware(['check-api-permission:hub.view,hub.view_global,hub.export,hub.print']);
         Route::post('/', [MumeneenController::class, 'register_hub'])
             ->middleware(['check-api-permission:hub.create']);
-        Route::post('/update/{id}', [MumeneenController::class, 'update'])
+        Route::post('/update/{id}', [MumeneenController::class, 'update_hub'])
             ->middleware(['check-api-permission:hub.edit']);
         Route::delete('/{id}', [MumeneenController::class, 'delete_hub'])
             ->middleware(['check-api-permission:hub.delete']);
