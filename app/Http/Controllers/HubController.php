@@ -9,7 +9,7 @@ use App\Models\YearModel;
 
 class HubController extends Controller
 {
-    public function hub_distribution($year)
+    public function hub_distribution()
     {
         // Get total users for the given year
         // $total_hof = User::whereHas('sector', function ($query) use ($year) {
