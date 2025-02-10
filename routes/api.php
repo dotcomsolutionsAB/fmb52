@@ -21,6 +21,8 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PDFController;
 use App\Http\Controllers\WhatsAppQueueController;
 use App\Http\Controllers\NiyazController;
+use App\Http\Controllers\HubController;
+
 
 // Public Routes
 Route::post('/register', [MumeneenController::class, 'register_users']);
@@ -31,8 +33,12 @@ Route::get('/sector', [MumeneenController::class, 'all_sector'])
         'check-api-permission:sector.create,sector.edit,sector.view,sector.view_global,sector.delete,sector.export,sector.print,sub_sector.create,sub_sector.edit,sub_sector.view,sub_sector.view_global,sub_sector.delete,sub_sector.export,sub_sector.print'
     ]);
 
-// Sync Routes
+// Register New Jamaat
+Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
+Route::post('/forgot_password', [JamiatController::class, 'forgot_password']);
+Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
+// Sync Routes
 
 // Scenario 1: Detect Missing HOFs in users
 Route::get('/sync/detect-missing-hof', [SyncController::class, 'detectMissingHofInUsers']);
@@ -73,11 +79,6 @@ Route::get('/receipt_print/{id}', [PDFController::class, 'printReceipt']);
 Route::post('/whatsapp-queue', [WhatsAppQueueController::class, 'addToQueue']);
 Route::post('/whatsapp-queue/process', [WhatsAppQueueController::class, 'processQueue']);
 
-// Register New Jamaat
-Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
-Route::post('/forgot_password', [JamiatController::class, 'forgot_password']);
-Route::post('/verify_email', [JamiatController::class, 'verify_email']);
-
 // jamiat
 Route::get('/jamiat', [JamiatController::class, 'view_jamiats']);
 Route::post('/update_jamiat/{id}', [JamiatController::class, 'update_jamiat']);
@@ -109,18 +110,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     //Upload ITS_DATA
     Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
-   
-
     Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
-
     Route::post('/logout', [AuthController::class, 'logout']);
 
-   
+
+    Route::post('/hub_distribution', [HubController::class, 'hub_distribution']);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {
-       
-        
         Route::get('/cash-summary', [DashboardController::class, 'getCashSummary'])
             ->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print');
     });
@@ -134,20 +131,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/get_photo', [UploadController::class, 'store_photo']);
     });
 
-
     Route::post('/sector_registor', [MumeneenController::class, 'register_sector']);
     
     //Year
-   
     Route::post('/create-year', [MumeneenController::class, 'createYearAndHubEntries']);
     Route::get('/year', [MumeneenController::class, 'all_years']);
     Route::post('/update_year/{id}', [MumeneenController::class, 'update_year']);
     Route::delete('/year/{id}', [MumeneenController::class, 'delete_year']);
 
-   // getDistinctFamilyCountUnderAge14
+    // getDistinctFamilyCountUnderAge14
     Route::get('/child', [MumeneenController::class, 'getDistinctFamilyCountUnderAge14']);
     Route::get('/users/below-age-15', [MumeneenController::class, 'getUsersBelowAge15WithHofDetails']);
-
     
     // User Management
     Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData'])
@@ -155,7 +149,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']) ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
 
     Route::prefix('users')->group(function () {
-       
         Route::post('/update/{id}', [MumeneenController::class, 'update_record'])
             ->middleware(['check-api-permission:mumeneen.edit']);
         Route::delete('/{id}', [MumeneenController::class, 'delete_user'])
@@ -164,9 +157,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
         Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
         Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
-           });
+    });
 
-           Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
+    Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
 
     // Permissions and Roles
     Route::prefix('permissions')->group(function () {
@@ -183,7 +176,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/{roleName}/permissions', [PermissionRoleController::class, 'getRolePermissions']);
         Route::post('/create-with-permissions', [PermissionRoleController::class, 'createRoleWithPermissions']);
     });
-   
 
     Route::prefix('sub_sector')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [MumeneenController::class, 'register_sub_sector'])
@@ -209,7 +201,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
     Route::get('/family_hub_details/{family_id}',[MumeneenController::class,'familyHubDetails']) ->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
     Route::post('/get_family_user', [MumeneenController::class, 'usersByFamily'])->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
-
 
     // Receipts
     Route::prefix('receipts')->group(function () {

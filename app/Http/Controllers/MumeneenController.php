@@ -40,12 +40,12 @@ use Hash;
 class MumeneenController extends Controller
 {
     public function __construct()
-{
-}
+    {
+    }
 
-    
+
+        
     //register user
-    
     public function register_users(Request $request)
     {
         $request->validate([
@@ -60,7 +60,7 @@ class MumeneenController extends Controller
                 'max:8',
                 Rule::unique('users')->where(function ($query) use ($request) {
                     return $query->where('jamiat_id', $request->jamiat_id)
-                                 ->where('role', 'mumeneen');
+                                ->where('role', 'mumeneen');
                 })
             ],
             'hof_its' => 'required|string|max:8',
@@ -148,7 +148,7 @@ class MumeneenController extends Controller
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
     
-    public function usersWithHubData(Request $request, $year = 0)
+public function usersWithHubData(Request $request, $year = 0)
 {
     $user = Auth::user();
     if (!$user) {
@@ -659,122 +659,6 @@ class MumeneenController extends Controller
     
         return $totalProcessed;
     }
-    
-
-    // public function migrate()
-    // {
-    //     // Step 1: Truncate existing data for 'mumeneen' users, buildings, and hubs with jamiat_id = 1
-    //     User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
-    //     BuildingModel::where('jamiat_id', 1)->delete();
-    //     HubModel::where('jamiat_id', 1)->delete();
-    
-    //     // Step 2: Initialize batch variables
-    //     $batchSize = 100; // Process 100 records per batch
-    //     $offset = 0;
-    //     $hasMoreData = true;
-    
-    //     while ($hasMoreData) {
-    //         // Step 3: Fetch a batch of data from the API
-    //         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php?limit=' . $batchSize . '&offset=' . $offset;
-    //         $response = Http::get($url);
-    
-    //         if ($response->failed()) {
-    //             return response()->json(['message' => 'Failed to fetch data from the API'], 500);
-    //         }
-    
-    //         $families = $response->json()['data']; // Adjust to match your API response structure
-    
-    //         // If no data is returned, stop processing
-    //         if (empty($families)) {
-    //             $hasMoreData = false;
-    //             break;
-    //         }
-    
-    //         // Step 4: Process the data batch
-    //         foreach ($families as $family) {
-    //             $buildingId = null;
-    //             $address = $family['address'] ?? [];
-    
-    //             // Step 4a: Save or update building data if present
-    //             if (!empty($address)) {
-    //                 $building = BuildingModel::updateOrCreate(
-    //                     ['name' => $address['address_2']],
-    //                     [
-    //                         'jamiat_id' => 1,
-    //                         'name' => $address['address_2'],
-    //                         'address_lime_1' => $address['address_1'] ?? null,
-    //                         'address_lime_2' => $address['address_2'] ?? null,
-    //                         'city' => $address['city'] ?? null,
-    //                         'pincode' => $address['pincode'] ?? null,
-    //                         'state' => null,
-    //                         'lattitude' => $address['latitude'] ?? null,
-    //                         'longtitude' => $address['longitude'] ?? null,
-    //                         'landmark' => null,
-    //                     ]
-    //                 );
-    //                 $buildingId = $building->id;
-    //             }
-    
-    //             // Step 4b: Loop through each family member and save in User model
-    //             foreach ($family['members'] as $member) {
-    //                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
-    //                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-    
-    //                 User::updateOrCreate(
-    //                     ['its' => $member['its']], // Unique identifier
-    //                     [
-    //                         'name' => $member['name'],
-    //                         'email' => $member['email'],
-    //                         'password' => bcrypt('default_password'), // Use hashed default password
-    //                         'jamiat_id' => 1,
-    //                         'family_id' => $family['family_id'],
-    //                         'title' => $title,
-    //                         'its' => substr($member['its'], 0, 8),
-    //                         'hof_its' => $member['hof_id'],
-    //                         'its_family_id' => $member['family_its_id'],
-    //                         'mumeneen_type' => $member['type'],
-    //                         'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
-    //                         'gender' => $gender,
-    //                         'folio_no' => $family['folio_no'],
-    //                         'sector' => $family['sector'],
-    //                         'sub_sector' => $family['sub_sector'],
-    //                         'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
-    //                         'status' => $family['status'],
-    //                         'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
-    //                         'role' => 'mumeneen',
-    //                         'building_id' => $buildingId
-    //                     ]
-    //                 );
-    //             }
-    
-    //             // Step 4c: Save or update hub data for each year
-    //             foreach ($family['hub_array'] as $hubEntry) {
-    //                 HubModel::updateOrCreate(
-    //                     [
-    //                         'family_id' => $family['family_id'],
-    //                         'year' => $hubEntry['year']
-    //                     ],
-    //                     [
-    //                         'jamiat_id' => 1,
-    //                         'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-    //                         'paid_amount' => 0,
-    //                         'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-    //                         'log_user' => 'system_migration'
-    //                     ]
-    //                 );
-    //             }
-    //         }
-    
-    //         // Increment offset for the next batch
-    //         $offset += $batchSize;
-    //     }
-    
-    //     return response()->json(['message' => 'Data migration completed successfully']);
-    // }
-    
-
-
-
 
     // view
     public function all_its()
@@ -1198,8 +1082,6 @@ class MumeneenController extends Controller
     }
 
     // create
-   
-
     // view
     public function all_years()
     {
@@ -1220,7 +1102,6 @@ class MumeneenController extends Controller
             ? response()->json(['message' => 'Year records fetched successfully!', 'data' => $get_all_years], 200)
             : response()->json(['message' => 'No year records found!'], 404);
     }
-
 
     // update
     public function update_year(Request $request, $id)
@@ -1431,281 +1312,283 @@ class MumeneenController extends Controller
         ], 200);
     }
 
-private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
-{
-    // Check if hub_slab count is valid (greater than or equal to 1)
-    if (empty($hubSlab->count) || $hubSlab->count < 1) {
-        return; // Exit the function if count is not valid
-    }
-
-    // Generate a unique niyaz_id for the batch
-    $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
-
-    // Prepare the data for insertion
-    $data = [];
-    $date = now();
-    $entryCount = $hubSlab->count; // Number of entries to add based on slab count
-
-    // Calculate total amount per Niyaz entry
-    $niyazAmount = $totalHubAmount / $entryCount;
-
-    for ($i = 0; $i < $entryCount; $i++) {
-        $data[] = [
-            'niyaz_id' => $niyazId + $i, // Ensure unique niyaz_id per entry
-            'jamiat_id' => $jamiat_id,
-            'family_id' => $family_id,
-            'date' => $date,
-            'menu' => $hubSlab->name ?? 'Niyaz Menu Example', // Use slab name as menu
-            'total_amount' => $niyazAmount,
-            'created_at' => $date,
-            'updated_at' => $date,
-        ];
-    }
-
-    // Insert all entries into t_niyaz table
-    DB::table('t_niyaz')->insert($data);
-}
-
-      
-
-    // delete
-    public function delete_hub($id)
+    private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
     {
-        $delete_hub = HubModel::where('id', $id)->delete();
-
-        return $delete_hub
-            ? response()->json(['message' => 'Hub record deleted successfully!'], 200)
-            : response()->json(['message' => 'Hub record not found!'], 404);
-    }
-
-    // create
-   
-    // users by family
-    public function usersByFamily(Request $request)
-    {
-        $family_id = $request->input('family_id');
-    
-        // Fetch all family members sorted by age descending
-        $family_members = User::select(
-                'id','name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
-                'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
-                'role', 'username', 'photo_id'
-            )
-            ->with(['photo:id,file_url'])
-            ->where('mumeneen_type','FM')
-            ->where('family_id', $family_id)
-            ->orderBy('age', 'desc') // Start with the eldest
-            ->get();
-    
-        if ($family_members->isEmpty()) {
-            return response()->json(['Sorry, failed to fetch records!'], 404);
+        // Check if hub_slab count is valid (greater than or equal to 1)
+        if (empty($hubSlab->count) || $hubSlab->count < 1) {
+            return; // Exit the function if count is not valid
         }
-    
-        // Sort members manually by `its_family_id` grouping
-        $sorted_members = [];
-        $grouped_by_its_family_id = [];
-    
-        // Group members by `its_family_id`
-        foreach ($family_members as $member) {
-            $grouped_by_its_family_id[$member->its_family_id][] = $member;
-        }
-    
-        // Process each group by age
-        foreach ($grouped_by_its_family_id as $its_family_id => $members) {
-            // Sort each group by age descending (already sorted from initial query, but for safety)
-            usort($members, function ($a, $b) {
-                return $b->age <=> $a->age;
-            });
-            // if (!empty($sorted_members)) {
-            //     array_shift($sorted_members); // Remove the first element
-            // }
-    
-            // Append members to the final sorted list
-            foreach ($members as $member) {
-                $sorted_members[] = $member;
-            }
-        }
-    
-        return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
-    }  
-    public function familyHubDetails(Request $request, $family_id)
-{
-    $jamiat_id = Auth::user()->jamiat_id;
 
-    // Fetch all years for the current jamiat
-    $years = YearModel::where('jamiat_id', $jamiat_id)
-        ->orderBy('year', 'desc') // Ensure the years are in descending order
-        ->limit(3) // Limit to the last 3 years
-        ->get();
+        // Generate a unique niyaz_id for the batch
+        $niyazId = DB::table('t_niyaz')->max('niyaz_id') + 1;
 
-    if ($years->isEmpty()) {
-        return response()->json(['message' => 'No year data found for the Jamiat.'], 404);
-    }
+        // Prepare the data for insertion
+        $data = [];
+        $date = now();
+        $entryCount = $hubSlab->count; // Number of entries to add based on slab count
 
-    // Fetch hub data for the given family_id for the last three years
-    $hub_data = HubModel::select('year', 'hub_amount', 'paid_amount', 'due_amount')
-        ->where('family_id', $family_id)
-        ->where('jamiat_id', $jamiat_id)
-        ->whereIn('year', $years->pluck('year')) // Only fetch data for the last three years
-        ->get()
-        ->keyBy('year'); // Key by year for easy lookup
+        // Calculate total amount per Niyaz entry
+        $niyazAmount = $totalHubAmount / $entryCount;
 
-    // Prepare a response with year-wise hub details for the last three years
-    $yearly_details = $years->map(function ($year) use ($hub_data) {
-        $year_str = $year->year; // Extract the year string
-
-        $hub_record = $hub_data->get($year_str); // Find hub record for this year
-
-        return [
-            'year' => $year_str,
-            'hub_amount' => $hub_record->hub_amount ?? 0,
-            'paid_amount' => $hub_record->paid_amount ?? 0,
-            'due_amount' => $hub_record->due_amount ?? 0,
-        ];
-    });
-
-    return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
-}
-public function createYearAndHubEntries(Request $request)
-{
-    // Validate input to ensure a year is provided
-    $request->validate([
-        'year' => 'required|string|max:10',
-        'jamiat_id' => 'required|integer'
-    ]);
-
-    $year = $request->input('year');
-    $jamiatId = $request->input('jamiat_id');
-
-    DB::beginTransaction();
-
-    try {
-        // Step 1: Create new year entry in t_year table
-        $newYear = YearModel::create([
-            'year' => $year,
-            'jamiat_id' => $jamiatId,
-            'is_current' => '1', // Assuming '1' marks it as current
-        ]);
-
-        // Step 2: Get all unique family_ids from users table
-        $uniqueFamilyIds = User::select('family_id')
-            ->distinct()
-            ->whereNotNull('family_id')
-            ->pluck('family_id');
-
-        // Step 3: Insert entries into t_hub table for each family_id
-        $hubEntries = [];
-        foreach ($uniqueFamilyIds as $familyId) {
-            $hubEntries[] = [
-                'jamiat_id' => $jamiatId,
-                'family_id' => $familyId,
-                'year' => $year,
-                'hub_amount' => 0, // Default value, update as needed
-                'paid_amount' => 0,
-                'due_amount' => 0,
-                'log_user' => auth()->user()->name ?? 'system', // Assuming user is logged in
-                'created_at' => now(),
-                'updated_at' => now(),
+        for ($i = 0; $i < $entryCount; $i++) {
+            $data[] = [
+                'niyaz_id' => $niyazId + $i, // Ensure unique niyaz_id per entry
+                'jamiat_id' => $jamiat_id,
+                'family_id' => $family_id,
+                'date' => $date,
+                'menu' => $hubSlab->name ?? 'Niyaz Menu Example', // Use slab name as menu
+                'total_amount' => $niyazAmount,
+                'created_at' => $date,
+                'updated_at' => $date,
             ];
         }
 
-        // Batch insert into t_hub table
-        if (!empty($hubEntries)) {
-            HubModel::insert($hubEntries);
+        // Insert all entries into t_niyaz table
+        DB::table('t_niyaz')->insert($data);
+    }
+
+        
+
+        // delete
+        public function delete_hub($id)
+        {
+            $delete_hub = HubModel::where('id', $id)->delete();
+
+            return $delete_hub
+                ? response()->json(['message' => 'Hub record deleted successfully!'], 200)
+                : response()->json(['message' => 'Hub record not found!'], 404);
         }
 
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'New year and hub entries created successfully!',
-            'year_id' => $newYear->id
-        ], 201);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Error occurred: ' . $e->getMessage()
-        ], 500);
-    }
-}
-public function getDistinctFamilyCountUnderAge14()
-    {
-        // Count distinct family IDs where users are under age 14
-        $distinctFamilyCount = DB::table('users')
-            ->where('age', '<', 14)
-            ->distinct('family_id')
-            ->count('family_id');
-
-        // Count total number of children under age 14
-        $totalChildrenCount = DB::table('users')
-            ->where('age', '<', 14)
-            ->count();
-
-        return response()->json([
-            'message' => 'Number of distinct families and total children under age 14',
-            'distinct_family_count' => $distinctFamilyCount,
-            'total_children_count' => $totalChildrenCount,
-        ]);
-    }
-
-
-    public function getUsersBelowAge15WithHofDetails()
-    {
-        // Fetch users below age 15 with their HOF details grouped by HOF and sector
-        $rawData = DB::table('users as children')
-            ->select(
-                'hof.name as hof_name',
-                'hof.its as hof_its',
-                'hof.mobile as hof_mobile',
-                'children.name as child_name',
-                'children.age as child_age',
-                'children.its as child_its',
-                'children.family_id',
-                't_sector.name as sector_name'
-            )
-            ->leftJoin('users as hof', function ($join) {
-                $join->on('children.family_id', '=', 'hof.family_id')
-                     ->where('hof.mumeneen_type', '=', 'HOF');
-            })
-            ->leftJoin('t_sector', 'children.sector_id', '=', 't_sector.id')
-            ->where('children.age', '<', 15)
-            ->where('children.mumeneen_type', '=', 'FM') // Include only Family Members
-            ->orderBy('t_sector.name')
-            ->orderBy('hof.name')
-            ->orderBy('children.name')
-            ->get();
+        // create
     
-        // Group data by sectors
-        $groupedData = $rawData->groupBy('sector_name')->map(function ($sector) {
-            $hofGrouped = $sector->groupBy('hof_its')->map(function ($hofGroup) {
-                $hof = $hofGroup->first(); // HOF details
+        // users by family
+        public function usersByFamily(Request $request)
+        {
+            $family_id = $request->input('family_id');
+        
+            // Fetch all family members sorted by age descending
+            $family_members = User::select(
+                    'id','name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+                    'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
+                    'role', 'username', 'photo_id'
+                )
+                ->with(['photo:id,file_url'])
+                ->where('mumeneen_type','FM')
+                ->where('family_id', $family_id)
+                ->orderBy('age', 'desc') // Start with the eldest
+                ->get();
+        
+            if ($family_members->isEmpty()) {
+                return response()->json(['Sorry, failed to fetch records!'], 404);
+            }
+        
+            // Sort members manually by `its_family_id` grouping
+            $sorted_members = [];
+            $grouped_by_its_family_id = [];
+        
+            // Group members by `its_family_id`
+            foreach ($family_members as $member) {
+                $grouped_by_its_family_id[$member->its_family_id][] = $member;
+            }
+        
+            // Process each group by age
+            foreach ($grouped_by_its_family_id as $its_family_id => $members) {
+                // Sort each group by age descending (already sorted from initial query, but for safety)
+                usort($members, function ($a, $b) {
+                    return $b->age <=> $a->age;
+                });
+                // if (!empty($sorted_members)) {
+                //     array_shift($sorted_members); // Remove the first element
+                // }
+        
+                // Append members to the final sorted list
+                foreach ($members as $member) {
+                    $sorted_members[] = $member;
+                }
+            }
+        
+            return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
+        }  
+        public function familyHubDetails(Request $request, $family_id)
+    {
+        $jamiat_id = Auth::user()->jamiat_id;
+
+        // Fetch all years for the current jamiat
+        $years = YearModel::where('jamiat_id', $jamiat_id)
+            ->orderBy('year', 'desc') // Ensure the years are in descending order
+            ->limit(3) // Limit to the last 3 years
+            ->get();
+
+        if ($years->isEmpty()) {
+            return response()->json(['message' => 'No year data found for the Jamiat.'], 404);
+        }
+
+        // Fetch hub data for the given family_id for the last three years
+        $hub_data = HubModel::select('year', 'hub_amount', 'paid_amount', 'due_amount')
+            ->where('family_id', $family_id)
+            ->where('jamiat_id', $jamiat_id)
+            ->whereIn('year', $years->pluck('year')) // Only fetch data for the last three years
+            ->get()
+            ->keyBy('year'); // Key by year for easy lookup
+
+        // Prepare a response with year-wise hub details for the last three years
+        $yearly_details = $years->map(function ($year) use ($hub_data) {
+            $year_str = $year->year; // Extract the year string
+
+            $hub_record = $hub_data->get($year_str); // Find hub record for this year
+
+            return [
+                'year' => $year_str,
+                'hub_amount' => $hub_record->hub_amount ?? 0,
+                'paid_amount' => $hub_record->paid_amount ?? 0,
+                'due_amount' => $hub_record->due_amount ?? 0,
+            ];
+        });
+
+        return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
+    }
+    
+    public function createYearAndHubEntries(Request $request)
+    {
+        // Validate input to ensure a year is provided
+        $request->validate([
+            'year' => 'required|string|max:10',
+            'jamiat_id' => 'required|integer'
+        ]);
+
+        $year = $request->input('year');
+        $jamiatId = $request->input('jamiat_id');
+
+        DB::beginTransaction();
+
+        try {
+            // Step 1: Create new year entry in t_year table
+            $newYear = YearModel::create([
+                'year' => $year,
+                'jamiat_id' => $jamiatId,
+                'is_current' => '1', // Assuming '1' marks it as current
+            ]);
+
+            // Step 2: Get all unique family_ids from users table
+            $uniqueFamilyIds = User::select('family_id')
+                ->distinct()
+                ->whereNotNull('family_id')
+                ->pluck('family_id');
+
+            // Step 3: Insert entries into t_hub table for each family_id
+            $hubEntries = [];
+            foreach ($uniqueFamilyIds as $familyId) {
+                $hubEntries[] = [
+                    'jamiat_id' => $jamiatId,
+                    'family_id' => $familyId,
+                    'year' => $year,
+                    'hub_amount' => 0, // Default value, update as needed
+                    'paid_amount' => 0,
+                    'due_amount' => 0,
+                    'log_user' => auth()->user()->name ?? 'system', // Assuming user is logged in
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            // Batch insert into t_hub table
+            if (!empty($hubEntries)) {
+                HubModel::insert($hubEntries);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'New year and hub entries created successfully!',
+                'year_id' => $newYear->id
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error occurred: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getDistinctFamilyCountUnderAge14()
+        {
+            // Count distinct family IDs where users are under age 14
+            $distinctFamilyCount = DB::table('users')
+                ->where('age', '<', 14)
+                ->distinct('family_id')
+                ->count('family_id');
+
+            // Count total number of children under age 14
+            $totalChildrenCount = DB::table('users')
+                ->where('age', '<', 14)
+                ->count();
+
+            return response()->json([
+                'message' => 'Number of distinct families and total children under age 14',
+                'distinct_family_count' => $distinctFamilyCount,
+                'total_children_count' => $totalChildrenCount,
+            ]);
+        }
+
+
+        public function getUsersBelowAge15WithHofDetails()
+        {
+            // Fetch users below age 15 with their HOF details grouped by HOF and sector
+            $rawData = DB::table('users as children')
+                ->select(
+                    'hof.name as hof_name',
+                    'hof.its as hof_its',
+                    'hof.mobile as hof_mobile',
+                    'children.name as child_name',
+                    'children.age as child_age',
+                    'children.its as child_its',
+                    'children.family_id',
+                    't_sector.name as sector_name'
+                )
+                ->leftJoin('users as hof', function ($join) {
+                    $join->on('children.family_id', '=', 'hof.family_id')
+                        ->where('hof.mumeneen_type', '=', 'HOF');
+                })
+                ->leftJoin('t_sector', 'children.sector_id', '=', 't_sector.id')
+                ->where('children.age', '<', 15)
+                ->where('children.mumeneen_type', '=', 'FM') // Include only Family Members
+                ->orderBy('t_sector.name')
+                ->orderBy('hof.name')
+                ->orderBy('children.name')
+                ->get();
+        
+            // Group data by sectors
+            $groupedData = $rawData->groupBy('sector_name')->map(function ($sector) {
+                $hofGrouped = $sector->groupBy('hof_its')->map(function ($hofGroup) {
+                    $hof = $hofGroup->first(); // HOF details
+                    return [
+                        'hof_name' => $hof->hof_name,
+                        'hof_its' => $hof->hof_its,
+                        'hof_mobile' => $hof->hof_mobile,
+                        'sector_name' => $hof->sector_name,
+                        'children_count' => $hofGroup->count(),
+                        'children' => $hofGroup->map(function ($child) {
+                            return [
+                                'child_name' => $child->child_name,
+                                'child_age' => $child->child_age,
+                                'child_its' => $child->child_its,
+                            ];
+                        })->values(),
+                    ];
+                })->values();
+        
                 return [
-                    'hof_name' => $hof->hof_name,
-                    'hof_its' => $hof->hof_its,
-                    'hof_mobile' => $hof->hof_mobile,
-                    'sector_name' => $hof->sector_name,
-                    'children_count' => $hofGroup->count(),
-                    'children' => $hofGroup->map(function ($child) {
-                        return [
-                            'child_name' => $child->child_name,
-                            'child_age' => $child->child_age,
-                            'child_its' => $child->child_its,
-                        ];
-                    })->values(),
+                    'sector_name' => $sector->first()->sector_name,
+                    'sector_count' => $hofGrouped->sum('children_count'),
+                    'users' => $hofGrouped,
                 ];
             })->values();
-    
-            return [
-                'sector_name' => $sector->first()->sector_name,
-                'sector_count' => $hofGrouped->sum('children_count'),
-                'users' => $hofGrouped,
-            ];
-        })->values();
-    
-        return response()->json([
-            'message' => 'Users below age 15 grouped by HOF and sector',
-            'data' => $groupedData,
-        ]);
+        
+            return response()->json([
+                'message' => 'Users below age 15 grouped by HOF and sector',
+                'data' => $groupedData,
+            ]);
+        }
     }
-}
