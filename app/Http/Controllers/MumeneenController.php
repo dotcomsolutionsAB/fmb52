@@ -610,6 +610,9 @@ public function usersWithHubData(Request $request, $year = 0)
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
     
+                $sectorId = SectorModel::where('name', $family['sector'])->value('id');
+                $subSectorId = SubSectorModel::where('name', $family['sub_sector'])->value('id');
+
                 User::updateOrCreate(
                     ['its' => $member['its']],
                     [
@@ -626,8 +629,8 @@ public function usersWithHubData(Request $request, $year = 0)
                         'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
                         'gender' => $gender,
                         'folio_no' => $family['folio_no'],
-                        'sector' => $family['sector'],
-                        'sub_sector' => $family['sub_sector'],
+                        'sector_id' => $sectorId,
+                        'sub_sector_id' => $subSectorId,
                         'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
                         'status' => $family['status'],
                         'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
@@ -635,6 +638,7 @@ public function usersWithHubData(Request $request, $year = 0)
                         'building_id' => $buildingId
                     ]
                 );
+
                 $totalProcessed++;
             }
     
