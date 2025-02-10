@@ -101,6 +101,55 @@ class HubController extends Controller
                     'total' => "45000",
                 ]
             ],
-        ]);        
+        ]);    
     }
+    
+    
+    public function mohalla_wise()
+    {
+
+        return response()->json([
+            'code' => 200,
+            'status' => true,
+            'message' => 'Details fetched successfully',
+            'data' => [
+                [
+                    'mohalla' => "BURHANI",
+                    'total_hof' => "350",
+                    'done' => "200",
+                    'pending' => "150",
+                    'amount' => "100000",
+                ],
+                [
+                    'mohalla' => "EZZY",
+                    'total_hof' => "350",
+                    'done' => "200",
+                    'pending' => "150",
+                    'amount' => "100000",
+                ],
+                [
+                    'mohalla' => "SHUJAI",
+                    'total_hof' => "350",
+                    'done' => "200",
+                    'pending' => "150",
+                    'amount' => "100000",
+                ],
+                [
+                    'mohalla' => "MOHAMMEDI",
+                    'total_hof' => "350",
+                    'done' => "200",
+                    'pending' => "150",
+                    'amount' => "100000",
+                ],
+                [
+                    'mohalla' => "ZAINY",
+                    'total_hof' => "350",
+                    'done' => "200",
+                    'pending' => "150",
+                    'amount' => "100000",
+                ],
+            ],
+        ]);    
+    }
+    
 }
