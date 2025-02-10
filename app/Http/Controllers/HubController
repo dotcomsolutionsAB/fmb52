@@ -11,6 +11,7 @@ class HubController extends Controller
 {
     public function hub_distribution($year)
     {
+        die('yes');
         // Get total users for the given year
         $total_hof = User::whereHas('sector', function ($query) use ($year) {
             $query->where('year', $year);
