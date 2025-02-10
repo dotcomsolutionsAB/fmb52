@@ -114,7 +114,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
 
-    Route::post('/hub_distribution', [HubController::class, 'hub_distribution']);
+    Route::get('/hub_distribution', [HubController::class, 'hub_distribution']);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {
