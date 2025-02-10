@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
     Route::post('/hub_distribution', [HubController::class, 'hub_distribution']);
+    Route::post('/niyaz_stats', [HubController::class, 'niyaz_stats']);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {

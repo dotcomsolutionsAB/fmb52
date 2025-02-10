@@ -45,4 +45,62 @@ class HubController extends Controller
             ]
         ]);
     }
+
+    public function niyaz_stats()
+    {
+
+        $total_hof = 850;
+        $hub_done = 600;
+        $hub_pending = 250;
+
+        return response()->json([
+            'code' => 200,
+            'status' => true,
+            'message' => 'Details fetched successfully',
+            'data' => [
+                [
+                    'slab' => "Full Niyaz",
+                    'amount' => "172000",
+                    'count' => "10",
+                    'total' => "1720000",
+                ],
+                [
+                    'slab' => "3/4 Niyaz",
+                    'amount' => "129000",
+                    'count' => "10",
+                    'total' => "1290000",
+                ],
+                [
+                    'slab' => "1/2 Niyaz",
+                    'amount' => "86000",
+                    'count' => "10",
+                    'total' => "860000",
+                ],
+                [
+                    'slab' => "1/3 Niyaz",
+                    'amount' => "57500",
+                    'count' => "10",
+                    'total' => "575000",
+                ],
+                [
+                    'slab' => "1/4 Niyaz",
+                    'amount' => "43000",
+                    'count' => "10",
+                    'total' => "430000",
+                ],
+                [
+                    'slab' => "1/5 Niyaz",
+                    'amount' => "34500",
+                    'count' => "10",
+                    'total' => "345000",
+                ],
+                [
+                    'slab' => "Hub Contribution",
+                    'amount' => "0", // If '-' is meant to indicate no amount, use "0"
+                    'count' => "10",
+                    'total' => "45000",
+                ]
+            ],
+        ]);        
+    }
 }
