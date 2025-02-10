@@ -109,6 +109,8 @@ Route::get('/currencies', [AccountsController::class, 'fetchCurrencies']);
 Route::middleware(['auth:sanctum'])->group(function () {
 
     //Upload ITS_DATA
+    Route::post('/user_migrate', [MumeneenController::class, 'migrate']);
+
     Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
     Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
     Route::post('/logout', [AuthController::class, 'logout']);
