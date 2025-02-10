@@ -520,6 +520,7 @@ public function usersWithHubData(Request $request, $year = 0)
         User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
         BuildingModel::where('jamiat_id', 1)->delete();
         HubModel::where('jamiat_id', 1)->delete();
+        YearModel::where('jamiat_id', 1)->delete();
     
         // API endpoint and batch configuration
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
@@ -647,6 +648,7 @@ public function usersWithHubData(Request $request, $year = 0)
                     ],
                     [
                         'jamiat_id' => 1,
+                        'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
                         'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
                         'paid_amount' => 0,
                         'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
@@ -1447,7 +1449,7 @@ public function usersWithHubData(Request $request, $year = 0)
 
         return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
     }
-    
+
     public function createYearAndHubEntries(Request $request)
     {
         // Validate input to ensure a year is provided
