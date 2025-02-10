@@ -610,8 +610,8 @@ public function usersWithHubData(Request $request, $year = 0)
                 $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
                 $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
     
-                $sectorId = SectorModel::where('name', $family['sector'])->value('id');
-                $subSectorId = SubSectorModel::where('name', $family['sub_sector'])->value('id');
+                $sectorId = SectorModel::where('name', strtoupper($family['sector']))->value('id');
+                $subSectorId = SubSectorModel::where('name', strtoupper($family['sub_sector']))->value('id');
 
                 User::updateOrCreate(
                     ['its' => $member['its']],
