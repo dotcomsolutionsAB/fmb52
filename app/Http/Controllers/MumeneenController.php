@@ -42,8 +42,6 @@ class MumeneenController extends Controller
     public function __construct()
     {
     }
-
-
         
     //register user
     public function register_users(Request $request)
@@ -148,69 +146,69 @@ class MumeneenController extends Controller
             : response()->json(['Sorry, failed to fetched records!'], 404);
     }
     
-public function usersWithHubData(Request $request, $year = 0)
-{
-    $user = Auth::user();
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized.'], 403);
-    }
+    public function usersWithHubData(Request $request, $year = 0)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
-    $jamiat_id = $user->jamiat_id;
+        $jamiat_id = $user->jamiat_id;
 
-    // Determine the year
-    if ($year !== 0) {
-        $yearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('id', $year)->first();
-        $year = $yearRecord->year ?? date('Y');
-    } else {
-        $currentYearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('is_current', '1')->first();
-        $year = $currentYearRecord->year ?? date('Y');
-    }
+        // Determine the year
+        if ($year !== 0) {
+            $yearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('id', $year)->first();
+            $year = $yearRecord->year ?? date('Y');
+        } else {
+            $currentYearRecord = YearModel::where('jamiat_id', $jamiat_id)->where('is_current', '1')->first();
+            $year = $currentYearRecord->year ?? date('Y');
+        }
 
-    // Fetch sub-sector permissions from authenticated user
-    $permittedSubSectorIds = $user->sub_sector_access_id ?? [];
+        // Fetch sub-sector permissions from authenticated user
+        $permittedSubSectorIds = $user->sub_sector_access_id ?? [];
 
-    // Ensure sub-sector access IDs are an array
-    if (!is_array($permittedSubSectorIds)) {
-        $permittedSubSectorIds = json_decode($permittedSubSectorIds, true) ?? [];
-    }
+        // Ensure sub-sector access IDs are an array
+        if (!is_array($permittedSubSectorIds)) {
+            $permittedSubSectorIds = json_decode($permittedSubSectorIds, true) ?? [];
+        }
 
-    // Validation
-    $request->validate([
-        'sector' => 'required|array',
-        'sector.*' => ['required', function ($attribute, $value, $fail) {
-            if ($value !== 'all' && !is_numeric($value)) {
-                $fail("The $attribute field must be an integer or the string 'all'.");
-            }
-        }],
-        'sub_sector' => 'required|array',
-        'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
-            if ($value !== 'all' && !is_numeric($value)) {
-                $fail("The $attribute field must be an integer or the string 'all'.");
-            }
-        }],
-    ]);
+        // Validation
+        $request->validate([
+            'sector' => 'required|array',
+            'sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or the string 'all'.");
+                }
+            }],
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or the string 'all'.");
+                }
+            }],
+        ]);
 
-    // Handle "all" for sector and sub-sector
-    $requestedSectors = $request->input('sector', []);
-    if (in_array('all', $requestedSectors)) {
-        $requestedSectors = DB::table('t_sector')->pluck('id')->toArray(); // Replace "all" with all sector IDs
-    }
+        // Handle "all" for sector and sub-sector
+        $requestedSectors = $request->input('sector', []);
+        if (in_array('all', $requestedSectors)) {
+            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray(); // Replace "all" with all sector IDs
+        }
 
-    $requestedSubSectors = $request->input('sub_sector', []);
-    if (in_array('all', $requestedSubSectors)) {
-        $requestedSubSectors = DB::table('t_sub_sector')
-            ->whereIn('sector_id', $requestedSectors) // Fetch sub-sectors for the specified sectors
-            ->pluck('id')
-            ->toArray();
-    }
+        $requestedSubSectors = $request->input('sub_sector', []);
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = DB::table('t_sub_sector')
+                ->whereIn('sector_id', $requestedSectors) // Fetch sub-sectors for the specified sectors
+                ->pluck('id')
+                ->toArray();
+        }
 
-    // Ensure the requested sub-sectors match the user's permissions
-    $finalSubSectors = array_intersect($requestedSubSectors, $permittedSubSectorIds);
+        // Ensure the requested sub-sectors match the user's permissions
+        $finalSubSectors = array_intersect($requestedSubSectors, $permittedSubSectorIds);
 
-    if (empty($finalSubSectors)) {
-        return response()->json(['message' => 'Access denied for the requested sub-sectors.'], 403);
-    }
-    
+        if (empty($finalSubSectors)) {
+            return response()->json(['message' => 'Access denied for the requested sub-sectors.'], 403);
+        }
+        
         // Fetch users belonging to the permitted sub-sectors
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
@@ -223,7 +221,7 @@ public function usersWithHubData(Request $request, $year = 0)
             'subSector:id,name'   // Eager load sub-sector name
         ])
         ->where('jamiat_id', $jamiat_id)
-       // ->where('mumeneen_type', 'HOF')
+        // ->where('mumeneen_type', 'HOF')
         ->where('status', 'active')
         ->whereIn('sub_sector_id', $finalSubSectors)
         ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
@@ -273,6 +271,8 @@ public function usersWithHubData(Request $request, $year = 0)
     
         return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
     }
+
+
     // dashboard
     public function get_user($id)
     {
@@ -632,7 +632,7 @@ public function usersWithHubData(Request $request, $year = 0)
                         'sector_id' => $sectorId,
                         'sub_sector_id' => $subSectorId,
                         'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
-                        'status' => $family['status'],
+                        'status' => ($family['status'] == 1) ? 'in_active' : 'active',
                         'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
                         'role' => 'mumeneen',
                         'building_id' => $buildingId
