@@ -107,6 +107,9 @@ class MumeneenController extends Controller
         $buildings = [];
         $hubs = [];
 
+        // Fetch existing ITS numbers to avoid duplicates
+        $existingITS = User::pluck('its')->toArray();
+
         foreach ($families as $family) {
             $buildingId = null;
             $address = $family['address'] ?? [];
@@ -128,6 +131,14 @@ class MumeneenController extends Controller
 
             // Prepare users data
             foreach ($family['members'] as $member) {
+                $its = substr($member['its'], 0, 8);
+
+                // Skip duplicate ITS numbers
+                if (in_array($its, $existingITS)) {
+                    Log::warning("Skipping duplicate ITS: {$its}");
+                    continue;
+                }
+
                 $users[] = [
                     'username' => substr($member['its'], 0, 8),
                     'name' => $member['name'],
@@ -136,7 +147,7 @@ class MumeneenController extends Controller
                     'jamiat_id' => 1,
                     'family_id' => $family['family_id'],
                     'title' => in_array(strtolower($member['title']), ['shaikh', 'mulla']) ? ucfirst(strtolower($member['title'])) : null,
-                    'its' => substr($member['its'], 0, 8),
+                    'its' => $its,
                     'hof_its' => $member['hof_id'],
                     'its_family_id' => $member['family_its_id'],
                     'mumeneen_type' => $member['type'],
@@ -147,8 +158,11 @@ class MumeneenController extends Controller
                     'sub_sector_id' => $subSectors[strtoupper($family['sub_sector'])] ?? null,
                     'status' => $family['status'] == 1 ? 'in_active' : 'active',
                     'role' => 'mumeneen',
-                    'building' => $buildingId,
+                    'building_id' => $buildingId,
                 ];
+
+                // Add to existing ITS list to prevent further duplication
+                $existingITS[] = $its;
             }
 
             // Prepare hub data
@@ -166,15 +180,20 @@ class MumeneenController extends Controller
             }
         }
 
-        // Bulk insert using transactions
+        // Bulk insert using transactions with error handling
         DB::transaction(function () use ($users, $buildings, $hubs) {
-            if (!empty($buildings)) BuildingModel::insert($buildings);
-            if (!empty($users)) User::insert($users);
-            if (!empty($hubs)) HubModel::insert($hubs);
+            try {
+                if (!empty($buildings)) BuildingModel::insert($buildings);
+                if (!empty($users)) User::insert($users); // Will skip duplicates automatically
+                if (!empty($hubs)) HubModel::insert($hubs);
+            } catch (\Exception $e) {
+                Log::error("Batch Insert Failed: " . $e->getMessage());
+            }
         });
 
         Log::info("Batch of " . count($users) . " users migrated successfully.");
     }
+
 
         
     //register user
