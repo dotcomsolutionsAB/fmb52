@@ -136,13 +136,25 @@ class MumeneenController extends Controller
                 $existingITS[] = $its;
             }
 
+            // Mapping Thali Status
+            $thaliMapping = [
+                1 => 'taking',
+                2 => 'not_taking',
+                3 => 'once_a_week',
+                9 => 'joint',
+                0 => 'other_centre'
+            ];
+
+            $thaliStatus = $thaliMapping[$family['is_taking_thali']] ?? null;
+
+
             // Prepare hub data
             foreach ($family['hub_array'] as $hubEntry) {
                 $hubs[] = [
                     'family_id' => $family['family_id'],
                     'year' => $hubEntry['year'],
                     'jamiat_id' => 1,
-                    'thali_status' => $family['is_taking_thali'],
+                    'thali_status' => $thaliStatus,
                     'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
                     'paid_amount' => 0,
                     'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
