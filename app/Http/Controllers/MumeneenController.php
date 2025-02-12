@@ -44,9 +44,9 @@ class MumeneenController extends Controller
         DB::statement('SET FOREIGN_KEY_CHECKS=0;'); // Temporarily disable foreign key checks for performance
 
         // Step 1: Delete existing data
-        User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
-        BuildingModel::where('jamiat_id', 1)->delete();
-        HubModel::where('jamiat_id', 1)->delete();
+        // User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
+        // BuildingModel::where('jamiat_id', 1)->delete();
+        // HubModel::where('jamiat_id', 1)->delete();
 
         // API Endpoint
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
