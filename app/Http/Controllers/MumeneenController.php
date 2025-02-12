@@ -129,7 +129,7 @@ class MumeneenController extends Controller
                     'sub_sector_id' => $subSectors[strtoupper($family['sub_sector'])] ?? null,
                     'status' => $family['status'] == 1 ? 'in_active' : 'active',
                     'role' => 'mumeneen',
-                    'building_id' => $buildingId,
+                    'building' => $buildingId,
                 ];
 
                 // Add to existing ITS list to prevent further duplication
