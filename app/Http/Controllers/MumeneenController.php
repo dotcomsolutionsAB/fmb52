@@ -41,6 +41,7 @@ class MumeneenController extends Controller
 
     public function migrate()
     {
+        die("Maintenance Mode");
         DB::statement('SET FOREIGN_KEY_CHECKS=0;'); // Temporarily disable foreign key checks for performance
 
         // Step 1: Delete existing data
