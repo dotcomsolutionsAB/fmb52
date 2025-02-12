@@ -19,7 +19,6 @@ use App\Models\FcmModel;
 use App\Models\HubModel;
 use App\Models\ZabihatModel;
 use App\Http\Controllers\UploadController;
-use App\Jobs\ProcessMigrationBatch;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -44,11 +43,11 @@ class MumeneenController extends Controller
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;'); // Temporarily disable foreign key checks for performance
 
-        // Step 1: Delete existing data (use truncate if you can afford losing data)
+        // Step 1: Delete existing data (use truncate if possible)
         User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
         BuildingModel::where('jamiat_id', 1)->delete();
         HubModel::where('jamiat_id', 1)->delete();
-        // YearModel::where('jamiat_id', 1)->delete();
+        YearModel::where('jamiat_id', 1)->delete();
 
         // API endpoint and batch configuration
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
@@ -56,6 +55,10 @@ class MumeneenController extends Controller
         $offset = 0;
         $totalProcessed = 0;
         $batches = [];
+
+        // Fetch sector and sub-sector mappings once
+        $sectors = SectorModel::pluck('id', 'name')->toArray();
+        $subSectors = SubSectorModel::pluck('id', 'name')->toArray();
 
         while (true) {
             // Fetch data from API using limit and offset
@@ -79,8 +82,8 @@ class MumeneenController extends Controller
                 break;
             }
 
-            // Dispatch batch processing to queue
-            dispatch(new ProcessMigrationBatch($families));
+            // Process and store data efficiently
+            $this->processBatch($families, $sectors, $subSectors);
 
             $totalProcessed += count($families);
             $batches[] = ['offset' => $offset, 'batch_size' => count($families)];
@@ -92,103 +95,86 @@ class MumeneenController extends Controller
         DB::statement('SET FOREIGN_KEY_CHECKS=1;'); // Re-enable foreign key checks
 
         return response()->json([
-            'message' => "Migration started. Check logs for batch processing status.",
-            'total_queued' => $totalProcessed,
+            'message' => "Migration completed successfully.",
+            'total_processed' => $totalProcessed,
             'batches' => $batches
         ]);
     }
 
-    
-    // protected function processBatch(array $families)
-    // {
-    //     $totalProcessed = 0;
-    
-    //     foreach ($families as $family) {
-    //         $buildingId = null;
-    //         $address = $family['address'] ?? [];
-    
-    //         // Save or update building data
-    //         if (!empty($address)) {
-    //             $building = BuildingModel::updateOrCreate(
-    //                 ['name' => $address['address_2']],
-    //                 [
-    //                     'jamiat_id' => 1,
-    //                     'name' => $address['address_2'],
-    //                     'address_lime_1' => $address['address_1'] ?? null,
-    //                     'address_lime_2' => $address['address_2'] ?? null,
-    //                     'city' => $address['city'] ?? null,
-    //                     'pincode' => $address['pincode'] ?? null,
-    //                     'state' => null,
-    //                     'lattitude' => $address['latitude'] ?? null,
-    //                     'longtitude' => $address['longitude'] ?? null,
-    //                     'landmark' => null,
-    //                 ]
-    //             );
-    //             $buildingId = $building->id;
-    //             $totalProcessed++;
-    //         }
-    
-    //         // Save family members
-    //         $members = $family['members'] ?? [];
-    //         foreach ($members as $member) {
-    //             $gender = (strtolower($member['gender']) === 'male' || strtolower($member['gender']) === 'female') ? strtolower($member['gender']) : null;
-    //             $title = ($member['title'] === 'Shaikh' || strtolower($member['title']) === 'Mulla') ? $member['title'] : null;
-    
-    //             $sectorId = SectorModel::where('name', strtoupper($family['sector']))->value('id');
-    //             $subSectorId = SubSectorModel::where('name', strtoupper($family['sub_sector']))->value('id');
+    protected function processBatch(array $families, $sectors, $subSectors)
+    {
+        $users = [];
+        $buildings = [];
+        $hubs = [];
 
-    //             User::updateOrCreate(
-    //                 ['its' => $member['its']],
-    //                 [
-    //                     'name' => $member['name'],
-    //                     'email' => $member['email'],
-    //                     'password' => bcrypt('default_password'),
-    //                     'jamiat_id' => 1,
-    //                     'family_id' => $family['family_id'],
-    //                     'title' => $title,
-    //                     'its' => substr($member['its'], 0, 8),
-    //                     'hof_its' => $member['hof_id'],
-    //                     'its_family_id' => $member['family_its_id'],
-    //                     'mumeneen_type' => $member['type'],
-    //                     'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
-    //                     'gender' => $gender,
-    //                     'folio_no' => $family['folio_no'],
-    //                     'sector_id' => $sectorId,
-    //                     'sub_sector_id' => $subSectorId,
-    //                     'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
-    //                     'status' => ($family['status'] == 1) ? 'in_active' : 'active',
-    //                     'username' => strtolower(str_replace(' ', '', substr($member['its'], 0, 8))),
-    //                     'role' => 'mumeneen',
-    //                     'building_id' => $buildingId
-    //                 ]
-    //             );
+        foreach ($families as $family) {
+            $buildingId = null;
+            $address = $family['address'] ?? [];
 
-    //             $totalProcessed++;
-    //         }
-    
-    //         // Save hub data
-    //         $hubArray = $family['hub_array'] ?? [];
-    //         foreach ($hubArray as $hubEntry) {
-    //             HubModel::updateOrCreate(
-    //                 [
-    //                     'family_id' => $family['family_id'],
-    //                     'year' => $hubEntry['year']
-    //                 ],
-    //                 [
-    //                     'jamiat_id' => 1,
-    //                     'thali_status' => in_array($family['is_taking_thali'], ['taking', 'not_taking', 'once_a_week', 'joint']) ? $family['is_taking_thali'] : null,
-    //                     'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-    //                     'paid_amount' => 0,
-    //                     'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
-    //                     'log_user' => 'system_migration'
-    //                 ]
-    //             );
-    //             $totalProcessed++;
-    //         }
-    //     }
-    
-    //     return $totalProcessed;
-    // }
+            // Prepare building data
+            if (!empty($address['address_2'])) {
+                $buildings[] = [
+                    'jamiat_id' => 1,
+                    'name' => $address['address_2'],
+                    'address_lime_1' => $address['address_1'] ?? null,
+                    'address_lime_2' => $address['address_2'] ?? null,
+                    'city' => $address['city'] ?? null,
+                    'pincode' => $address['pincode'] ?? null,
+                    'lattitude' => $address['latitude'] ?? null,
+                    'longtitude' => $address['longitude'] ?? null,
+                ];
+                $buildingId = count($buildings);
+            }
+
+            // Prepare users data
+            foreach ($family['members'] as $member) {
+                $users[] = [
+                    'name' => $member['name'],
+                    'email' => $member['email'],
+                    'password' => bcrypt('default_password'),
+                    'jamiat_id' => 1,
+                    'family_id' => $family['family_id'],
+                    'title' => $member['title'],
+                    'its' => substr($member['its'], 0, 8),
+                    'hof_its' => $member['hof_id'],
+                    'its_family_id' => $member['family_its_id'],
+                    'mumeneen_type' => $member['type'],
+                    'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
+                    'gender' => $member['gender'],
+                    'folio_no' => $family['folio_no'],
+                    'sector_id' => $sectors[strtoupper($family['sector'])] ?? null,
+                    'sub_sector_id' => $subSectors[strtoupper($family['sub_sector'])] ?? null,
+                    'status' => $family['status'] == 1 ? 'in_active' : 'active',
+                    'role' => 'mumeneen',
+                    'building_id' => $buildingId,
+                ];
+            }
+
+            // Prepare hub data
+            foreach ($family['hub_array'] as $hubEntry) {
+                $hubs[] = [
+                    'family_id' => $family['family_id'],
+                    'year' => $hubEntry['year'],
+                    'jamiat_id' => 1,
+                    'thali_status' => $family['is_taking_thali'],
+                    'hub_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                    'paid_amount' => 0,
+                    'due_amount' => is_numeric($hubEntry['hub']) ? $hubEntry['hub'] : 0,
+                    'log_user' => 'system_migration'
+                ];
+            }
+        }
+
+        // Bulk insert using transactions
+        DB::transaction(function () use ($users, $buildings, $hubs) {
+            if (!empty($buildings)) BuildingModel::insert($buildings);
+            if (!empty($users)) User::insert($users);
+            if (!empty($hubs)) HubModel::insert($hubs);
+        });
+
+        Log::info("Batch of " . count($users) . " users migrated successfully.");
+    }
+
         
     //register user
     public function register_users(Request $request)
