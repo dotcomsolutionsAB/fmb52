@@ -135,7 +135,7 @@ class MumeneenController extends Controller
                     'password' => bcrypt('default_password'),
                     'jamiat_id' => 1,
                     'family_id' => $family['family_id'],
-                    'title' => $member['title'],
+                    'title' => in_array(strtolower($member['title']), ['shaikh', 'mulla']) ? ucfirst(strtolower($member['title'])) : null,
                     'its' => substr($member['its'], 0, 8),
                     'hof_its' => $member['hof_id'],
                     'its_family_id' => $member['family_its_id'],
