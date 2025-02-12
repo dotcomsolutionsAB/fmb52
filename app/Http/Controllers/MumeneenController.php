@@ -43,72 +43,43 @@ class MumeneenController extends Controller
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;'); // Temporarily disable foreign key checks for performance
 
-        // Step 1: Delete existing data (use truncate if possible)
+        // Step 1: Delete existing data
         User::where('role', 'mumeneen')->where('jamiat_id', 1)->delete();
         BuildingModel::where('jamiat_id', 1)->delete();
         HubModel::where('jamiat_id', 1)->delete();
-        YearModel::where('jamiat_id', 1)->delete();
 
-        // API endpoint and batch configuration
+        // API Endpoint
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
-        $limit = 500; // Start with 500, dynamically adjust if needed
-        $offset = 0;
-        $totalProcessed = 0;
-        $batches = [];
+
+        // Fetch data from API (All at once)
+        try {
+            $response = Http::timeout(300)->retry(3, 500)->get($url);
+        } catch (\Exception $e) {
+            Log::error("API request failed: " . $e->getMessage());
+            return response()->json(['message' => "API request failed."], 500);
+        }
+
+        if ($response->failed()) {
+            Log::error("API failure.");
+            return response()->json(['message' => "API failure."], 500);
+        }
+
+        // Get families data
+        $families = $response->json()['data'] ?? [];
+        if (empty($families)) {
+            return response()->json(['message' => "No data received from API."], 200);
+        }
 
         // Fetch sector and sub-sector mappings once
         $sectors = SectorModel::pluck('id', 'name')->toArray();
         $subSectors = SubSectorModel::pluck('id', 'name')->toArray();
 
-        while (true) {
-            // Fetch data from API using limit and offset
-            try {
-                $response = Http::timeout(120)->retry(3, 500)->get($url, [
-                    'limit' => $limit,
-                    'offset' => $offset
-                ]);
-            } catch (\Exception $e) {
-                Log::error("Failed to fetch data at offset $offset: " . $e->getMessage());
-                break;
-            }
+        // Fetch existing ITS numbers to avoid duplicates
+        $existingITS = User::pluck('its')->toArray();
 
-            if ($response->failed()) {
-                Log::error("API failure at offset $offset");
-                break;
-            }
-
-            $families = $response->json()['data'] ?? [];
-            if (empty($families)) {
-                break;
-            }
-
-            // Process and store data efficiently
-            $this->processBatch($families, $sectors, $subSectors);
-
-            $totalProcessed += count($families);
-            $batches[] = ['offset' => $offset, 'batch_size' => count($families)];
-
-            // Increase offset
-            $offset += $limit;
-        }
-
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;'); // Re-enable foreign key checks
-
-        return response()->json([
-            'message' => "Migration completed successfully.",
-            'total_processed' => $totalProcessed,
-            'batches' => $batches
-        ]);
-    }
-
-    protected function processBatch(array $families, $sectors, $subSectors)
-    {
         $users = [];
         $buildings = [];
         $hubs = [];
-
-        // Fetch existing ITS numbers to avoid duplicates
-        $existingITS = User::pluck('its')->toArray();
 
         foreach ($families as $family) {
             $buildingId = null;
@@ -140,7 +111,7 @@ class MumeneenController extends Controller
                 }
 
                 $users[] = [
-                    'username' => substr($member['its'], 0, 8),
+                    'username' => $its,
                     'name' => $member['name'],
                     'email' => $member['email'],
                     'password' => bcrypt('default_password'),
@@ -191,11 +162,18 @@ class MumeneenController extends Controller
             }
         });
 
-        Log::info("Batch of " . count($users) . " users migrated successfully.");
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;'); // Re-enable foreign key checks
+
+        Log::info("Migration completed successfully. Users Inserted: " . count($users));
+
+        return response()->json([
+            'message' => "Migration completed successfully.",
+            'total_users' => count($users),
+            'total_buildings' => count($buildings),
+            'total_hubs' => count($hubs)
+        ]);
     }
 
-
-        
     //register user
     public function register_users(Request $request)
     {
