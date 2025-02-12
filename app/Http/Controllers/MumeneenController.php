@@ -141,7 +141,7 @@ class MumeneenController extends Controller
                     'its_family_id' => $member['family_its_id'],
                     'mumeneen_type' => $member['type'],
                     'mobile' => (strlen($member['mobile']) <= 15) ? $member['mobile'] : null,
-                    'gender' => $member['gender'],
+                    'gender' => in_array(strtolower($member['gender']), ['male', 'female']) ? strtolower($member['gender']) : null,
                     'folio_no' => $family['folio_no'],
                     'sector_id' => $sectors[strtoupper($family['sector'])] ?? null,
                     'sub_sector_id' => $subSectors[strtoupper($family['sub_sector'])] ?? null,
