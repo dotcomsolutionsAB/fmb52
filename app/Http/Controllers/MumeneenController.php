@@ -129,6 +129,7 @@ class MumeneenController extends Controller
             // Prepare users data
             foreach ($family['members'] as $member) {
                 $users[] = [
+                    'username' => substr($member['its'], 0, 8),
                     'name' => $member['name'],
                     'email' => $member['email'],
                     'password' => bcrypt('default_password'),
