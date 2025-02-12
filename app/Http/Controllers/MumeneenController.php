@@ -65,7 +65,7 @@ class MumeneenController extends Controller
         }
 
         // Get families data
-        $families = $response->json()['data'] ?? [];
+        $families = $response->json() ?? [];
         if (empty($families)) {
             return response()->json(['message' => "No data received from API."], 200);
         }
