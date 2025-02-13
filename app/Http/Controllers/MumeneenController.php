@@ -1466,12 +1466,12 @@ class MumeneenController extends Controller
 
         try {
             // Step 1: Mark all previous years as non-current for this jamiat
-            YearModel::where('jamiat_id', $jamiatId)->update(['is_current' => 0]);
+            YearModel::where('jamiat_id', $jamiatId)->update(['is_current' => '0']);
 
             // Step 2: Create new year entry in `t_year` table (if it does not exist)
             $newYear = YearModel::updateOrCreate(
                 ['year' => $year, 'jamiat_id' => $jamiatId],
-                ['is_current' => 1] // Ensure only one year is marked as current
+                ['is_current' => '1'] // Ensure only one year is marked as current
             );
 
             // Step 3: Get all unique `family_id`s from `users` table
@@ -1530,6 +1530,7 @@ class MumeneenController extends Controller
             ], 500);
         }
     }
+
 
 
     public function getDistinctFamilyCountUnderAge14()
