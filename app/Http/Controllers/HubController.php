@@ -9,30 +9,99 @@ use App\Models\YearModel;
 
 class HubController extends Controller
 {
-    public function hub_distribution()
+    public function hub_distribution(Request $request)
     {
-        // Get total users for the given year
-        // $total_hof = User::whereHas('sector', function ($query) use ($year) {
-        //     $query->where('year', $year);
-        // })->count();
+        // Get authenticated user's jamiat_id
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
-        // // Count users whose hub amount is greater than 0 or thali_status is "joint"
-        // $hub_done = User::whereHas('sector', function ($query) use ($year) {
-        //     $query->where('year', $year);
-        // })->whereHas('hub', function ($query) {
-        //     $query->where('hub_amount', '>', 0);
-        // })->orWhere('thali_status', 'joint')->count();
+        $jamiatId = $user->jamiat_id;
 
-        // // Count users whose hub amount is 0 and thali_status is either "taking", "not_taking", or "once_a_week"
-        // $hub_pending = User::whereHas('sector', function ($query) use ($year) {
-        //     $query->where('year', $year);
-        // })->whereDoesntHave('hub', function ($query) {
-        //     $query->where('hub_amount', '>', 0);
-        // })->whereIn('thali_status', ['taking', 'not_taking', 'once_a_week'])->count();
+        // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
+        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', 1)->value('year');
 
-        $total_hof = 850;
-        $hub_done = 600;
-        $hub_pending = 250;
+        if (!$currentYear) {
+            return response()->json([
+                'code' => 404,
+                'status' => false,
+                'message' => 'Current year not found for the user',
+                'data' => [],
+            ]);
+        }
+
+        // Fetch permitted sub-sector IDs for the user
+        $permittedSubSectorIds = $user->sub_sector_access_id ?? [];
+
+        // Ensure sub-sector access IDs are an array
+        if (!is_array($permittedSubSectorIds)) {
+            $permittedSubSectorIds = json_decode($permittedSubSectorIds, true) ?? [];
+        }
+
+        // Validation for sector and sub-sector input
+        $request->validate([
+            'sector' => 'required|array',
+            'sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or 'all'.");
+                }
+            }],
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or 'all'.");
+                }
+            }],
+        ]);
+
+        // Handle "all" for sector and sub-sector
+        $requestedSectors = $request->input('sector', []);
+        if (in_array('all', $requestedSectors)) {
+            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
+            $requestedSectors[] = null; // Include NULL values for sector_id
+        }
+
+        $requestedSubSectors = $request->input('sub_sector', []);
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = DB::table('t_sub_sector')
+                ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
+                ->pluck('id')
+                ->toArray();
+            $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
+        }
+
+        // Ensure the requested sub-sectors match the user's permissions
+        $finalSubSectors = array_merge(array_intersect($requestedSubSectors, $permittedSubSectorIds), [null]);
+
+        // Fetch total HoF where entry is present in `t_hub` for the current year and matches the filters
+        $total_hof = HubModel::where('year', $currentYear)
+            ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
+                $query->select('family_id')
+                    ->from('users')
+                    ->where('jamiat_id', $jamiatId)
+                    ->whereIn('sector_id', $requestedSectors)
+                    ->whereIn('sub_sector_id', $finalSubSectors);
+            })
+            ->distinct('family_id')
+            ->count();
+
+        // Get count of `hub_done` where `thali_status` is not null or is 'joint'
+        $hub_done = HubModel::where('year', $currentYear)
+            ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
+                $query->select('family_id')
+                    ->from('users')
+                    ->where('jamiat_id', $jamiatId)
+                    ->whereIn('sector_id', $requestedSectors)
+                    ->whereIn('sub_sector_id', $finalSubSectors);
+            })
+            ->where(function ($query) {
+                $query->whereNotNull('thali_status')->orWhere('thali_status', 'joint');
+            })
+            ->count();
+
+        // Calculate pending hubs
+        $hub_pending = $total_hof - $hub_done;
 
         return response()->json([
             'code' => 200,
@@ -45,6 +114,7 @@ class HubController extends Controller
             ]
         ]);
     }
+
 
     public function niyaz_stats()
     {
