@@ -245,7 +245,7 @@ class HubController extends Controller
         $jamiatId = $user->jamiat_id;
 
         // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
-        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', "1")->value('year');
+        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', 1)->value('year');
 
         if (!$currentYear) {
             return response()->json([
@@ -290,8 +290,8 @@ class HubController extends Controller
 
         // Fetch mohalla-wise data
         $mohallaData = User::select(
-                'sector_id as mohalla',
-                DB::raw('COUNT(DISTINCT family_id) as total_hof'),
+                'users.sector_id as mohalla',
+                DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
                 DB::raw('SUM(CASE WHEN hub.hub_amount > 0 OR hub.thali_status = "joint" THEN 1 ELSE 0 END) as done'),
                 DB::raw('SUM(hub.hub_amount) as amount')
             )
@@ -326,6 +326,7 @@ class HubController extends Controller
             'data' => $responseData,
         ]);
     }
+
 
     
 }
