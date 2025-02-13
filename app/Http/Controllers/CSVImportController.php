@@ -30,9 +30,10 @@ class CSVImportController extends Controller
                 ->select('id', 'name', 'sector_id')
                 ->get()
                 ->mapWithKeys(function ($item) {
-                    return ["{$item->sector}:{$item->name}" => $item->id];
+                    return ["{$item->sector_id}:{$item->name}" => $item->id]; // Use sector_id instead of sector name
                 })
                 ->toArray();
+
 
             // Process Receipt CSV
             $this->processReceiptCSV($receiptCsvUrl, $sectorMapping, $subSectorMapping);
@@ -69,7 +70,8 @@ class CSVImportController extends Controller
         foreach ($receiptRecords as $record) {
             // Map sector and sub-sector IDs
             $sectorId = $sectorMapping[$record['sector']] ?? null;
-            $subSectorId = $subSectorMapping["{$record['sector']}:{$record['sub_sector']}"] ?? null;
+            $subSectorId = $subSectorMapping["{$sectorId}:{$record['sub_sector']}"] ?? null;
+
 
             // Determine status using the old fields
             $statusFlag = (int) $record['status']; // 0 = active, 1 = cancelled
@@ -147,7 +149,8 @@ class CSVImportController extends Controller
         foreach ($paymentRecords as $record) {
             // Map sector and sub-sector IDs
             $sectorId = $sectorMapping[$record['sector']] ?? null;
-            $subSectorId = $subSectorMapping["{$record['sector']}:{$record['sub_sector']}"] ?? null;
+            $subSectorId = $subSectorMapping["{$sectorId}:{$record['sub_sector']}"] ?? null;
+
 
             // Format payment_no as "P_counter_(date)"
             $formattedDate = $this->validateAndFormatDate($record['date']);
