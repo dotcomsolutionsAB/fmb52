@@ -27,7 +27,7 @@ class CSVImportController extends Controller
             // Fetch sector and sub-sector mappings
             $sectorMapping = DB::table('t_sector')->pluck('id', 'name')->toArray();
             $subSectorMapping = DB::table('t_sub_sector')
-                ->select('id', 'name', 'sector')
+                ->select('id', 'name', 'sector_id')
                 ->get()
                 ->mapWithKeys(function ($item) {
                     return ["{$item->sector}:{$item->name}" => $item->id];
