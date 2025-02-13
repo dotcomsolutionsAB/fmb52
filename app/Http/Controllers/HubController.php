@@ -245,7 +245,7 @@ class HubController extends Controller
         $jamiatId = $user->jamiat_id;
 
         // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
-        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', 1)->value('year');
+        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', "1")->value('year');
 
         if (!$currentYear) {
             return response()->json([
