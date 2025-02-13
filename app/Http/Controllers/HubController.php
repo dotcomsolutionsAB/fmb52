@@ -119,63 +119,119 @@ class HubController extends Controller
     }
 
 
-    public function niyaz_stats()
+    public function niyaz_stats(Request $request)
     {
+        // Get authenticated user's jamiat_id
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
 
-        $total_hof = 850;
-        $hub_done = 600;
-        $hub_pending = 250;
+        $jamiatId = $user->jamiat_id;
+
+        // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
+        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', 1)->value('year');
+
+        if (!$currentYear) {
+            return response()->json([
+                'code' => 404,
+                'status' => false,
+                'message' => 'Current year not found for the user',
+                'data' => [],
+            ]);
+        }
+
+        // Validate sector and sub-sector input
+        $request->validate([
+            'sector' => 'required|array',
+            'sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or 'all'.");
+                }
+            }],
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or 'all'.");
+                }
+            }],
+        ]);
+
+        // Handle "all" for sector and sub-sector
+        $requestedSectors = $request->input('sector', []);
+        if (in_array('all', $requestedSectors)) {
+            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
+            $requestedSectors[] = null; // Include NULL values for sector_id
+        }
+
+        $requestedSubSectors = $request->input('sub_sector', []);
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = DB::table('t_sub_sector')
+                ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
+                ->pluck('id')
+                ->toArray();
+            $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
+        }
+
+        // Fetch all hub_done entries where `hub_amount > 0`, filtered by sector & sub-sector
+        $hubData = HubModel::where('year', $currentYear)
+            ->where('jamiat_id', $jamiatId)
+            ->where('hub_amount', '>', 0)
+            ->whereIn('family_id', function ($query) use ($requestedSectors, $requestedSubSectors, $jamiatId) {
+                $query->select('family_id')
+                    ->from('users')
+                    ->where('jamiat_id', $jamiatId)
+                    ->whereIn('sector_id', $requestedSectors)
+                    ->whereIn('sub_sector_id', $requestedSubSectors);
+            })
+            ->pluck('hub_amount')
+            ->toArray();
+
+        // Define slabs with amount thresholds
+        $slabs = [
+            "Full Niyaz" => 172000,
+            "3/4 Niyaz" => 129000,
+            "1/2 Niyaz" => 86000,
+            "1/3 Niyaz" => 57500,
+            "1/4 Niyaz" => 43000,
+            "1/5 Niyaz" => 34500,
+            "Hub Contribution" => 0, // Remaining values fall here
+        ];
+
+        // Initialize counts for each slab
+        $slabCounts = array_fill_keys(array_keys($slabs), 0);
+        $slabTotals = array_fill_keys(array_keys($slabs), 0);
+
+        // Distribute hub amounts into slabs
+        foreach ($hubData as $amount) {
+            foreach ($slabs as $slab => $threshold) {
+                if ($amount >= $threshold) {
+                    $slabCounts[$slab]++;
+                    $slabTotals[$slab] += $amount;
+                    break; // Stop checking once assigned to a slab
+                }
+            }
+        }
+
+        // Prepare response data
+        $responseData = [];
+        foreach ($slabs as $slab => $amount) {
+            $responseData[] = [
+                'slab' => $slab,
+                'amount' => (string) $amount,
+                'count' => (string) $slabCounts[$slab],
+                'total' => (string) $slabTotals[$slab],
+            ];
+        }
 
         return response()->json([
             'code' => 200,
             'status' => true,
             'message' => 'Details fetched successfully',
-            'data' => [
-                [
-                    'slab' => "Full Niyaz",
-                    'amount' => "172000",
-                    'count' => "10",
-                    'total' => "1720000",
-                ],
-                [
-                    'slab' => "3/4 Niyaz",
-                    'amount' => "129000",
-                    'count' => "10",
-                    'total' => "1290000",
-                ],
-                [
-                    'slab' => "1/2 Niyaz",
-                    'amount' => "86000",
-                    'count' => "10",
-                    'total' => "860000",
-                ],
-                [
-                    'slab' => "1/3 Niyaz",
-                    'amount' => "57500",
-                    'count' => "10",
-                    'total' => "575000",
-                ],
-                [
-                    'slab' => "1/4 Niyaz",
-                    'amount' => "43000",
-                    'count' => "10",
-                    'total' => "430000",
-                ],
-                [
-                    'slab' => "1/5 Niyaz",
-                    'amount' => "34500",
-                    'count' => "10",
-                    'total' => "345000",
-                ],
-                [
-                    'slab' => "Hub Contribution",
-                    'amount' => "0", // If '-' is meant to indicate no amount, use "0"
-                    'count' => "10",
-                    'total' => "45000",
-                ]
-            ],
-        ]);    
+            'data' => $responseData,
+        ]);
     }
+
     
     
     public function mohalla_wise()
