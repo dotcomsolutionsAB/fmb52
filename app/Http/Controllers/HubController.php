@@ -19,9 +19,9 @@ class HubController extends Controller
         }
 
         $jamiatId = $user->jamiat_id;
-
+		
         // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
-        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', 1)->value('year');
+        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', '1')->value('year');
 
         if (!$currentYear) {
             return response()->json([
@@ -74,7 +74,7 @@ class HubController extends Controller
 
         // Ensure the requested sub-sectors match the user's permissions
         $finalSubSectors = array_merge(array_intersect($requestedSubSectors, $permittedSubSectorIds), [null]);
-
+		
         // Fetch total HoF where entry is present in `t_hub` for the current year and matches the filters
         $total_hof = HubModel::where('year', $currentYear)
             ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
