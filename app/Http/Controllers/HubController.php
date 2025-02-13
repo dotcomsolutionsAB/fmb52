@@ -234,51 +234,98 @@ class HubController extends Controller
 
     
     
-    public function mohalla_wise()
+    public function mohalla_wise(Request $request)
     {
+        // Get authenticated user's jamiat_id
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $jamiatId = $user->jamiat_id;
+
+        // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
+        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', "1")->value('year');
+
+        if (!$currentYear) {
+            return response()->json([
+                'code' => 404,
+                'status' => false,
+                'message' => 'Current year not found for the user',
+                'data' => [],
+            ]);
+        }
+
+        // Validate sector and sub-sector input
+        $request->validate([
+            'sector' => 'required|array',
+            'sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or 'all'.");
+                }
+            }],
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or 'all'.");
+                }
+            }],
+        ]);
+
+        // Handle "all" for sector and sub-sector
+        $requestedSectors = $request->input('sector', []);
+        if (in_array('all', $requestedSectors)) {
+            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
+            $requestedSectors[] = null; // Include NULL values for sector_id
+        }
+
+        $requestedSubSectors = $request->input('sub_sector', []);
+        if (in_array('all', $requestedSubSectors)) {
+            $requestedSubSectors = DB::table('t_sub_sector')
+                ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
+                ->pluck('id')
+                ->toArray();
+            $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
+        }
+
+        // Fetch mohalla-wise data
+        $mohallaData = User::select(
+                'sector_id as mohalla',
+                DB::raw('COUNT(DISTINCT family_id) as total_hof'),
+                DB::raw('SUM(CASE WHEN hub.hub_amount > 0 OR hub.thali_status = "joint" THEN 1 ELSE 0 END) as done'),
+                DB::raw('SUM(hub.hub_amount) as amount')
+            )
+            ->leftJoin('t_hub as hub', function ($join) use ($currentYear) {
+                $join->on('users.family_id', '=', 'hub.family_id')
+                    ->where('hub.year', $currentYear);
+            })
+            ->where('users.jamiat_id', $jamiatId)
+            ->whereIn('users.sector_id', $requestedSectors)
+            ->whereIn('users.sub_sector_id', $requestedSubSectors)
+            ->groupBy('users.sector_id')
+            ->get();
+
+        // Process data into required response format
+        $responseData = [];
+        foreach ($mohallaData as $data) {
+            $sectorName = DB::table('t_sector')->where('id', $data->mohalla)->value('name'); // Fetch sector name
+
+            $responseData[] = [
+                'mohalla' => $sectorName ?? 'Unknown',
+                'total_hof' => (string) $data->total_hof,
+                'done' => (string) $data->done,
+                'pending' => (string) ($data->total_hof - $data->done),
+                'amount' => (string) $data->amount,
+            ];
+        }
 
         return response()->json([
             'code' => 200,
             'status' => true,
             'message' => 'Details fetched successfully',
-            'data' => [
-                [
-                    'mohalla' => "BURHANI",
-                    'total_hof' => "350",
-                    'done' => "200",
-                    'pending' => "150",
-                    'amount' => "100000",
-                ],
-                [
-                    'mohalla' => "EZZY",
-                    'total_hof' => "350",
-                    'done' => "200",
-                    'pending' => "150",
-                    'amount' => "100000",
-                ],
-                [
-                    'mohalla' => "SHUJAI",
-                    'total_hof' => "350",
-                    'done' => "200",
-                    'pending' => "150",
-                    'amount' => "100000",
-                ],
-                [
-                    'mohalla' => "MOHAMMEDI",
-                    'total_hof' => "350",
-                    'done' => "200",
-                    'pending' => "150",
-                    'amount' => "100000",
-                ],
-                [
-                    'mohalla' => "ZAINY",
-                    'total_hof' => "350",
-                    'done' => "200",
-                    'pending' => "150",
-                    'amount' => "100000",
-                ],
-            ],
-        ]);    
+            'data' => $responseData,
+        ]);
     }
+
     
 }
