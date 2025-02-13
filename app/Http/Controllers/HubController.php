@@ -87,19 +87,21 @@ class HubController extends Controller
             ->distinct('family_id')
             ->count();
 
-        // Get count of `hub_done` where `thali_status` is not null or is 'joint'
+        // Get count of `hub_done` where `hub_amount` > 0 or `thali_status` is 'joint'
         $hub_done = HubModel::where('year', $currentYear)
-            ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
-                $query->select('family_id')
-                    ->from('users')
-                    ->where('jamiat_id', $jamiatId)
-                    ->whereIn('sector_id', $requestedSectors)
-                    ->whereIn('sub_sector_id', $finalSubSectors);
-            })
-            ->where(function ($query) {
-                $query->whereNotNull('thali_status')->orWhere('thali_status', 'joint');
-            })
-            ->count();
+        ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
+            $query->select('family_id')
+                ->from('users')
+                ->where('jamiat_id', $jamiatId)
+                ->whereIn('sector_id', $requestedSectors)
+                ->whereIn('sub_sector_id', $finalSubSectors);
+        })
+        ->where(function ($query) {
+            $query->where('hub_amount', '>', 0)
+                ->orWhere('thali_status', 'joint');
+        })
+        ->count();
+
 
         // Calculate pending hubs
         $hub_pending = $total_hof - $hub_done;
