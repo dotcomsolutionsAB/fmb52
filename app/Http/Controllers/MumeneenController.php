@@ -1255,6 +1255,7 @@ class MumeneenController extends Controller
         $request->validate([
             'year' => 'required|string|max:10', // Ensure the year is provided
             'hub_amount' => 'required', // Ensure the hub slab ID exists
+            'thali_status' => 'required', // Ensure the hub slab ID exists
         ]);
 
         // Get jamiat_id from authenticated user
@@ -1273,6 +1274,7 @@ class MumeneenController extends Controller
             [
                 'jamiat_id' => $jamiat_id,
                 'hub_amount' => $request->input('hub_amount'),
+                'thali_status' => $request->input('thali_status'),
                 'paid_amount' => 0,
                 'due_amount' => $request->input('hub_amount'),
                 'log_user' => auth()->user()->username,
