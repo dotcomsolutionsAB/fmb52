@@ -367,6 +367,7 @@ class MumeneenController extends Controller
         ->where('jamiat_id', $jamiat_id)
         // ->where('mumeneen_type', 'HOF')
         ->where('status', 'active')
+        ->where('role', 'mumeneen')
         ->whereIn('sub_sector_id', $finalSubSectors)
         ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
         ->orderBy('sub_sector_id') // Sort by sub-sector ID
