@@ -1283,11 +1283,11 @@ class MumeneenController extends Controller
         // Find or create the hub record
         $get_hub = HubModel::firstOrCreate(
             [
+                'jamiat_id' => $jamiat_id,
                 'family_id' => $family_id,
                 'year' => $request->input('year'),
             ],
             [
-                'jamiat_id' => $jamiat_id,
                 'hub_amount' => $request->input('hub_amount'),
                 'thali_status' => $request->input('thali_status'),
                 'paid_amount' => 0,
@@ -1297,6 +1297,14 @@ class MumeneenController extends Controller
                 'updated_at' => now(),
             ]
         );
+    
+        // If the record already existed, update only the hub_amount and thali_status fields
+        if (!$get_hub->wasRecentlyCreated) {
+            $get_hub->update([
+                'hub_amount' => $request->input('hub_amount'),
+                'thali_status' => $request->input('thali_status'),
+            ]);
+        }
 
         // If the hub record exists, update the hub amount
         if (!$get_hub->wasRecentlyCreated) {
