@@ -1451,7 +1451,7 @@ class MumeneenController extends Controller
         return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
     }
 
-    public function createOrUpdateYearAndHubEntries(Request $request)
+    public function createYearAndHubEntries(Request $request)
     {
         // Validate input to ensure a year and jamiat_id are provided
         $request->validate([
