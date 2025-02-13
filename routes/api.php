@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::post('/migrate_receipts', [CSVImportController::class, 'importDataFromUrl']);
 
     Route::post('/hub_distribution', [HubController::class, 'hub_distribution']);
     Route::post('/niyaz_stats', [HubController::class, 'niyaz_stats']);
