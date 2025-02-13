@@ -1451,9 +1451,9 @@ class MumeneenController extends Controller
         return response()->json(['message' => 'Hub details fetched successfully!', 'data' => $yearly_details], 200);
     }
 
-    public function createYearAndHubEntries(Request $request)
+    public function createOrUpdateYearAndHubEntries(Request $request)
     {
-        // Validate input to ensure a year is provided
+        // Validate input to ensure a year and jamiat_id are provided
         $request->validate([
             'year' => 'required|string|max:10',
             'jamiat_id' => 'required|integer'
@@ -1465,45 +1465,61 @@ class MumeneenController extends Controller
         DB::beginTransaction();
 
         try {
-            // Step 1: Create new year entry in t_year table
-            $newYear = YearModel::create([
-                'year' => $year,
-                'jamiat_id' => $jamiatId,
-                'is_current' => '1', // Assuming '1' marks it as current
-            ]);
+            // Step 1: Mark all previous years as non-current for this jamiat
+            YearModel::where('jamiat_id', $jamiatId)->update(['is_current' => 0]);
 
-            // Step 2: Get all unique family_ids from users table
+            // Step 2: Create new year entry in `t_year` table (if it does not exist)
+            $newYear = YearModel::updateOrCreate(
+                ['year' => $year, 'jamiat_id' => $jamiatId],
+                ['is_current' => 1] // Ensure only one year is marked as current
+            );
+
+            // Step 3: Get all unique `family_id`s from `users` table
             $uniqueFamilyIds = User::select('family_id')
                 ->distinct()
                 ->whereNotNull('family_id')
                 ->pluck('family_id');
 
-            // Step 3: Insert entries into t_hub table for each family_id
-            $hubEntries = [];
             foreach ($uniqueFamilyIds as $familyId) {
-                $hubEntries[] = [
+                // Fetch the most recent `thali_status` from `t_hub` for this `family_id`
+                $previousThaliStatus = HubModel::where('family_id', $familyId)
+                    ->where('jamiat_id', $jamiatId)
+                    ->where('year', '<', $year)
+                    ->orderBy('year', 'desc') // Get the latest year entry
+                    ->value('thali_status');
+
+                // Check if an entry already exists for the current year
+                $existingHubEntry = HubModel::where([
                     'jamiat_id' => $jamiatId,
                     'family_id' => $familyId,
                     'year' => $year,
-                    'hub_amount' => 0, // Default value, update as needed
-                    'paid_amount' => 0,
-                    'due_amount' => 0,
-                    'log_user' => auth()->user()->name ?? 'system', // Assuming user is logged in
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
+                ])->first();
 
-            // Batch insert into t_hub table
-            if (!empty($hubEntries)) {
-                HubModel::insert($hubEntries);
+                if ($existingHubEntry) {
+                    // Update only `thali_status`
+                    $existingHubEntry->update(['thali_status' => $previousThaliStatus]);
+                } else {
+                    // Create a new entry with default values
+                    HubModel::create([
+                        'jamiat_id' => $jamiatId,
+                        'family_id' => $familyId,
+                        'year' => $year,
+                        'hub_amount' => 0, // Default value, update as needed
+                        'paid_amount' => 0,
+                        'due_amount' => 0,
+                        'thali_status' => $previousThaliStatus, // Store the previous thali_status
+                        'log_user' => auth()->user()->name ?? 'system', // Assuming user is logged in
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'New year and hub entries created successfully!',
+                'message' => 'Year and hub entries created/updated successfully!',
                 'year_id' => $newYear->id
             ], 201);
         } catch (\Exception $e) {
@@ -1514,6 +1530,7 @@ class MumeneenController extends Controller
             ], 500);
         }
     }
+
 
     public function getDistinctFamilyCountUnderAge14()
     {
