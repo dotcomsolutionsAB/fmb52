@@ -335,29 +335,34 @@ class MumeneenController extends Controller
         // Handle "all" for sector and sub-sector
         $requestedSectors = $request->input('sector', []);
         if (in_array('all', $requestedSectors)) {
-            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray(); // Replace "all" with all sector IDs
+            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
+            $requestedSectors[] = null; // Include NULL values for sector_id
         }
 
         $requestedSubSectors = $request->input('sub_sector', []);
         if (in_array('all', $requestedSubSectors)) {
             $requestedSubSectors = DB::table('t_sub_sector')
-                ->whereIn('sector_id', $requestedSectors) // Fetch sub-sectors for the specified sectors
+                ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
                 ->pluck('id')
                 ->toArray();
+            $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
         }
 
         // Ensure the requested sub-sectors match the user's permissions
-        $finalSubSectors = array_intersect($requestedSubSectors, $permittedSubSectorIds);
+        $finalSubSectors = array_merge(array_intersect($requestedSubSectors, $permittedSubSectorIds), [null]);
 
-        if (empty($finalSubSectors)) {
-            return response()->json(['message' => 'Access denied for the requested sub-sectors.'], 403);
-        }
-        
-        // Fetch users belonging to the permitted sub-sectors
+        // Fetch hub data for the specified year including thali_status
+        $hub_data = HubModel::select('family_id', 'hub_amount', 'paid_amount', 'due_amount', 'thali_status', 'year')
+            ->where('jamiat_id', $jamiat_id)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('family_id');
+
+        // Get all users with permitted sub-sectors and filter out those without hub data
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
             'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
-            'building', 'sector_id', 'sub_sector_id', 'status', 'thali_status', 'role', 'username', 'photo_id'
+            'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id'
         )
         ->with([
             'photo:id,file_url', // Existing relationship
@@ -365,31 +370,30 @@ class MumeneenController extends Controller
             'subSector:id,name'   // Eager load sub-sector name
         ])
         ->where('jamiat_id', $jamiat_id)
-        // ->where('mumeneen_type', 'HOF')
         ->where('status', 'active')
         ->where('role', 'mumeneen')
-        ->whereIn('sub_sector_id', $finalSubSectors)
-        ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") // Push empty sub-sectors to the end
-        ->orderBy('sub_sector_id') // Sort by sub-sector ID
-        ->orderBy('folio_no') // Then sort by folio number
+        ->where(function ($query) use ($requestedSectors) {
+            $query->whereIn('sector_id', $requestedSectors)
+                ->orWhereNull('sector_id'); // Include NULL sector_id
+        })
+        ->where(function ($query) use ($finalSubSectors) {
+            $query->whereIn('sub_sector_id', $finalSubSectors)
+                ->orWhereNull('sub_sector_id'); // Include NULL sub_sector_id
+        })
+        ->whereIn('family_id', $hub_data->keys()->toArray()) // Filter users with hub records
+        ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") 
+        ->orderBy('sub_sector_id') 
+        ->orderBy('folio_no') 
         ->get();
-    
+
         if ($get_all_users->isNotEmpty()) {
             $family_ids = $get_all_users->pluck('family_id')->toArray();
-    
-            // Fetch hub data for the specified year
-            $hub_data = HubModel::select('id', 'family_id', 'hub_amount', 'paid_amount', 'due_amount', 'year')
-                ->whereIn('family_id', $family_ids)
-                ->where('jamiat_id', $jamiat_id)
-                ->where('year', $year)
-                ->get()
-                ->keyBy('family_id');
-    
+
             // Calculate overdue amounts
             $previous_years = YearModel::where('jamiat_id', $jamiat_id)
                 ->where('year', '<', $year)
                 ->pluck('year');
-    
+
             $overdue_data = HubModel::select('family_id', DB::raw('SUM(due_amount) as overdue'))
                 ->whereIn('family_id', $family_ids)
                 ->where('jamiat_id', $jamiat_id)
@@ -397,25 +401,36 @@ class MumeneenController extends Controller
                 ->groupBy('family_id')
                 ->get()
                 ->keyBy('family_id');
-    
+
             // Map hub data and overdue amounts to users
             $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
                 $hub_record = $hub_data->get($user->family_id);
-                $user->hub_amount = $hub_record->hub_amount ?? 'NA';
-                $user->paid_amount = $hub_record->paid_amount ?? 'NA';
-                $user->due_amount = $hub_record->due_amount ?? 'NA';
-    
+
+                if ($user->mumeneen_type === 'FM') {
+                    // Set hub amounts to 0 for FM users
+                    $user->hub_amount = 0;
+                    $user->paid_amount = 0;
+                    $user->due_amount = 0;
+                } else {
+                    $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+                    $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+                    $user->due_amount = $hub_record->due_amount ?? 'NA';
+                }
+
+                $user->thali_status = $hub_record->thali_status ?? 'NA'; // Assign thali_status
+
                 $overdue_record = $overdue_data->get($user->family_id);
                 $user->overdue = $overdue_record->overdue ?? 0;
-    
+
                 return $user;
             });
-    
+
             return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
         }
-    
+
         return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
     }
+
 
     // dashboard
     public function get_user($id)
