@@ -213,10 +213,13 @@ class HubController extends Controller
             }
         }
 
+        $slab_id = 1;
+
         // Prepare response data
         $responseData = [];
         foreach ($slabs as $slab => $amount) {
             $responseData[] = [
+                'slab_id' => $slab_id++,
                 'slab' => $slab,
                 'amount' => (string) $amount,
                 'count' => (string) $slabCounts[$slab],
