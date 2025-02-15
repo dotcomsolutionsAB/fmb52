@@ -400,6 +400,7 @@ class HubController extends Controller
             ->leftJoin('t_uploads as upload', 'users.photo_id', '=', 'upload.id')
             ->whereIn('users.family_id', $filteredFamilies)
             ->where('users.jamiat_id', $jamiatId)
+            ->where('users.mumeneen_type', 'HOF')
             ->offset($offset)
             ->limit($limit)
             ->get();
