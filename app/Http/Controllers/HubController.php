@@ -339,11 +339,15 @@ class HubController extends Controller
         // Validate input parameters
         $request->validate([
             'niyaz_slab' => 'required|integer|min:1|max:7',
-            'year' => 'required|string|max:10'
+            'year' => 'required|string|max:10',
+            'limit' => 'sometimes|integer|min:1|max:100',
+            'offset' => 'sometimes|integer|min:0'
         ]);
 
         $niyazSlab = $request->input('niyaz_slab');
         $year = $request->input('year');
+        $limit = $request->input('limit', 10); // Default limit 10
+        $offset = $request->input('offset', 0); // Default offset 0
 
         // Define slabs with amount thresholds
         $slabs = [
@@ -379,7 +383,7 @@ class HubController extends Controller
             ]);
         }
 
-        // Fetch user details
+        // Fetch user details with pagination
         $users = User::select(
                 'users.folio_no',
                 'users.its',
@@ -393,16 +397,29 @@ class HubController extends Controller
             )
             ->leftJoin('t_sector as sector', 'users.sector_id', '=', 'sector.id')
             ->leftJoin('t_sub_sector as sub_sector', 'users.sub_sector_id', '=', 'sub_sector.id')
-            ->leftJoin('t_uploads as upload', 'users.photo_id', '=', 'upload.id')
+            ->leftJoin('uploads as upload', 'users.photo_id', '=', 'upload.id')
             ->whereIn('users.family_id', $filteredFamilies)
             ->where('users.jamiat_id', $jamiatId)
+            ->offset($offset)
+            ->limit($limit)
             ->get();
+
+        // Fetch total count for pagination
+        $totalCount = User::whereIn('users.family_id', $filteredFamilies)
+            ->where('users.jamiat_id', $jamiatId)
+            ->count();
 
         return response()->json([
             'code' => 200,
             'status' => true,
             'message' => 'Details fetched successfully',
-            'data' => $users
+            'data' => $users,
+            'pagination' => [
+                'total' => $totalCount,
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => ($offset + $limit) < $totalCount
+            ]
         ]);
     }
 
