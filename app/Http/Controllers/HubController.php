@@ -397,7 +397,7 @@ class HubController extends Controller
             )
             ->leftJoin('t_sector as sector', 'users.sector_id', '=', 'sector.id')
             ->leftJoin('t_sub_sector as sub_sector', 'users.sub_sector_id', '=', 'sub_sector.id')
-            ->leftJoin('uploads as upload', 'users.photo_id', '=', 'upload.id')
+            ->leftJoin('t_uploads as upload', 'users.photo_id', '=', 'upload.id')
             ->whereIn('users.family_id', $filteredFamilies)
             ->where('users.jamiat_id', $jamiatId)
             ->offset($offset)
