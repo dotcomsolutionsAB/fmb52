@@ -351,7 +351,7 @@ class HubController extends Controller
 
         // Define slabs with amount thresholds
         $slabs = [
-            1 => ['min' => 172000, 'max' => null],  // Full Niyaz (>= 172000)
+            1 => ['min' => 172000, 'max' => 1720000],  // Full Niyaz (>= 172000)
             2 => ['min' => 129000, 'max' => 172000],  // 3/4 Niyaz (129000 - 172000)
             3 => ['min' => 86000, 'max' => 129000],  // 1/2 Niyaz (86000 - 129000)
             4 => ['min' => 57500, 'max' => 86000],  // 1/3 Niyaz (57500 - 86000)
@@ -392,7 +392,7 @@ class HubController extends Controller
                 'sector.name as sector',
                 'sub_sector.name as sub_sector',
                 DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = $year LIMIT 1) as this_year_hub"),
-                DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = ($year - 1) LIMIT 1) as last_year_hub"),
+                DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = ('1445-1446') LIMIT 1) as last_year_hub"),
                 DB::raw("(SELECT SUM(due_amount) FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year < $year) as total_overdue")
             )
             ->leftJoin('t_sector as sector', 'users.sector_id', '=', 'sector.id')
