@@ -408,6 +408,7 @@ class HubController extends Controller
         // Fetch total count for pagination
         $totalCount = User::whereIn('users.family_id', $filteredFamilies)
             ->where('users.jamiat_id', $jamiatId)
+            ->where('users.mumeneen_type', 'HOF')
             ->count();
 
         return response()->json([
