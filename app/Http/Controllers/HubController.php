@@ -292,8 +292,8 @@ class HubController extends Controller
         }
 
         // Fetch mohalla-wise data
-        $mohallaData = User::select(
-                'users.sector_id as mohalla',
+        $sectorData = User::select(
+                'users.sector_id as sector_id',
                 DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
                 DB::raw('SUM(CASE WHEN hub.hub_amount > 0 OR hub.thali_status = "joint" THEN 1 ELSE 0 END) as done'),
                 DB::raw('SUM(hub.hub_amount) as amount')
@@ -310,11 +310,13 @@ class HubController extends Controller
 
         // Process data into required response format
         $responseData = [];
-        foreach ($mohallaData as $data) {
-            $sectorName = DB::table('t_sector')->where('id', $data->mohalla)->value('name'); // Fetch sector name
+        foreach ($sectorData as $data) {
+            $sectorName = DB::table('t_sector')->where('id', $data->sector_id)->value('name'); // Fetch sector name
+            $sectorName = DB::table('t_sector')->where('id', $data->sector_id)->value('name'); // Fetch sector name
 
             $responseData[] = [
-                'mohalla' => $sectorName ?? 'Unknown',
+                'sector_id' => $data->sector_id,
+                'sector' => $sectorName ?? 'Unknown',
                 'total_hof' => (string) $data->total_hof,
                 'done' => (string) $data->done,
                 'pending' => (string) ($data->total_hof - $data->done),
