@@ -327,6 +327,86 @@ class HubController extends Controller
         ]);
     }
 
+    public function usersByNiyazSlab(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $jamiatId = $user->jamiat_id;
+
+        // Validate input parameters
+        $request->validate([
+            'niyaz_slab' => 'required|integer|min:1|max:7',
+            'year' => 'required|string|max:10'
+        ]);
+
+        $niyazSlab = $request->input('niyaz_slab');
+        $year = $request->input('year');
+
+        // Define slabs with amount thresholds
+        $slabs = [
+            1 => ['min' => 172000, 'max' => null],  // Full Niyaz (>= 172000)
+            2 => ['min' => 129000, 'max' => 172000],  // 3/4 Niyaz (129000 - 172000)
+            3 => ['min' => 86000, 'max' => 129000],  // 1/2 Niyaz (86000 - 129000)
+            4 => ['min' => 57500, 'max' => 86000],  // 1/3 Niyaz (57500 - 86000)
+            5 => ['min' => 43000, 'max' => 57500],  // 1/4 Niyaz (43000 - 57500)
+            6 => ['min' => 34500, 'max' => 43000],  // 1/5 Niyaz (34500 - 43000)
+            7 => ['min' => 0, 'max' => 34500],      // Hub Contribution (0 - 34500)
+        ];
+
+        // Get the min and max amount range for the selected slab
+        $selectedSlab = $slabs[$niyazSlab];
+
+        // Fetch user family IDs that fall under the selected slab for the given year
+        $filteredFamilies = HubModel::where('jamiat_id', $jamiatId)
+            ->where('year', $year)
+            ->where('hub_amount', '>=', $selectedSlab['min']);
+
+        if ($selectedSlab['max'] !== null) {
+            $filteredFamilies->where('hub_amount', '<', $selectedSlab['max']);
+        }
+
+        $filteredFamilies = $filteredFamilies->pluck('family_id')->toArray();
+
+        if (empty($filteredFamilies)) {
+            return response()->json([
+                'code' => 404,
+                'status' => false,
+                'message' => 'No users found for the given slab.',
+                'data' => [],
+            ]);
+        }
+
+        // Fetch user details
+        $users = User::select(
+                'users.folio_no',
+                'users.its',
+                'upload.file_url as photo_url',
+                'users.name',
+                'sector.name as sector',
+                'sub_sector.name as sub_sector',
+                DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = $year LIMIT 1) as this_year_hub"),
+                DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = ($year - 1) LIMIT 1) as last_year_hub"),
+                DB::raw("(SELECT SUM(due_amount) FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year < $year) as total_overdue")
+            )
+            ->leftJoin('t_sector as sector', 'users.sector_id', '=', 'sector.id')
+            ->leftJoin('t_sub_sector as sub_sector', 'users.sub_sector_id', '=', 'sub_sector.id')
+            ->leftJoin('uploads as upload', 'users.photo_id', '=', 'upload.id')
+            ->whereIn('users.family_id', $filteredFamilies)
+            ->where('users.jamiat_id', $jamiatId)
+            ->get();
+
+        return response()->json([
+            'code' => 200,
+            'status' => true,
+            'message' => 'Details fetched successfully',
+            'data' => $users
+        ]);
+    }
+
+
 
     
 }
