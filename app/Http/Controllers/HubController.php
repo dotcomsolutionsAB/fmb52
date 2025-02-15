@@ -391,7 +391,7 @@ class HubController extends Controller
                 'users.name',
                 'sector.name as sector',
                 'sub_sector.name as sub_sector',
-                DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = $year LIMIT 1) as this_year_hub"),
+                DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = ('1446-1447') LIMIT 1) as this_year_hub"),
                 DB::raw("(SELECT hub_amount FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year = ('1445-1446') LIMIT 1) as last_year_hub"),
                 DB::raw("(SELECT SUM(due_amount) FROM t_hub WHERE t_hub.family_id = users.family_id AND t_hub.year < $year) as total_overdue")
             )
