@@ -93,7 +93,7 @@ class SyncController extends Controller
     public function detectInvalidHofInUsers()
     {
         $invalidHofs = DB::table('users')
-            ->select('users.family_id', 'users.its', 'users.name')
+            ->select('users.family_id', 'users.its', 'users.name','users.label')
             ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
             ->whereNull('t_its_data.its')
             ->whereColumn('users.its', 'users.hof_its')
