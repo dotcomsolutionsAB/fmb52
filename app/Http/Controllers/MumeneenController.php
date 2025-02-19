@@ -361,7 +361,7 @@ class MumeneenController extends Controller
         // Get all users with permitted sub-sectors and filter out those without hub data
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
-            'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age',
+            'its_family_id', 'folio_no', 'label', 'mumeneen_type', 'title', 'gender', 'age',
             'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id'
         )
         ->with([
