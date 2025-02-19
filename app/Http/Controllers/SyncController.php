@@ -11,13 +11,39 @@ class SyncController extends Controller
     /**
      * Scenario 1: Detect HOF present in t_its_data but missing in users.
      */
+    // public function detectMissingHofInUsers()
+    // {
+    //     $missingHofs = DB::table('t_its_data')
+    //         ->select('t_its_data.its', 't_its_data.name', 't_its_data.mobile', 't_its_data.age', 't_its_data.hof_its')
+    //         ->leftJoin('users', 't_its_data.its', '=', 'users.its')
+    //         ->whereNull('users.its')
+    //         ->whereColumn('t_its_data.its', 't_its_data.hof_its')
+    //         ->get();
+
+    //     return response()->json([
+    //         'message' => 'Missing HOFs detected.',
+    //         'data' => $missingHofs
+    //     ]);
+    // }
+
     public function detectMissingHofInUsers()
     {
-        $missingHofs = DB::table('t_its_data')
-            ->select('t_its_data.its', 't_its_data.name', 't_its_data.mobile', 't_its_data.age', 't_its_data.hof_its')
-            ->leftJoin('users', 't_its_data.its', '=', 'users.its')
-            ->whereNull('users.its')
-            ->whereColumn('t_its_data.its', 't_its_data.hof_its')
+        $missingHofs = DB::table('t_its_data as t')
+            ->select(
+                't.its', 
+                't.name', 
+                't.mobile', 
+                't.age', 
+                't.hof_its', 
+                'u.family_id' // Fetch family_id from users table
+            )
+            ->leftJoin('users as u', 't.hof_its', '=', 'u.its') // Join on HOF ITS
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('users')
+                    ->whereColumn('users.its', 't.its');
+            })
+            ->whereColumn('t.its', 't.hof_its') // Ensure ITS is same as HOF ITS
             ->get();
 
         return response()->json([
@@ -25,6 +51,7 @@ class SyncController extends Controller
             'data' => $missingHofs
         ]);
     }
+
 
     /**
      * Scenario 2: Confirm and add missing Family Members from t_its_data to users.
