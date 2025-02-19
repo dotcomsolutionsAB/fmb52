@@ -97,7 +97,7 @@ class SyncController extends Controller
             ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
             ->whereNull('t_its_data.its')
             ->whereColumn('users.its', 'users.hof_its')
-            ->whereColumn('users.status', 'active')
+            ->where('users.status', 'active')
             ->get();
 
         return response()->json([
