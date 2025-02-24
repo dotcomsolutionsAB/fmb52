@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\ItsModel;
+use App\Models\SectorModel;
+use App\Models\SubSectorModel;
 use Auth;
 
 class SyncController extends Controller
