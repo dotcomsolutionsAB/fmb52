@@ -92,6 +92,16 @@ class SyncController extends Controller
             ], 404);
         }
 
+        // Extract title if it starts with "Shaikh" or "Mulla"
+        $nameParts = explode(' ', $hofData->name, 2); // Split into two parts
+        $title = null;
+        $name = $hofData->name;
+
+        if (in_array($nameParts[0], ['Shaikh', 'Mulla'])) {
+            $title = $nameParts[0]; // Set title
+            $name = $nameParts[1] ?? ''; // Remove title from name
+        }
+
         // Generate a unique 10-digit family_id
         $familyId = $this->generateUniqueFamilyId();
 
@@ -100,7 +110,7 @@ class SyncController extends Controller
 
         // Create the user using the retrieved data
         $newUser = User::create([
-            'name' => $hofData->name,
+            'name' => $name,
             'email' => strtolower($hofData->email ?? null), // Default email if not available
             'password' => bcrypt('defaultpassword'), // Set a default password, should be changed later
             'jamiat_id' => $hofData->jamiat_id,
@@ -109,7 +119,7 @@ class SyncController extends Controller
             'hof_its' => $hofData->hof_its,
             'its_family_id' => $hofData->its_family_id,
             'mobile' => $hofData->mobile,
-            'title' => $hofData->title ?? null,
+            'title' => $title,
             'gender' => $hofData->gender,
             'age' => $hofData->age,
             'building' => null, // Not available in t_its_data
