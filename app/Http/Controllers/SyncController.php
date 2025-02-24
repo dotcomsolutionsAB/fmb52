@@ -132,6 +132,21 @@ class SyncController extends Controller
             'username' => $hofIts
         ]);
 
+        HubModel::updateOrCreate(
+            [
+                'family_id' => $familyId,
+                'year' => '1446-1447',
+            ],
+            [
+                'jamiat_id' => 1,
+                'hub_amount' => 0,
+                'paid_amount' => 0,
+                'due_amount' => 0,
+                'log_user' => 'admin',
+                'updated_at' => now(),
+            ]
+        );
+
         return response()->json([
             'message' => 'User created successfully!',
             'data' => $newUser
