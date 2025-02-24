@@ -216,6 +216,106 @@ class SyncController extends Controller
 
         return response()->json(['message' => 'Missing Family Members have been added successfully!']);
     }
+
+    public function syncFamilyMembers()
+    {
+        DB::beginTransaction();
+
+        try {
+            // Step 1: Remove FM from `users` if not in `t_its_data`
+            $fmsToRemove = DB::table('users')
+                ->leftJoin('t_its_data', 'users.its', '=', 't_its_data.its')
+                ->whereNull('t_its_data.its')
+                ->where('users.mumeneen_type', 'FM')
+                ->pluck('users.its'); // Get ITS numbers to remove
+
+            if ($fmsToRemove->isNotEmpty()) {
+                DB::table('users')->whereIn('its', $fmsToRemove)->delete();
+            }
+
+            // Step 2: Remove FM if its `its_family_id` is not part of its `family_id` group
+            $invalidFamilyFMs = DB::table('users as u')
+                ->leftJoin('t_its_data as tid', 'u.its', '=', 'tid.its')
+                ->where('u.mumeneen_type', 'FM')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('users as u2')
+                        ->whereRaw('u.its_family_id = u2.its_family_id')
+                        ->whereRaw('u.family_id = u2.family_id');
+                })
+                ->pluck('u.its');
+
+            if ($invalidFamilyFMs->isNotEmpty()) {
+                DB::table('users')->whereIn('its', $invalidFamilyFMs)->delete();
+            }
+
+            // Step 3: Add missing FM from `t_its_data`
+            $missingFms = DB::table('t_its_data as tid')
+                ->leftJoin('users as u', 'tid.its', '=', 'u.its')
+                ->whereNull('u.its') // Ensure FM is not already in users
+                ->select('tid.*')
+                ->get();
+
+            foreach ($missingFms as $fm) {
+                // Fetch the HOF associated with this FM
+                $hof = DB::table('users')
+                    ->where('its', $fm->hof_its)
+                    ->where('mumeneen_type', 'HOF')
+                    ->first();
+
+                if (!$hof) {
+                    continue; // Skip if no valid HOF is found
+                }
+
+                // Insert FM into users
+                DB::table('users')->insert([
+                    'username' => $fm->its,
+                    'role' => 'mumeneen',
+                    'name' => $fm->name,
+                    'email' => $fm->email ?? null,
+                    'jamiat_id' => $hof->jamiat_id,
+                    'family_id' => $hof->family_id,
+                    'mobile' => $fm->mobile ?? null,
+                    'its' => $fm->its,
+                    'hof_its' => $fm->hof_its,
+                    'its_family_id' => $fm->its_family_id,
+                    'folio_no' => $hof->folio_no,
+                    'mumeneen_type' => 'FM',
+                    'title' => in_array($fm->title, ['Shaikh', 'Mulla']) ? $fm->title : null,
+                    'gender' => $fm->gender ?? null,
+                    'age' => $fm->age ?? null,
+                    'building' => $fm->building ?? null,
+                    'status' => $hof->status,
+                    'thali_status' => $hof->thali_status,
+                    'otp' => null,
+                    'expires_at' => null,
+                    'email_verified_at' => null,
+                    'password' => bcrypt('default_password'),
+                    'joint_with' => null,
+                    'photo_id' => null,
+                    'sector_access_id' => null,
+                    'sub_sector_access_id' => null,
+                    'sector_id' => $hof->sector_id ?? null,
+                    'sub_sector_id' => $hof->sub_sector_id ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Family Members sync completed!',
+                'removed_fms' => $fmsToRemove,
+                'removed_invalid_fms' => $invalidFamilyFMs,
+                'added_fms' => $missingFms
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Sync failed!', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     
     /**
      * Scenario 3: Detect HOF present in users but not in t_its_data.

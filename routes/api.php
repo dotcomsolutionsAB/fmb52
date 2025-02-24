@@ -40,6 +40,8 @@ Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
 // Sync Routes
 
+// Scenario 0 : Sync Family Members
+Route::get('/sync/sync-family-members', [SyncController::class, 'syncFamilyMembers']);
 // Scenario 1: Detect Missing HOFs in users
 Route::get('/sync/detect-missing-hof', [SyncController::class, 'detectMissingHofInUsers']);
 
