@@ -26,6 +26,16 @@ class SyncController extends Controller
     //     ]);
     // }
 
+    private function generateUniqueFamilyId()
+    {
+        do {
+            $familyId = mt_rand(1000000000, 9999999999); // Generate a 10-digit random number
+            $exists = User::where('family_id', $familyId)->exists();
+        } while ($exists); // Ensure uniqueness
+
+        return $familyId;
+    }
+
     public function detectMissingHofInUsers()
     {
         $missingHofs = DB::table('t_its_data as t')
@@ -52,6 +62,67 @@ class SyncController extends Controller
         ]);
     }
 
+    public function addMissingHofInUsers(Request $request)
+    {
+        $request->validate([
+            'hof_its' => 'required|string|max:8'
+        ]);
+
+        $hofIts = $request->input('hof_its');
+
+        // Check if the HOF already exists in users
+        $existingUser = User::where('its', $hofIts)->first();
+        if ($existingUser) {
+            return response()->json([
+                'message' => 'User already exists.',
+                'data' => $existingUser
+            ], 200);
+        }
+
+        // Fetch data from t_its_data
+        $hofData = ItsModel::where('its', $hofIts)->first();
+
+        if (!$hofData) {
+            return response()->json([
+                'message' => 'HOF ITS not found in t_its_data.'
+            ], 404);
+        }
+
+        // Generate a unique 10-digit family_id
+        $familyId = $this->generateUniqueFamilyId();
+
+        $sectorMapping = DB::table('t_sector')->pluck('id', 'name')->toArray();
+        $sectorId = $sectorMapping[$hofData->sector] ?? null;
+
+        // Create the user using the retrieved data
+        $newUser = User::create([
+            'name' => $hofData->name,
+            'email' => strtolower($hofData->email ?? null), // Default email if not available
+            'password' => bcrypt('defaultpassword'), // Set a default password, should be changed later
+            'jamiat_id' => $hofData->jamiat_id,
+            'family_id' => $familyId,
+            'its' => $hofData->its,
+            'hof_its' => $hofData->hof_its,
+            'its_family_id' => $hofData->its_family_id,
+            'mobile' => $hofData->mobile,
+            'title' => $hofData->title ?? null,
+            'gender' => $hofData->gender,
+            'age' => $hofData->age,
+            'building' => null, // Not available in t_its_data
+            'folio_no' => null, // Not available in t_its_data
+            'mumeneen_type' => $hofData->mumeneen_type,
+            'sector_id' => $sectorId,
+            'sub_sector_id' => null,
+            'role' => 'mumeneen', // Default role
+            'status' => 'active', // Default status
+            'username' => $hofIts
+        ]);
+
+        return response()->json([
+            'message' => 'User created successfully!',
+            'data' => $newUser
+        ], 201);
+    }
 
     /**
      * Scenario 2: Confirm and add missing Family Members from t_its_data to users.
