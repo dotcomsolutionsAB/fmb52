@@ -124,6 +124,7 @@ class SyncController extends Controller
             'title' => $title,
             'gender' => $hofData->gender,
             'age' => $hofData->age,
+            'thali_status' => 'taking',
             'building' => null, // Not available in t_its_data
             'folio_no' => null, // Not available in t_its_data
             'mumeneen_type' => $hofData->mumeneen_type,
