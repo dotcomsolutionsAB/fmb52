@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\ItsModel;
 use App\Models\SectorModel;
 use App\Models\SubSectorModel;
+use App\Models\HubModel;
 use Auth;
 
 class SyncController extends Controller
