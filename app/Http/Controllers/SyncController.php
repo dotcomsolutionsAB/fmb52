@@ -302,7 +302,7 @@ class SyncController extends Controller
             ->join('t_its_data', 'users.its', '=', 't_its_data.its')
             ->where('users.mumeneen_type', 'HOF') // Check HOF in users
             ->whereColumn('t_its_data.hof_its', '!=', 't_its_data.its') // Check FM in t_its_data
-            ->select('users.its', 'users.name', 'users.mumeneen_type as current_type', 't_its_data.hof_its')
+            ->select('users.its', 'users.name', 'users.mumeneen_type as current_type', 't_its_data.hof_its','users.label', )
             ->get();
     
         return response()->json([
