@@ -222,8 +222,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware(['check-api-permission:receipts.create']);
         Route::post('/update/{id}', [AccountsController::class, 'update_receipts'])
             ->middleware(['check-api-permission:receipts.edit']);
-        Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds'])
-        ->middleware(['check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print']);
+        Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
+       
         Route::delete('/{id}', [AccountsController::class, 'delete_receipts'])
             ->middleware(['check-api-permission:receipts.delete']);
     });
