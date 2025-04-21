@@ -289,7 +289,7 @@ class JamiatController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Password reset successfully. Check your email for the new password.',
+                'message' => 'Password reset successfully. Check your ' . $recipientEmail . 'for the new password.',
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
