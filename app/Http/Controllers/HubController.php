@@ -534,7 +534,7 @@ class HubController extends Controller
 
     $hub = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')
         ->where('family_id', $id)
-        ->first();
+        ->last();
 
     return $hub
         ? response()->json(['message' => 'Hub record fetched successfully!', 'data' => $hub], 200)
