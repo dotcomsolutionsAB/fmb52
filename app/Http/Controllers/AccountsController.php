@@ -638,6 +638,7 @@ class AccountsController extends Controller
         'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
     )
     ->whereIn('family_id', $family_ids)
+    ->orderBy('id', 'desc')
     ->get();
 
     return $get_receipts->isNotEmpty()

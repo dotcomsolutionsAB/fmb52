@@ -210,6 +210,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware(['check-api-permission:hub.edit']);
         Route::delete('/{id}', [MumeneenController::class, 'delete_hub'])
             ->middleware(['check-api-permission:hub.delete']);
+        Route::get('/get/{id}', [HubController::class, 'get_hub_by_family']);
+            
+
     });
     Route::get('/family_hub_details/{family_id}',[MumeneenController::class,'familyHubDetails']) ->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
     Route::post('/get_family_user', [MumeneenController::class, 'usersByFamily'])->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
