@@ -22,6 +22,8 @@ use App\Http\Controllers\PDFController;
 use App\Http\Controllers\WhatsAppQueueController;
 use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\FeedbacksController;
 
 
 // Public Routes
@@ -266,5 +268,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/niyaz/delete/{niyaz_id}', [NiyazController::class, 'destroy']);
 
 
+    
 
+    Route::prefix('notifications')->group(function () {
+    Route::post('add', [NotificationController::class, 'add']); // Add a notification
+    Route::put('edit/{id}', [NotificationController::class, 'edit']); // Edit a notification
+    Route::get('view/{id}', [NotificationController::class, 'view']); // View a specific notification
+    Route::get('view-all', [NotificationController::class, 'viewAll']); // View all notifications
+});
+
+
+
+Route::prefix('feedbacks')->group(function () {
+    Route::post('add', [FeedbacksController::class, 'add']); // Add feedback
+    Route::put('edit/{id}', [FeedbacksController::class, 'edit']); // Edit feedback
+    Route::get('view/{id}', [FeedbacksController::class, 'view']); // View a specific feedback
+    Route::get('view-all', [FeedbacksController::class, 'viewAll']); // View all feedbacks
+});
 });
