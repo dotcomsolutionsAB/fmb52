@@ -168,7 +168,8 @@ class MenuController extends Controller
     private function getHijriDate($date)
     {
         // Aladhan API URL for Gregorian to Hijri conversion
-        $apiUrl = "https://api.aladhan.com/v1/gToH?date=" . $date;
+        $apiUrl = "https://api.aladhan.com/v1/gToH/".$date;
+        //https://api.aladhan.com/v1/gToH/03-04-2001?calendarMethod=HJCoSA
 
         // Send GET request to Aladhan API
         $response = Http::get($apiUrl);
