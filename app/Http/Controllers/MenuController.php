@@ -167,31 +167,36 @@ class MenuController extends Controller
     // Helper method to get the Hijri date for a given Gregorian date
     private function getHijriDate($date)
     {
+        // Format the date to match the API's expected format (DD-MM-YYYY)
+        $formattedDate = \Carbon\Carbon::parse($date)->format('d-m-Y');
+    
         // Aladhan API URL for Gregorian to Hijri conversion
-        $apiUrl = "https://api.aladhan.com/v1/gToH/".$date.'?calendarMethod=HJCoSA';
-        //https://api.aladhan.com/v1/gToH/03-04-2001?calendarMethod=HJCoSA
-
+        $apiUrl = "https://api.aladhan.com/v1/gToH/" . $formattedDate . "?calendarMethod=HJCoSA";
+        
         // Send GET request to Aladhan API
         $response = Http::get($apiUrl);
-
+    
         // Check if the response is successful
         if ($response->successful()) {
             $data = $response->json();
             
             // Fetch Hijri date information
             $hijriDate = $data['data']['hijri'];
-
+    
             // Return Hijri date in the required format
             return [
-                'day' => $hijriDate['day'],
-                'month' => $hijriDate['month'],
-                'year' => $hijriDate['year']
+                'day' => $hijriDate['day'],        // Day of the month
+                'month' => $hijriDate['month'],    // Month name (e.g., Shawwal)
+                'month_number' => $hijriDate['month_number'], // Month number (e.g., 10 for Shawwal)
+                'year' => $hijriDate['year']      // Year in Hijri calendar
             ];
         } else {
+            // If the API request fails, return the URL for debugging
             return [
-                'url'=>$apiUrl,
+                'url' => $apiUrl,
                 'day' => 'N/A',
                 'month' => 'N/A',
+                'month_number' => 'N/A',
                 'year' => 'N/A'
             ];
         }
