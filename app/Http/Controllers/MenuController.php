@@ -108,27 +108,37 @@ class MenuController extends Controller
     public function getMenuByDate(Request $request)
     {
         $request->validate([
-            'date' => 'required|date', // Make sure the date is required and valid
+            'date' => 'required|date', // Ensure the date is required and valid
         ]);
-
+    
         $date = $request->input('date');
         
         // Get the menu for that specific date
         $menu = MenuModel::where('date', $date)->get();
-
+    
         if ($menu->isEmpty()) {
             return response()->json(['message' => 'No menu found for this date'], 404);
         }
-
-        // Call the Aladhan API to get Hijri date information
-        $hijriDate = $this->getHijriDate($date);
-
+    
+        // Call the Aladhan API to get Hijri date information for the specified date
+        $hijriDate = $this->getHijriDate($date); // Hijri date (e.g., "27 Shawwal al-Mukarram 1446")
+        $dayName = \Carbon\Carbon::parse($date)->format('l'); // Get the day name (e.g., "Friday")
+    
         return response()->json([
             'message' => 'Menu for the specified date fetched successfully!',
-            'data' => [
-                'menu' => $menu,
-                'hijri_date' => $hijriDate
-            ]
+            'menu' => $menu->map(function ($item) use ($hijriDate, $dayName) {
+                return [
+                    'id' => $item->id,
+                    'date' => $item->date,
+                    'hijri_date' => $hijriDate, // Add Hijri date
+                    'day_name' => $dayName,     // Add day name (e.g., Friday)
+                    'menu' => $item->menu,
+                    'addons' => $item->addons,
+                    'niaz_by' => $item->niaz_by,
+                    'slip_names' => $item->slip_names,
+                    'category' => $item->category,
+                ];
+            }),
         ], 200);
     }
 
@@ -136,31 +146,45 @@ class MenuController extends Controller
     public function getMenuForWeek(Request $request)
     {
         $request->validate([
-            'date' => 'required|date', // Make sure the date is required and valid
+            'date' => 'required|date', // Ensure the date is required and valid
         ]);
-
+    
         $date = $request->input('date');
         
-        // Calculate the start of the week (Monday)
+        // Calculate the start of the week (Monday) and end of the week (Sunday)
         $startOfWeek = \Carbon\Carbon::parse($date)->startOfWeek()->toDateString();
         $endOfWeek = \Carbon\Carbon::parse($startOfWeek)->endOfWeek()->toDateString();
-
+    
         // Fetch all menus for the week
         $menus = MenuModel::whereBetween('date', [$startOfWeek, $endOfWeek])->get();
-
+    
         if ($menus->isEmpty()) {
             return response()->json(['message' => 'No menus found for this week'], 404);
         }
-
-        // Call the Aladhan API to get Hijri date information for the week (using the first day of the week)
-        $hijriStartOfWeek = $this->getHijriDate($startOfWeek);
-
+    
+        // Call the Aladhan API to get Hijri date information for each day of the week
+        $hijriDates = [];
+        foreach (\Carbon\Carbon::parse($startOfWeek)->daysUntil($endOfWeek) as $day) {
+            $hijriDates[$day->toDateString()] = $this->getHijriDate($day->toDateString());
+        }
+    
         return response()->json([
             'message' => 'Menus for the week fetched successfully!',
-            'data' => [
-                'menus' => $menus,
-                'hijri_start_of_week' => $hijriStartOfWeek
-            ]
+            'menus' => $menus->map(function ($item) use ($hijriDates) {
+                $hijriDate = $hijriDates[$item->date] ?? 'N/A'; // Get Hijri date for the specific day
+                $dayName = \Carbon\Carbon::parse($item->date)->format('l'); // Get the day name (e.g., "Monday")
+    
+                return [
+                    'date' => $item->date,
+                    'hijri_date' => $hijriDate, // Add Hijri date for the specific day
+                    'day_name' => $dayName,     // Add day name (e.g., Monday)
+                    'menu' => $item->menu,
+                    'addons' => $item->addons,
+                    'niaz_by' => $item->niaz_by,
+                    'slip_names' => $item->slip_names,
+                    'category' => $item->category,
+                ];
+            }),
         ], 200);
     }
 
