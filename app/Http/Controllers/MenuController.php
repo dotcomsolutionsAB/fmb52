@@ -167,12 +167,12 @@ class MenuController extends Controller
     // Helper method to get the Hijri date for a given Gregorian date
     private function getHijriDate($date)
     {
-        // Format the date to match the API's expected format (DD-MM-YYYY)
-        $formattedDate = \Carbon\Carbon::parse($date)->format('d-m-Y');
-    
+        // Ensure the date is in DD-MM-YYYY format
+        $formattedDate = \Carbon\Carbon::parse($date)->format('d-m-Y');  // Format the input date
+        
         // Aladhan API URL for Gregorian to Hijri conversion
         $apiUrl = "https://api.aladhan.com/v1/gToH/" . $formattedDate . "?calendarMethod=HJCoSA";
-        
+    
         // Send GET request to Aladhan API
         $response = Http::get($apiUrl);
     
@@ -185,19 +185,21 @@ class MenuController extends Controller
     
             // Return Hijri date in the required format
             return [
-                'day' => $hijriDate['day'],        // Day of the month
-                'month' => $hijriDate['month'],    // Month name (e.g., Shawwal)
-                'month_number' => $hijriDate['month_number'], // Month number (e.g., 10 for Shawwal)
-                'year' => $hijriDate['year']      // Year in Hijri calendar
+                'day' => $hijriDate['day'],  // Day of the Hijri date
+                'month' => $hijriDate['month']['en'],  // Month name in English (e.g., Rajab)
+                'month_number' => $hijriDate['month']['number'],  // Month number (e.g., 7 for Rajab)
+                'year' => $hijriDate['year'],  // Year in Hijri calendar
+                'weekday' => $hijriDate['weekday']['en'],  // Weekday in English (e.g., Wednesday)
             ];
         } else {
-            // If the API request fails, return the URL for debugging
+            // If the API request fails, return the API URL for debugging
             return [
                 'url' => $apiUrl,
                 'day' => 'N/A',
                 'month' => 'N/A',
                 'month_number' => 'N/A',
-                'year' => 'N/A'
+                'year' => 'N/A',
+                'weekday' => 'N/A',
             ];
         }
     }
