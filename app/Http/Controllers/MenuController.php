@@ -167,7 +167,23 @@ class MenuController extends Controller
     // Helper method to get the Hijri date for a given Gregorian date
     private function getHijriDate($date)
     {
-        // Ensure the date is in DD-MM-YYYY format
+        // Define an array with Hijri month names in order
+        $hijriMonths = [
+            1 => "Moharram al-Haraam",
+            2 => "Safar al-Muzaffar",
+            3 => "Rabi al-Awwal",
+            4 => "Rabi al-Aakhar",
+            5 => "Jumada al-Ula",
+            6 => "Jumada al-Ukhra",
+            7 => "Rajab al-Asab",
+            8 => "Shabaan al-Karim",
+            9 => "Ramadaan al-Moazzam",
+            10 => "Shawwal al-Mukarram",
+            11 => "Zilqadah al-Haraam",
+            12 => "Zilhaj al-Haraam"
+        ];
+    
+        // Format the date to match the API's expected format (DD-MM-YYYY)
         $formattedDate = \Carbon\Carbon::parse($date)->format('d-m-Y');  // Format the input date
         
         // Aladhan API URL for Gregorian to Hijri conversion
@@ -183,14 +199,11 @@ class MenuController extends Controller
             // Fetch Hijri date information
             $hijriDate = $data['data']['hijri'];
     
-            // Return Hijri date in the required format
-            return [
-                'day' => $hijriDate['day'],  // Day of the Hijri date
-                'month' => $hijriDate['month']['en'],  // Month name in English (e.g., Rajab)
-                'month_number' => $hijriDate['month']['number'],  // Month number (e.g., 7 for Rajab)
-                'year' => $hijriDate['year'],  // Year in Hijri calendar
-                'weekday' => $hijriDate['weekday']['en'],  // Weekday in English (e.g., Wednesday)
-            ];
+            // Map the month number to the Hijri month name from the array
+            $monthName = $hijriMonths[$hijriDate['month']['number']] ?? 'Unknown Month';
+    
+            // Return Hijri date in the required format: "day month_name year"
+            return $hijriDate['day'] . ' ' . $monthName . ' ' . $hijriDate['year'];
         } else {
             // If the API request fails, return the API URL for debugging
             return [
