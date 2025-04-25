@@ -34,7 +34,7 @@ class NotificationController extends Controller
         'jamiat_id' => $validated['jamiat_id'],
         'title' => $validated['title'],
         'msg' => $validated['msg'],
-        'image' => $imageUrl,
+        'image' => 'https://api.fmb52.com/storage/'.$imageUrl,
         'type' => $validated['type'],
         'created_by' => $createdBy,  // Set created_by to the logged-in user's name
     ]);

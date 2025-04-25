@@ -103,4 +103,93 @@ class MenuController extends Controller
             ? response()->json(['message' => 'Menu record deleted successfully!'], 200)
             : response()->json(['message' => 'Menu record not found!'], 404);
     }
+    public function getMenuByDate(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date', // Make sure the date is required and valid
+        ]);
+
+        $date = $request->input('date');
+        
+        // Get the menu for that specific date
+        $menu = MenuModel::where('date', $date)->get();
+
+        if ($menu->isEmpty()) {
+            return response()->json(['message' => 'No menu found for this date'], 404);
+        }
+
+        // Call the Aladhan API to get Hijri date information
+        $hijriDate = $this->getHijriDate($date);
+
+        return response()->json([
+            'message' => 'Menu for the specified date fetched successfully!',
+            'data' => [
+                'menu' => $menu,
+                'hijri_date' => $hijriDate
+            ]
+        ], 200);
+    }
+
+    // Method to fetch menu for the week starting from Monday
+    public function getMenuForWeek(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date', // Make sure the date is required and valid
+        ]);
+
+        $date = $request->input('date');
+        
+        // Calculate the start of the week (Monday)
+        $startOfWeek = \Carbon\Carbon::parse($date)->startOfWeek()->toDateString();
+        $endOfWeek = \Carbon\Carbon::parse($startOfWeek)->endOfWeek()->toDateString();
+
+        // Fetch all menus for the week
+        $menus = MenuModel::whereBetween('date', [$startOfWeek, $endOfWeek])->get();
+
+        if ($menus->isEmpty()) {
+            return response()->json(['message' => 'No menus found for this week'], 404);
+        }
+
+        // Call the Aladhan API to get Hijri date information for the week (using the first day of the week)
+        $hijriStartOfWeek = $this->getHijriDate($startOfWeek);
+
+        return response()->json([
+            'message' => 'Menus for the week fetched successfully!',
+            'data' => [
+                'menus' => $menus,
+                'hijri_start_of_week' => $hijriStartOfWeek
+            ]
+        ], 200);
+    }
+
+    // Helper method to get the Hijri date for a given Gregorian date
+    private function getHijriDate($date)
+    {
+        // Aladhan API URL for Gregorian to Hijri conversion
+        $apiUrl = "https://api.aladhan.com/v1/gToH?date=" . $date;
+
+        // Send GET request to Aladhan API
+        $response = Http::get($apiUrl);
+
+        // Check if the response is successful
+        if ($response->successful()) {
+            $data = $response->json();
+            
+            // Fetch Hijri date information
+            $hijriDate = $data['data']['hijri'];
+
+            // Return Hijri date in the required format
+            return [
+                'day' => $hijriDate['day'],
+                'month' => $hijriDate['month'],
+                'year' => $hijriDate['year']
+            ];
+        } else {
+            return [
+                'day' => 'N/A',
+                'month' => 'N/A',
+                'year' => 'N/A'
+            ];
+        }
+    }
 }

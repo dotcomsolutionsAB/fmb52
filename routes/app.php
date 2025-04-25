@@ -24,6 +24,7 @@ use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\FeedbacksController;
+use App\Http\Controllers\MenuController;
 
 
 // Public Routes
@@ -284,5 +285,10 @@ Route::prefix('feedbacks')->group(function () {
     Route::put('edit/{id}', [FeedbacksController::class, 'edit']); // Edit feedback
     Route::get('view/{id}', [FeedbacksController::class, 'view']); // View a specific feedback
     Route::get('view-all', [FeedbacksController::class, 'viewAll']); // View all feedbacks
+
+    Route::prefix('menus')->group(function () {
+        Route::post('by-date', [MenuController::class, 'getMenuByDate']); // Get menu by a specific date
+        Route::post('by-week', [MenuController::class, 'getMenuForWeek']); // Get menu for the week
+    });
 });
 });
