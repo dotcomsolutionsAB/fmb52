@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\MenuModel;
 use Auth;
 
+use Illuminate\Support\Facades\Http; // 
+
 class MenuController extends Controller
 {
     //
