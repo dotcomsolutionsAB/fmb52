@@ -168,7 +168,7 @@ class MenuController extends Controller
     private function getHijriDate($date)
     {
         // Aladhan API URL for Gregorian to Hijri conversion
-        $apiUrl = "https://api.aladhan.com/v1/gToH/".$date;
+        $apiUrl = "https://api.aladhan.com/v1/gToH/".$date.'?calendarMethod=HJCoSA';
         //https://api.aladhan.com/v1/gToH/03-04-2001?calendarMethod=HJCoSA
 
         // Send GET request to Aladhan API
@@ -189,6 +189,7 @@ class MenuController extends Controller
             ];
         } else {
             return [
+                'url'=>$apiUrl,
                 'day' => 'N/A',
                 'month' => 'N/A',
                 'year' => 'N/A'
