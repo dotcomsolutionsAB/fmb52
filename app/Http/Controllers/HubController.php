@@ -529,17 +529,28 @@ class HubController extends Controller
     }
 
     public function get_hub_by_family($id)
-{
-   
-
-    $hub = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')
-        ->where('family_id', $id)
-        ->orderBy('id', 'desc') // or 'year', depending on what defines latest
-        ->first();
-    return $hub
-        ? response()->json(['message' => 'Hub record fetched successfully!', 'data' => $hub], 200)
-        : response()->json(['message' => 'No hub record found for this family!'], 404);
-}
+    {
+        // Fetch the hub data for the specific family ID
+        $hub = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')
+            ->where('family_id', $id)
+            ->orderBy('id', 'desc') // or 'year', depending on what defines the latest
+            ->first();
+    
+        // Check if the hub record is found
+        if ($hub) {
+            // Add the hardcoded 'masool' value to the response data
+            $hubData = $hub->toArray();
+            $hubData['masool'] = 'john Mary Doe';
+    
+            return response()->json([
+                'message' => 'Hub record fetched successfully!',
+                'data' => $hubData
+            ], 200);
+        }
+    
+        // If no hub record found
+        return response()->json(['message' => 'No hub record found for this family!'], 404);
+    }
 
     
 }
