@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\HubModel;
 use App\Models\YearModel;
+use App\Models\SectorModel;
+use App\Models\SubSectorModel;
 
 class HubController extends Controller
 {
@@ -538,18 +540,48 @@ class HubController extends Controller
     
         // Check if the hub record is found
         if ($hub) {
-            // Add the hardcoded 'masool' value to the response data
-            $hubData = $hub->toArray();
-            $hubData['masool'] = 'john Mary Doe';
+            // Retrieve sector and subsector information from the users table
+            $user = User::select('sector_id', 'sub_sector_id')
+                ->where('family_id', $id)
+                ->where('mumeneen_type', 'HOF')
+                ->first();
     
-            return response()->json([
-                'message' => 'Hub record fetched successfully!',
-                'data' => $hubData
-            ], 200);
+            // Check if the user exists and sector & subsector ids are available
+            if ($user) {
+                // Get the sector and subsector names
+                $sector = SectorModel::find($user->sector_id);
+                $subSector = SubSectorModel::find($user->sub_sector_id);
+    
+                // Extract the Incharge name from the subsector notes column
+                $incharge = $subSector ? $this->extractInchargeName($subSector->notes) : 'N/A';
+    
+                // Add the sector and subsector names and incharge (masool) to the response data
+                $hubData = $hub->toArray();
+                $hubData['masool'] = $incharge; // Add the extracted Incharge name as masool
+                $hubData['sector_name'] = $sector ? $sector->name : 'N/A';
+                $hubData['subsector_name'] = $subSector ? $subSector->name : 'N/A';
+    
+                return response()->json([
+                    'message' => 'Hub record fetched successfully!',
+                    'data' => $hubData
+                ], 200);
+            } else {
+                return response()->json(['message' => 'No user found with mumeneen_type HOF for this family!'], 404);
+            }
         }
     
         // If no hub record found
         return response()->json(['message' => 'No hub record found for this family!'], 404);
+    }
+    
+    // Helper function to extract Incharge name from the 'notes' column
+    private function extractInchargeName($notes)
+    {
+        // Use regular expression to extract the "Incharge: <Name>" part from the string
+        preg_match('/Incharge:\s*([^,]+)/', $notes, $matches);
+        
+        // Return the extracted name or 'N/A' if not found
+        return $matches[1] ?? 'N/A';
     }
 
     
