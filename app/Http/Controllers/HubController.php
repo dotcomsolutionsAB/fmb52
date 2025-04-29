@@ -541,7 +541,7 @@ class HubController extends Controller
         // Check if the hub record is found
         if ($hub) {
             // Retrieve sector and subsector information from the users table
-            $user = User::select('sector_id', 'sub_sector_id')
+            $user = User::select('sector_id', 'sub_sector_id','thaali_status')
                 ->where('family_id', $id)
                 ->where('mumeneen_type', 'HOF')
                 ->first();
@@ -560,6 +560,7 @@ class HubController extends Controller
                 $hubData['masool'] = $incharge; // Add the extracted Incharge name as masool
                 $hubData['sector_name'] = $sector ? $sector->name : 'N/A';
                 $hubData['subsector_name'] = $subSector ? $subSector->name : 'N/A';
+                $hubData['thaali_status'] = $user? $user->thaali_status:"N/A";
     
                 return response()->json([
                     'message' => 'Hub record fetched successfully!',
