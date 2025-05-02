@@ -49,5 +49,4 @@ class sendWhatsAppUtility
         return $response;
     }
 
-    
-}
+   }

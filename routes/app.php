@@ -130,11 +130,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/mohalla_wise', [HubController::class, 'mohalla_wise']);
     Route::post('/users_by_niyaz', [HubController::class, 'usersByNiyazSlab']);
     Route::post('/users_by_sector', [HubController::class, 'usersBySector']);
+    Route::post('/app/dashboard', [DashboardController::class, 'dashboard']);
 
     // Dashboard
     Route::prefix('dashboard')->group(function () {
         Route::get('/cash-summary', [DashboardController::class, 'getCashSummary'])
             ->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print');
+            Route::post('', [DashboardController::class, 'dashboard']);
     });
     Route::get('dashboard-stats', [DashboardController::class, 'getDashboardStats'])
     ->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print');

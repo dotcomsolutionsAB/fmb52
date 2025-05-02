@@ -309,5 +309,55 @@ class DashboardController extends Controller
             'data' => $finalSummaryWithNames,
         ]);
     }
-    
+    public function dashboard(Request $request)
+{
+    $familyId = $request->input('family_id');
+    $date = $request->input('date', date('Y-m-d')); // fallback to today if not provided
+
+    if (!$familyId) {
+        return response()->json([
+            'code' => 400,
+            'status' => false,
+            'message' => 'Family ID is required.',
+        ]);
+    }
+
+    try {
+        $client = new \GuzzleHttp\Client();
+
+        // 1. Receipts
+        $receiptRes = $client->post(env('APP_URL') . '/app/receipts/by_family_ids', [
+            'json' => ['family_ids' => [$familyId]]
+        ]);
+        $receipts = json_decode($receiptRes->getBody()->getContents(), true);
+
+        // 2. Hub
+        $hubRes = $client->get(env('APP_URL') . "/app/hub/get/$familyId");
+        $hub = json_decode($hubRes->getBody()->getContents(), true);
+
+        // 3. Menu
+        $menuRes = $client->post(env('APP_URL') . '/app/menus/by-date', [
+            'json' => ['date' => $date]
+        ]);
+        $menu = json_decode($menuRes->getBody()->getContents(), true);
+
+        return response()->json([
+            'code' => 200,
+            'status' => true,
+            'message' => 'Dashboard data fetched successfully.',
+            'data' => [
+                'receipts' => $receipts['data'] ?? [],
+                'hub' => $hub['data'] ?? [],
+                'menu' => $menu['data'] ?? [],
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'code' => 500,
+            'status' => false,
+            'message' => 'Failed to fetch dashboard data.',
+            'error' => $e->getMessage()
+        ]);
+    }
+}
 }
