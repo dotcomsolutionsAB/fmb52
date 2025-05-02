@@ -327,7 +327,7 @@ class DashboardController extends Controller
 
         // 1. Receipts
         $receiptRes = $client->post(env('APP_URL') . '/app/receipts/by_family_ids', [
-            'json' => ['family_ids' => [$familyId]]
+            'json' => ['family_ids' => ["$familyId"]]
         ]);
         $receipts = json_decode($receiptRes->getBody()->getContents(), true);
 
