@@ -189,7 +189,7 @@ class MenuController extends Controller
     }
 
     // Helper method to get the Hijri date for a given Gregorian date
-    private function getHijriDate($date)
+    public function getHijriDate($date)
     {
         // Define an array with Hijri month names in order
         $hijriMonths = [
