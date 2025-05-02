@@ -14,6 +14,7 @@ use App\Models\SubSectorModel;
 use App\Models\MenuModel;
 use Carbon\Carbon;
 use Illuminate\Cache\RateLimiting\Limit;
+use App\Http\Controllers\MenuController;
 
 class DashboardController extends Controller
 {
@@ -384,7 +385,7 @@ class DashboardController extends Controller
         $menu = MenuModel::where('date', $date)->get();
     
         if ($menu->isNotEmpty()) {
-            $hijriDate = $this->getHijriDate($date); // your helper method
+            $hijriDate = (new MenuController())->getHijriDate($date);
             $dayName = Carbon::parse($date)->format('l');
     
             $data['menu'] = $menu->map(function ($item) use ($hijriDate, $dayName) {
