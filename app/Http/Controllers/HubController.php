@@ -576,7 +576,7 @@ class HubController extends Controller
     }
     
     // Helper function to extract Incharge name from the 'notes' column
-    private function extractInchargeName($notes)
+    public function extractInchargeName($notes)
     {
         // Use regular expression to extract the "Incharge: <Name>" part from the string
         preg_match('/Incharge:\s*([^,]+)/', $notes, $matches);

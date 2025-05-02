@@ -5,6 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ReceiptsModel;
+
+use App\Models\HubModel;
+use App\Models\User;
+use App\Models\SectorModel;
+use App\Models\SubSectorModel;
+use App\Models\MenuModel;
+use Carbon\Carbon;
+use Illuminate\Cache\RateLimiting\Limit;
 
 class DashboardController extends Controller
 {
@@ -309,55 +318,106 @@ class DashboardController extends Controller
             'data' => $finalSummaryWithNames,
         ]);
     }
+   
     public function dashboard(Request $request)
-{
-    $familyId = $request->input('family_id');
-    $date = $request->input('date', date('Y-m-d')); // fallback to today if not provided
-
-    if (!$familyId) {
-        return response()->json([
-            'code' => 400,
-            'status' => false,
-            'message' => 'Family ID is required.',
-        ]);
-    }
-
-    try {
-        $client = new \GuzzleHttp\Client();
-
-        // 1. Receipts
-        $receiptRes = $client->post(env('APP_URL') . '/app/receipts/by_family_ids', [
-            'json' => ['family_ids' => ["$familyId"]]
-        ]);
-        $receipts = json_decode($receiptRes->getBody()->getContents(), true);
-
-        // 2. Hub
-        $hubRes = $client->get(env('APP_URL') . "/app/hub/get/$familyId");
-        $hub = json_decode($hubRes->getBody()->getContents(), true);
-
-        // 3. Menu
-        $menuRes = $client->post(env('APP_URL') . '/app/menus/by-date', [
-            'json' => ['date' => $date]
-        ]);
-        $menu = json_decode($menuRes->getBody()->getContents(), true);
-
+    {
+        $familyId = $request->input('family_id');
+        $date = $request->input('date', date('Y-m-d'));
+    
+        if (!$familyId) {
+            return response()->json([
+                'code' => 400,
+                'status' => false,
+                'message' => 'family_id is required',
+            ]);
+        }
+    
+        $data = [];
+    
+        // --- 1. Fetch Receipts ---
+        $receipts = ReceiptsModel::select(
+            'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+            'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
+            'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
+            'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
+        )
+        ->where('family_id', $familyId)
+        ->orderBy('id', 'desc')
+        ->Limit(5)
+        ->get();
+    
+        $data['receipts'] = $receipts;
+    
+        // --- 2. Fetch Hub Info ---
+        $hub = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')
+            ->where('family_id', $familyId)
+            ->orderBy('id', 'desc')
+            ->first();
+    
+        if ($hub) {
+            $user = User::select('sector_id', 'sub_sector_id', 'thali_status')
+                ->where('family_id', $familyId)
+                ->where('mumeneen_type', 'HOF')
+                ->first();
+    
+            if ($user) {
+                $sector = SectorModel::find($user->sector_id);
+                $subSector = SubSectorModel::find($user->sub_sector_id);
+    
+                $incharge = $subSector ? $this->extractInchargeName($subSector->notes) : 'N/A';
+    
+                $hubData = $hub->toArray();
+                $hubData['masool'] = $incharge;
+                $hubData['sector_name'] = $sector ? $sector->name : 'N/A';
+                $hubData['subsector_name'] = $subSector ? $subSector->name : 'N/A';
+                $hubData['thali_status'] = $user->thali_status ?? 'N/A';
+    
+                $data['hub'] = $hubData;
+            } else {
+                $data['hub'] = ['message' => 'No HOF found for this family'];
+            }
+        } else {
+            $data['hub'] = ['message' => 'No hub record found for this family'];
+        }
+    
+        // --- 3. Fetch Menu ---
+        $menu = MenuModel::where('date', $date)->get();
+    
+        if ($menu->isNotEmpty()) {
+            $hijriDate = $this->getHijriDate($date); // your helper method
+            $dayName = Carbon::parse($date)->format('l');
+    
+            $data['menu'] = $menu->map(function ($item) use ($hijriDate, $dayName) {
+                return [
+                    'id' => $item->id,
+                    'date' => $item->date,
+                    'hijri_date' => $hijriDate,
+                    'day_name' => $dayName,
+                    'menu' => $item->menu,
+                    'addons' => $item->addons,
+                    'niaz_by' => $item->niaz_by,
+                    'slip_names' => $item->slip_names,
+                    'category' => $item->category,
+                ];
+            });
+        } else {
+            $data['menu'] = ['message' => 'No menu found for this date'];
+        }
+    
+        // --- Final Response ---
         return response()->json([
             'code' => 200,
             'status' => true,
-            'message' => 'Dashboard data fetched successfully.',
-            'data' => [
-                'receipts' => $receipts['data'] ?? [],
-                'hub' => $hub['data'] ?? [],
-                'menu' => $menu['data'] ?? [],
-            ]
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'code' => 500,
-            'status' => false,
-            'message' => 'Failed to fetch dashboard data.',
-            'error' => $e->getMessage()
+            'message' => 'Dashboard data fetched successfully!',
+            'data' => $data,
         ]);
     }
-}
+    public function extractInchargeName($notes)
+    {
+        // Use regular expression to extract the "Incharge: <Name>" part from the string
+        preg_match('/Incharge:\s*([^,]+)/', $notes, $matches);
+        
+        // Return the extracted name or 'N/A' if not found
+        return $matches[1] ?? 'N/A';
+    }
 }
