@@ -175,6 +175,7 @@ class MenuController extends Controller
                 $dayName = \Carbon\Carbon::parse($item->date)->format('l'); // Get the day name (e.g., "Monday")
     
                 return [
+                    'id'=> $item->id,
                     'date' => $item->date,
                     'hijri_date' => $hijriDate, // Add Hijri date for the specific day
                     'day_name' => $dayName,     // Add day name (e.g., Monday)
