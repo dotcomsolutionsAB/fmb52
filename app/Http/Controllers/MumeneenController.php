@@ -1434,7 +1434,7 @@ class MumeneenController extends Controller
         }
 
         // Fetch hub data for the given family_id for the last three years
-        $hub_data = HubModel::select('year', 'hub_amount', 'paid_amount', 'due_amount')
+        $hub_data = HubModel::select('id','year', 'hub_amount', 'paid_amount', 'due_amount')
             ->where('family_id', $family_id)
             ->where('jamiat_id', $jamiat_id)
             ->whereIn('year', $years->pluck('year')) // Only fetch data for the last three years
