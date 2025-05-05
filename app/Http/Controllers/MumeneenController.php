@@ -1448,7 +1448,7 @@ class MumeneenController extends Controller
             $hub_record = $hub_data->get($year_str); // Find hub record for this year
 
             return [
-                'id' => $hub_record->id,
+                'id' => $hub_record->id??null,
                 'year' => $year_str,
                 'hub_amount' => $hub_record->hub_amount ?? 0,
                 'paid_amount' => $hub_record->paid_amount ?? 0,
