@@ -1233,7 +1233,7 @@ class MumeneenController extends Controller
             'hub_amount' => 'required|numeric',
             'paid_amount' => 'nullable|numeric',
             'due_amount' => 'nullable|numeric',
-            'log_user' => 'required|string|max:100',
+            
         ]);
 
         $register_hub = HubModel::create([
@@ -1241,9 +1241,9 @@ class MumeneenController extends Controller
             'family_id' => $request->input('family_id'),
             'year' => $request->input('year'),
             'hub_amount' => $request->input('hub_amount'),
-            'paid_amount' => $request->input('paid_amount'),
-            'due_amount' => $request->input('due_amount'),
-            'log_user' => $request->input('log_user'),
+            'paid_amount' => $request->input('paid_amount')??0,
+            'due_amount' => $request->input('due_amount')??0,
+            'log_user' => auth()->user()->name,
         ]);
 
         unset($register_hub['id'], $register_hub['created_at'], $register_hub['updated_at']);
@@ -1420,7 +1420,7 @@ class MumeneenController extends Controller
         return response()->json(['User Record Fetched Successfully!', 'data' => $sorted_members], 200);
     }  
 
-    public function familyHubDetails(Request $request, $family_id)
+    public function familyHubDetails($family_id)
     {
         $jamiat_id = Auth::user()->jamiat_id;
 
