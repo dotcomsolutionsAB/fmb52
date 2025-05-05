@@ -1227,7 +1227,7 @@ class MumeneenController extends Controller
     public function register_hub(Request $request)
     {
         $request->validate([
-            'jamiat_id' => 'required|integer',
+            'jamiat_id' => 'nullable|integer',
             'family_id' => 'required|string|max:10',
             'year' => 'required|string|max:10',
             'hub_amount' => 'required|numeric',
@@ -1237,7 +1237,7 @@ class MumeneenController extends Controller
         ]);
 
         $register_hub = HubModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => $request->input('jamiat_id')?? auth()->user()->jamiat_id,
             'family_id' => $request->input('family_id'),
             'year' => $request->input('year'),
             'hub_amount' => $request->input('hub_amount'),

@@ -462,7 +462,7 @@ class AccountsController extends Controller
         'status' => 'required|in:pending,cancelled,paid',
         'cancellation_reason' => 'nullable|string',
         'collected_by' => 'nullable|string|max:100',
-        'log_user' => 'required|string|max:100',
+        'log_user' => 'nullable|string|max:100',
         'attachment' => 'nullable|integer',
         'payment_id' => 'nullable|integer',
     ]);
@@ -509,7 +509,7 @@ class AccountsController extends Controller
             'status' => $validatedData['status'],
             'cancellation_reason' => $validatedData['cancellation_reason'],
             'collected_by' => $validatedData['collected_by'],
-            'log_user' => $validatedData['log_user'],
+            'log_user' => $user->name,
             'attachment' => $validatedData['attachment'],
             'payment_id' => $validatedData['payment_id'],
         ]);
