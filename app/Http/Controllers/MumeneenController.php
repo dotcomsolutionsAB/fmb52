@@ -1256,7 +1256,7 @@ class MumeneenController extends Controller
     // view
     public function all_hub()
     {
-        $get_all_hubs = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')->get();
+        $get_all_hubs = HubModel::select('id','jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')->get();
 
         return $get_all_hubs->isNotEmpty()
             ? response()->json(['message' => 'Hub records fetched successfully!', 'data' => $get_all_hubs], 200)
@@ -1270,7 +1270,7 @@ class MumeneenController extends Controller
         $request->validate([
             'year' => 'required|string|max:10', // Ensure the year is provided
             'hub_amount' => 'required', // Ensure the hub slab ID exists
-            'thali_status' => 'required', // Ensure the hub slab ID exists
+            'thali_status' => 'nullable', // Ensure the hub slab ID exists
         ]);
 
         // Get jamiat_id from authenticated user
@@ -1289,7 +1289,6 @@ class MumeneenController extends Controller
             ],
             [
                 'hub_amount' => $request->input('hub_amount'),
-                'thali_status' => $request->input('thali_status'),
                 'paid_amount' => 0,
                 'due_amount' => $request->input('hub_amount'),
                 'log_user' => auth()->user()->username,
