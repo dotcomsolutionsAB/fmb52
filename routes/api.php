@@ -22,6 +22,7 @@ use App\Http\Controllers\PDFController;
 use App\Http\Controllers\WhatsAppQueueController;
 use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
+use App\Http\Controllers\MenuController;
 
 
 // Public Routes
