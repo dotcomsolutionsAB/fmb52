@@ -22,6 +22,7 @@ use App\Http\Controllers\PDFController;
 use App\Http\Controllers\WhatsAppQueueController;
 use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
+use App\Http\Controllers\MenuController;
 
 
 // Public Routes
@@ -262,6 +263,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::post('/migrate_receipts', [CSVImportController::class, 'importDataFromUrl']);
+    // Feedback
+    Route::prefix('feedback')->group(function () {
+        Route::get('/', [FeedbackController::class, 'view_feedbacks'])
+            ->middleware(['check-api-permission:feedback.view,feedback.view_global,feedback.export,feedback.print']);
+        Route::post('/', [FeedbackController::class, 'register_feedback'])
+            ->middleware(['check-api-permission:feedback.create']);
+        Route::post('/update/{id}', [FeedbackController::class, 'update_feedback'])
+            ->middleware(['check-api-permission:feedback.edit']);
+        Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])
+            ->middleware(['check-api-permission:feedback.delete']);
+    });
+
+    //Niyaz
+    Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
+    Route::get('/users-by-slab/{hubSlabId}', [NiyazController::class, 'getUsersBySlabId']);
+    Route::post('/niyaz/add', [NiyazController::class, 'addNiyaz']);
+    Route::get('/view-all', [NiyazController::class, 'show']);
+    Route::post('/niyaz/edit/{niyaz_id}', [NiyazController::class, 'editNiyaz']);
+    Route::get('/niyaz/{niyaz_id}', [NiyazController::class, 'getNiyazDetailsById']);
+    Route::post('/niyaz/delete/{niyaz_id}', [NiyazController::class, 'destroy']);
+
+
 
 });

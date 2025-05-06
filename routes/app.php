@@ -289,9 +289,13 @@ Route::prefix('feedbacks')->group(function () {
     Route::get('view-all', [FeedbacksController::class, 'viewAll']); // View all feedbacks
 });
 
-    Route::prefix('menus')->group(function () {
-        Route::post('by-date', [MenuController::class, 'getMenuByDate']); // Get menu by a specific date
-        Route::post('by-week', [MenuController::class, 'getMenuForWeek']); // Get menu for the week
-    });
+Route::prefix('menus')->group(function () {
+    Route::get('/', [MenuController::class, 'all_menu']);
+    Route::post('/', [MenuController::class, 'register_menu']);
+    Route::post('/by-date', [MenuController::class, 'getMenuByDate']); // Get menu by a specific date
+    Route::post('/by-week', [MenuController::class, 'getMenuForWeek']); // Get menu for the week
+    Route::post('/update/{id}', [MenuController::class, 'update_menu']); // Update
+Route::delete('/delete/{id}', [MenuController::class, 'delete_menu']); // 
+});
 
 });

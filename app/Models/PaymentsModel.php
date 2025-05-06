@@ -14,13 +14,6 @@ class PaymentsModel extends Model
         'year', 'mode', 'date', 'bank_name', 'cheque_no', 'cheque_date', 'ifsc_code', 'transaction_id',
         'transaction_date', 'amount', 'comments', 'status', 'cancellation_reason', 'log_user', 'attachment',
     ];
-    public function sector()
-    {
-        return $this->belongsTo(SectorModel::class, 'sector_id');
-    }
-
-    public function subSector()
-    {
-        return $this->belongsTo(SubSectorModel::class, 'sub_sector_id');
-    }
+   
+    
 }
