@@ -28,49 +28,43 @@ use App\Http\Controllers\HubController;
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
 Route::post('/login/{id?}', [AuthController::class, 'login']);
-Route::get('/sector', [MumeneenController::class, 'all_sector'])
-    ->middleware(['auth:sanctum',
-        'check-api-permission:sector.create,sector.edit,sector.view,sector.view_global,sector.delete,sector.export,sector.print,sub_sector.create,sub_sector.edit,sub_sector.view,sub_sector.view_global,sub_sector.delete,sub_sector.export,sub_sector.print'
-    ]);
+
 
 // Register New Jamaat
 Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
 Route::post('/forgot_password', [JamiatController::class, 'forgot_password']);
 Route::post('/verify_email', [JamiatController::class, 'verify_email']);
 
-// Sync Routes
+// Sync Routes - Manage Family Members & HOF Integrity
+Route::prefix('sync')->group(function () {
+    
+    // Scenario 0: Sync all family members
+    Route::get('/sync-family-members', [SyncController::class, 'syncFamilyMembers']);
 
-// Scenario 0 : Sync Family Members
-Route::get('/sync/sync-family-members', [SyncController::class, 'syncFamilyMembers']);
-// Scenario 1: Detect Missing HOFs in users
-Route::get('/sync/detect-missing-hof', [SyncController::class, 'detectMissingHofInUsers']);
+    // Scenario 1: Detect & Add Missing HOFs
+    Route::get('/detect-missing-hof', [SyncController::class, 'detectMissingHofInUsers']);
+    Route::post('/add-missing-hof', [SyncController::class, 'addMissingHofInUsers']);
 
-// Add Missing HOF in Users
-Route::post('/sync/add-missing-hof', [SyncController::class, 'addMissingHofInUsers']);
+    // Scenario 2: Confirm and add missing FMs from ITS data
+    Route::post('/confirm-fm-from-its-data', [SyncController::class, 'confirmFmFromItsData']);
 
-// Scenario 2: Confirm and add missing Family Members (FM) from t_its_data
-Route::post('/sync/confirm-fm-from-its-data', [SyncController::class, 'confirmFmFromItsData']);
+    // Scenario 3: Detect invalid HOFs in users
+    Route::get('/detect-invalid-hof', [SyncController::class, 'detectInvalidHofInUsers']);
 
-// Scenario 3: Detect Invalid HOFs in users
-Route::get('/sync/detect-invalid-hof', [SyncController::class, 'detectInvalidHofInUsers']);
+    // Scenario 4: Remove FMs in users not present in ITS data
+    Route::post('/remove-fm-not-in-its-data', [SyncController::class, 'removeFmNotInItsData']);
 
-// Scenario 4: Remove Family Members (FM) in users not present in t_its_data
-Route::post('/sync/remove-fm-not-in-its-data', [SyncController::class, 'removeFmNotInItsData']);
+    // Scenario 5: Resolve role mismatches - HOF marked as FM
+    Route::get('/detect-hof-marked-as-fm', [SyncController::class, 'detectHofMarkedAsFmInUsers']);
+    Route::post('/confirm-hof-role-update', [SyncController::class, 'confirmHofRoleUpdate']);
 
-// Scenario 5: Detect role mismatches - HOF marked as FM in users
-Route::get('/sync/detect-hof-marked-as-fm', [SyncController::class, 'detectHofMarkedAsFmInUsers']);
+    // Scenario 6: Resolve role mismatches - HOF in users but FM in ITS data
+    Route::get('/detect-hof-as-fm-in-its-data', [SyncController::class, 'detectHofMarkedAsFmInItsData']);
+    Route::post('/confirm-fm-role-update', [SyncController::class, 'confirmFmRoleUpdate']);
 
-// Scenario 5: Confirm role update - Mark FM in users as HOF
-Route::post('/sync/confirm-hof-role-update', [SyncController::class, 'confirmHofRoleUpdate']);
-
-// Scenario 6: Detect role mismatches - HOF marked as HOF in users but FM in t_its_data
-Route::get('/sync/detect-hof-as-fm-in-its-data', [SyncController::class, 'detectHofMarkedAsFmInItsData']);
-
-// Scenario 6: Confirm role update - Mark HOF in users as FM
-Route::post('/sync/confirm-fm-role-update', [SyncController::class, 'confirmFmRoleUpdate']);
-
-// Consolidated Sync: Run all scenarios sequentially
-Route::get('/sync/all', [SyncController::class, 'consolidatedSync']);
+    // Scenario 7: Consolidated Sync - Run all scenarios
+    Route::get('/all', [SyncController::class, 'consolidatedSync']);
+});
 
 // Payment Routes
 Route::post('/payment/verify', [PaymentController::class, 'verifyPayment']);
@@ -109,32 +103,126 @@ Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_sup
 
 Route::get('/currencies', [AccountsController::class, 'fetchCurrencies']);
 
-
 // Middleware-protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
-
-    //Upload ITS_DATA
-    Route::post('/user_migrate', [MumeneenController::class, 'migrate']);
-
-    Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
-    Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-
-    Route::post('/migrate_receipts', [CSVImportController::class, 'importDataFromUrl']);
-
-    Route::post('/hub_distribution', [HubController::class, 'hub_distribution']);
-    Route::post('/niyaz_stats', [HubController::class, 'niyaz_stats']);
-    Route::post('/mohalla_wise', [HubController::class, 'mohalla_wise']);
-    Route::post('/users_by_niyaz', [HubController::class, 'usersByNiyazSlab']);
-    Route::post('/users_by_sector', [HubController::class, 'usersBySector']);
-
-    // Dashboard
-    Route::prefix('dashboard')->group(function () {
-        Route::get('/cash-summary', [DashboardController::class, 'getCashSummary'])
-            ->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print');
+    
+    // Dashboard Routes
+    Route::prefix('dashboard')->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print')->group(function () {
+        Route::get('/stats', [DashboardController::class, 'getDashboardStats']);
+        Route::get('/cash-summary', [DashboardController::class, 'getCashSummary']);
+        Route::post('/hub_distribution', [HubController::class, 'hub_distribution']);
+        Route::post('/niyaz_stats', [HubController::class, 'niyaz_stats']);
+        Route::post('/mohalla_wise', [HubController::class, 'mohalla_wise']);
+        Route::post('/users_by_niyaz', [HubController::class, 'usersByNiyazSlab']);
+        Route::post('/users_by_sector', [HubController::class, 'usersBySector']);
     });
-    Route::get('dashboard-stats', [DashboardController::class, 'getDashboardStats'])
-    ->middleware('check-api-permission:dashboard_widgets.view,dashboard_widgets.view_global,dashboard_widgets.delete,dashboard_widgets.export,dashboard_widgets.print');
+
+    // Mumeneen Routes
+    Route::prefix('mumeneen')->middleware('check-api-permission:mumeneen.view,mumeneen.view_global')->group(function () {
+        Route::get('/{year?}', [MumeneenController::class, 'usersWithHubData']);
+        Route::get('/user/{id}', [MumeneenController::class, 'get_user']);
+        Route::post('/family_members', [MumeneenController::class, 'usersByFamily'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
+        Route::get('/hub_details/{family_id}', [MumeneenController::class, 'familyHubDetails'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
+    });
+
+    // Hub Routes
+    Route::prefix('hub')->middleware('check-api-permission:hub.view,hub.view_global,hub.export,hub.print')->group(function () {
+        Route::get('/', [MumeneenController::class, 'all_hub']);
+        Route::post('/', [MumeneenController::class, 'register_hub'])->middleware('check-api-permission:hub.create');
+        Route::post('/update/{id}', [MumeneenController::class, 'update_hub'])->middleware('check-api-permission:hub.edit');
+        Route::delete('/{id}', [MumeneenController::class, 'delete_hub'])->middleware('check-api-permission:hub.delete');
+    });
+
+    // Receipts Routes
+    Route::prefix('receipts')->group(function () {
+        Route::middleware('check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print')->group(function () {
+            Route::get('/', [AccountsController::class, 'all_receipts']);
+            Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
+        });
+        Route::post('/', [AccountsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.create');
+        Route::post('/update/{id}', [AccountsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.edit');
+        Route::delete('/{id}', [AccountsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.delete');
+    });
+
+    // Expense Routes
+
+
+
+    // Payments Routes
+    Route::prefix('payments')->group(function () {
+        Route::middleware('check-api-permission:payments.view,payments.view_global,payments.export,payments.print')->group(function () {
+            Route::get('/', [AccountsController::class, 'all_payments']);
+        });
+        Route::post('/', [AccountsController::class, 'register_payments'])->middleware('check-api-permission:payments.create');
+        Route::post('/update/{id}', [AccountsController::class, 'update_payments'])->middleware('check-api-permission:payments.edit');
+        Route::delete('/{id}', [AccountsController::class, 'delete_payments'])->middleware('check-api-permission:payments.delete');
+    });
+
+    // Thali Menu Routes
+        
+
+    // Feedback Routes
+    Route::prefix('feedback')->group(function () {
+        Route::middleware('check-api-permission:feedback.view,feedback.view_global,feedback.export,feedback.print')->group(function () {
+            Route::get('/', [FeedbackController::class, 'view_feedbacks']);
+        });
+        Route::post('/', [FeedbackController::class, 'register_feedback'])->middleware('check-api-permission:feedback.create');
+        Route::post('/update/{id}', [FeedbackController::class, 'update_feedback'])->middleware('check-api-permission:feedback.edit');
+        Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])->middleware('check-api-permission:feedback.delete');
+    });
+
+    // Sector Routes
+    Route::prefix('sector')->group(function () {
+        Route::get('/', [MumeneenController::class, 'all_sector'])->middleware([
+            'auth:sanctum',
+            'check-api-permission:sector.create,sector.edit,sector.view,sector.view_global,sector.delete,sector.export,sector.print,sub_sector.create,sub_sector.edit,sub_sector.view,sub_sector.view_global,sub_sector.delete,sub_sector.export,sub_sector.print'
+        ]);
+        Route::post('/', [MumeneenController::class, 'register_sector']);
+    });
+
+    // Sub-Sector Routes
+    Route::prefix('sub_sector')->middleware('auth:sanctum')->group(function () {
+        Route::middleware('check-api-permission:sub_sector.view,sub_sector.view_global,sub_sector.export,sub_sector.print')->group(function () {
+            Route::get('/', [MumeneenController::class, 'all_sub_sector']);
+        });
+        Route::post('/', [MumeneenController::class, 'register_sub_sector'])->middleware('check-api-permission:sub_sector.create');
+        Route::post('/update/{id}', [MumeneenController::class, 'update_sub_sector'])->middleware('check-api-permission:sub_sector.edit');
+        Route::delete('/{id}', [MumeneenController::class, 'delete_sub_sector'])->middleware('check-api-permission:sub_sector.delete');
+    });
+
+    // Niyaz Routes
+    Route::prefix('niyaz')->group(function () {
+        Route::post('/', [NiyazController::class, 'addNiyaz']);
+        Route::get('/', [NiyazController::class, 'show']);
+        Route::get('/{niyaz_id}', [NiyazController::class, 'getNiyazDetailsById']);
+        Route::post('/update/{niyaz_id}', [NiyazController::class, 'editNiyaz']);
+        Route::delete('/niyaz/{niyaz_id}', [NiyazController::class, 'destroy']);
+        Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
+        Route::get('/users-by-slab/{hubSlabId}', [NiyazController::class, 'getUsersBySlabId']);
+    });
+
+    // Year Routes
+    Route::prefix('year')->group(function () {
+        Route::post('/', [MumeneenController::class, 'createYearAndHubEntries']);
+        Route::get('/', [MumeneenController::class, 'all_years']);
+        Route::post('/update/{id}', [MumeneenController::class, 'update_year']);
+        Route::delete('/{id}', [MumeneenController::class, 'delete_year']);
+    });
+
+    // Users Routes
+    Route::prefix('users')->group(function () {
+        Route::post('/update/{id}', [MumeneenController::class, 'update_record'])->middleware('check-api-permission:mumeneen.edit');
+        Route::delete('/{id}', [MumeneenController::class, 'delete_user'])->middleware('check-api-permission:mumeneen.delete');
+        Route::get('/{id}', [MumeneenController::class, 'get_user']);
+
+        // Permission management
+        Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
+        Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
+        Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
+    });
+
+
+
 
     // Upload
     Route::prefix('upload')->group(function () {
@@ -142,35 +230,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/get_files', [UploadController::class, 'fetch_uploads']);
         Route::post('/get_photo', [UploadController::class, 'store_photo']);
     });
-
-    Route::post('/sector_registor', [MumeneenController::class, 'register_sector']);
     
-    //Year
-    Route::post('/create-year', [MumeneenController::class, 'createYearAndHubEntries']);
-    Route::get('/year', [MumeneenController::class, 'all_years']);
-    Route::post('/update_year/{id}', [MumeneenController::class, 'update_year']);
-    Route::delete('/year/{id}', [MumeneenController::class, 'delete_year']);
+    
 
     // getDistinctFamilyCountUnderAge14
     Route::get('/child', [MumeneenController::class, 'getDistinctFamilyCountUnderAge14']);
     Route::get('/users/below-age-15', [MumeneenController::class, 'getUsersBelowAge15WithHofDetails']);
-    
-    // User Management
-    Route::get('/get_all_user/{year?}', [MumeneenController::class, 'usersWithHubData'])
-    ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
-    Route::get('/user_details/{id}', [MumeneenController::class, 'get_user']) ->middleware(['check-api-permission:mumeneen.view,mumeneen.view_global']);
-
-    Route::prefix('users')->group(function () {
-        Route::post('/update/{id}', [MumeneenController::class, 'update_record'])
-            ->middleware(['check-api-permission:mumeneen.edit']);
-        Route::delete('/{id}', [MumeneenController::class, 'delete_user'])
-            ->middleware(['check-api-permission:mumeneen.delete']);
-        Route::get('/details/{id}', [MumeneenController::class, 'get_user']);
-        Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
-        Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
-        Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
-    });
-
     Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
 
     // Permissions and Roles
@@ -189,79 +254,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/create-with-permissions', [PermissionRoleController::class, 'createRoleWithPermissions']);
     });
 
-    Route::prefix('sub_sector')->middleware(['auth:sanctum'])->group(function () {
-        Route::post('/', [MumeneenController::class, 'register_sub_sector'])
-            ->middleware('check-api-permission:sub_sector.create');
-        Route::post('/update/{id}', [MumeneenController::class, 'update_sub_sector'])
-            ->middleware('check-api-permission:sub_sector.edit');
-        Route::get('/', [MumeneenController::class, 'all_sub_sector'])
-            ->middleware('check-api-permission:sub_sector.view,sub_sector.view_global,sub_sector.export,sub_sector.print');
-        Route::delete('/{id}', [MumeneenController::class, 'delete_sub_sector'])
-            ->middleware('check-api-permission:sub_sector.delete');
-    });
-
-    // Hubs->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
-    Route::prefix('hub')->group(function () {
-        Route::get('/', [MumeneenController::class, 'all_hub'])
-            ->middleware(['check-api-permission:hub.view,hub.view_global,hub.export,hub.print']);
-        Route::post('/', [MumeneenController::class, 'register_hub'])
-            ->middleware(['check-api-permission:hub.create']);
-        Route::post('/update/{id}', [MumeneenController::class, 'update_hub'])
-            ->middleware(['check-api-permission:hub.edit']);
-        Route::delete('/{id}', [MumeneenController::class, 'delete_hub'])
-            ->middleware(['check-api-permission:hub.delete']);
-    });
-    Route::get('/family_hub_details/{family_id}',[MumeneenController::class,'familyHubDetails']) ->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
-    Route::post('/get_family_user', [MumeneenController::class, 'usersByFamily'])->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
-
-    // Receipts
-    Route::prefix('receipts')->group(function () {
-        Route::get('/', [AccountsController::class, 'all_receipts'])
-            ->middleware(['check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print']);
-        Route::post('/', [AccountsController::class, 'register_receipts'])
-            ->middleware(['check-api-permission:receipts.create']);
-        Route::post('/update/{id}', [AccountsController::class, 'update_receipts'])
-            ->middleware(['check-api-permission:receipts.edit']);
-        Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds'])
-        ->middleware(['check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print']);
-        Route::delete('/{id}', [AccountsController::class, 'delete_receipts'])
-            ->middleware(['check-api-permission:receipts.delete']);
-    });
     
+    //Upload ITS_DATA
+    Route::post('/user_migrate', [MumeneenController::class, 'migrate']);
 
-    // Payments
-    Route::prefix('payments')->group(function () {
-        Route::get('/', [AccountsController::class, 'all_payments'])
-            ->middleware(['check-api-permission:payments.view,payments.view_global,payments.export,payments.print']);
-        Route::post('/', [AccountsController::class, 'register_payments'])
-            ->middleware(['check-api-permission:payments.create']);
-        Route::post('/update/{id}', [AccountsController::class, 'update_payments'])
-            ->middleware(['check-api-permission:payments.edit']);
-        Route::delete('/{id}', [AccountsController::class, 'delete_payments'])
-            ->middleware(['check-api-permission:payments.delete']);
-    });
+    Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
+    Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Feedback
-    Route::prefix('feedback')->group(function () {
-        Route::get('/', [FeedbackController::class, 'view_feedbacks'])
-            ->middleware(['check-api-permission:feedback.view,feedback.view_global,feedback.export,feedback.print']);
-        Route::post('/', [FeedbackController::class, 'register_feedback'])
-            ->middleware(['check-api-permission:feedback.create']);
-        Route::post('/update/{id}', [FeedbackController::class, 'update_feedback'])
-            ->middleware(['check-api-permission:feedback.edit']);
-        Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])
-            ->middleware(['check-api-permission:feedback.delete']);
-    });
-
-    //Niyaz
-    Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
-    Route::get('/users-by-slab/{hubSlabId}', [NiyazController::class, 'getUsersBySlabId']);
-    Route::post('/niyaz/add', [NiyazController::class, 'addNiyaz']);
-    Route::get('/view-all', [NiyazController::class, 'show']);
-    Route::post('/niyaz/edit/{niyaz_id}', [NiyazController::class, 'editNiyaz']);
-    Route::get('/niyaz/{niyaz_id}', [NiyazController::class, 'getNiyazDetailsById']);
-    Route::post('/niyaz/delete/{niyaz_id}', [NiyazController::class, 'destroy']);
-
-
+    Route::post('/migrate_receipts', [CSVImportController::class, 'importDataFromUrl']);
 
 });
