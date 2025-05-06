@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MenuModel;
+use App\Http\Controllers\Auth\AuthController;
 use Auth;
 
 use Illuminate\Support\Facades\Http; // 
@@ -14,7 +15,7 @@ class MenuController extends Controller
     public function register_menu(Request $request)
     {
         $request->validate([
-            'jamiat_id' => 'required|integer',
+            'jamiat_id' => 'nullable|integer',
             'family_id' => 'nullable|integer',
             'date' => 'required|date',
             'menu' => 'required|string|max:255',
@@ -27,7 +28,7 @@ class MenuController extends Controller
         ]);
 
         $register_menu = MenuModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => $request->input('jamiat_id')??auth()->$user->name,
             'family_id' => $request->input('family_id'),
             'date' => $request->input('date'),
             'menu' => $request->input('menu'),
