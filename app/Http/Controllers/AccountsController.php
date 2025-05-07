@@ -223,12 +223,12 @@ public function register_expense(Request $request)
         $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
 
         $upload = UploadModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id'  => $request->input('jamiat_id'),
             'file_name' => $fileName,
-            'path' => 'uploads/expenses',
-            'url' => Storage::url($filePath),
-            'extension' => $file->getClientOriginalExtension(),
+            'file_ext'  => $file->getClientOriginalExtension(),
+            'file_url'  => Storage::url($filePath),
             'file_size' => $file->getSize(),
+            'type'      => 'feedback', // or 'profile' based on your use case
         ]);
 
         // 3. Register expense
