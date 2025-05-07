@@ -50,7 +50,7 @@ class MenuController extends Controller
     // view
     public function all_menu()
     {
-        $get_all_menus = MenuModel::select('jamiat_id', 'family_id', 'date', 'menu', 'addons', 'niaz_by', 'year', 'slip_names', 'category', 'status')->get();
+        $get_all_menus = MenuModel::select('id','jamiat_id', 'family_id', 'date', 'menu', 'addons', 'niaz_by', 'year', 'slip_names', 'category', 'status')->get();
 
         return $get_all_menus->isNotEmpty()
             ? response()->json(['message' => 'Menus fetched successfully!', 'data' => $get_all_menus], 200)
