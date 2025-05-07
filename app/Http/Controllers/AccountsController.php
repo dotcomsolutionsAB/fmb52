@@ -191,9 +191,10 @@ public function register_expense(Request $request)
         'year' => 'required|string|max:10',
         'name' => 'required|string',
         'date' => 'required|date',
+        'amount' => 'required|integer',
         'cheque_no' => 'nullable|string',
         'description' => 'nullable|string',
-        'attachment' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+        'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
     ]);
 
     DB::beginTransaction();
@@ -236,6 +237,7 @@ public function register_expense(Request $request)
             'year' => $request->input('year'),
             'name' => $request->input('name'),
             'date' => $request->input('date'),
+            'amount'=>$request->input('amountexpense'),
             'cheque_no' => $request->input('cheque_no'),
             'description' => $request->input('description'),
             'log_user' => auth()->user()->name,
@@ -263,7 +265,7 @@ public function register_expense(Request $request)
     // view
     public function all_expense()
     {
-        $get_all_expenses = ExpenseModel::select('id','jamiat_id', 'voucher_no', 'year', 'name', 'date', 'cheque_no', 'description', 'log_user', 'attachment')->get();
+        $get_all_expenses = ExpenseModel::select('id','jamiat_id', 'voucher_no', 'year', 'name', 'date', 'amount','cheque_no', 'description', 'log_user', 'attachment')->get();
 
         return $get_all_expenses->isNotEmpty()
             ? response()->json(['message' => 'Expenses fetched successfully!', 'data' => $get_all_expenses], 200)
@@ -285,6 +287,7 @@ public function register_expense(Request $request)
             'year' => 'required|string|max:10',
             'name' => 'required|string',
             'date' => 'required|date',
+            'amount' => 'required|integer',
             'cheque_no' => 'nullable|string',
             'description' => 'nullable|string',
             'log_user' => 'required|string',
@@ -297,6 +300,7 @@ public function register_expense(Request $request)
             'year' => $request->input('year'),
             'name' => $request->input('name'),
             'date' => $request->input('date'),
+            'amount' => $request->input('amount'),
             'cheque_no' => $request->input('cheque_no'),
             'description' => $request->input('description'),
             'log_user' => $request->input('log_user'),
