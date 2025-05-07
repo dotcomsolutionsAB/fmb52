@@ -238,7 +238,7 @@ public function register_expense(Request $request)
             'year' => $request->input('year'),
             'name' => $request->input('name'),
             'date' => $request->input('date'),
-            'amount'=>$request->input('amountexpense'),
+            'amount'=>$request->input('amount'),
             'cheque_no' => $request->input('cheque_no'),
             'description' => $request->input('description'),
             'log_user' => auth()->user()->name,
