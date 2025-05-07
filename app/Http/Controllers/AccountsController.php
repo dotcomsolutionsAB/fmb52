@@ -264,15 +264,29 @@ public function register_expense(Request $request)
 }
 
     // view
+
     public function all_expense()
     {
-        $get_all_expenses = ExpenseModel::select('id','jamiat_id', 'voucher_no', 'year', 'name', 'date', 'amount','cheque_no', 'description', 'log_user', 'attachment')->get();
-
+        $get_all_expenses = ExpenseModel::leftJoin('t_uploads', 't_uploads.id', '=', 'expenses.attachment')
+            ->select(
+                'expenses.id',
+                'expenses.jamiat_id',
+                'expenses.voucher_no',
+                'expenses.year',
+                'expenses.name',
+                'expenses.date',
+                'expenses.amount',
+                'expenses.cheque_no',
+                'expenses.description',
+                'expenses.log_user',
+                't_uploads.file_url as attachment_url'
+            )
+            ->get();
+    
         return $get_all_expenses->isNotEmpty()
             ? response()->json(['message' => 'Expenses fetched successfully!', 'data' => $get_all_expenses], 200)
             : response()->json(['message' => 'No expenses found!'], 404);
     }
-
     // update
     public function update_expense(Request $request, $id)
     {
