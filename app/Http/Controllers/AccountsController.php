@@ -291,7 +291,7 @@ public function register_expense(Request $request)
             'cheque_no' => 'nullable|string',
             'description' => 'nullable|string',
             'log_user' => 'required|string',
-            'attachment' => 'required|string',
+           
         ]);
 
         $update_expense = $get_expense->update([
@@ -304,7 +304,7 @@ public function register_expense(Request $request)
             'cheque_no' => $request->input('cheque_no'),
             'description' => $request->input('description'),
             'log_user' => $request->input('log_user'),
-            'attachment' => $request->input('attachment'),
+            
         ]);
 
         return ($update_expense == 1)
