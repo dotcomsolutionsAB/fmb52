@@ -267,7 +267,7 @@ public function register_expense(Request $request)
 
     public function all_expense()
     {
-        $get_all_expenses = ExpenseModel::leftJoin('t_uploads', 't_uploads.id', '=', 'expenses.attachment')
+        $get_all_expenses = ExpenseModel::leftJoin('t_uploads', 't_uploads.id', '=', 't_expense.attachment')
             ->select(
                 'expenses.id',
                 'expenses.jamiat_id',
