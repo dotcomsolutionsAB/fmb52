@@ -146,7 +146,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     // Expense Routes
-
+    Route::post('/expense', [AccountsController::class, 'register_expense']);
+    Route::get('/expense', [AccountsController::class, 'all_expense']);
+    Route::post('/update_expense/{id}', [AccountsController::class, 'update_expense']);
+    Route::delete('/expense/{id}', [AccountsController::class, 'delete_expense']);
 
 
     // Payments Routes

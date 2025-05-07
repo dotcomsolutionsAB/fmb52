@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
 
+use App\Models\UploadModel;
+use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Http\Request;
 use App\Models\CounterModel;
 use App\Models\AdvanceReceiptModel;
@@ -179,44 +182,88 @@ class AccountsController extends Controller
             : response()->json(['message' => 'Advance Receipt not found!'], 404);
     }
 
-    // create
-    public function register_expense(Request $request)
-    {
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'voucher_no' => 'required|integer',
-            'year' => 'required|string|max:10',
-            'name' => 'required|string',
-            'date' => 'required|date',
-            'cheque_no' => 'nullable|string',
-            'description' => 'nullable|string',
-            'log_user' => 'required|string',
-            'attachment' => 'required|string', // Assuming this is a file path or a URL.
+
+
+public function register_expense(Request $request)
+{
+    $request->validate([
+        'jamiat_id' => 'required|integer',
+        'year' => 'required|string|max:10',
+        'name' => 'required|string',
+        'date' => 'required|date',
+        'cheque_no' => 'nullable|string',
+        'description' => 'nullable|string',
+        'attachment' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        // 1. Fetch & increment voucher number from t_counter
+        $counter = DB::table('t_counter')
+            ->where('type', 'Expense')
+            ->where('jamiat_id', $request->input('jamiat_id'))
+            ->where('year', $request->input('year'))
+            ->lockForUpdate()
+            ->first();
+
+        if (!$counter) {
+            return response()->json(['message' => 'Voucher counter not configured.'], 400);
+        }
+
+        $voucherNumber = $counter->value + 1;
+
+        DB::table('t_counter')
+            ->where('id', $counter->id)
+            ->update(['value' => $voucherNumber]);
+
+        // 2. Store attachment
+        $file = $request->file('attachment');
+        $fileName = time() . '_' . $file->getClientOriginalName();
+        $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
+
+        $upload = UploadModel::create([
+            'file_name' => $fileName,
+            'path' => 'uploads/expenses',
+            'url' => Storage::url($filePath),
+            'extension' => $file->getClientOriginalExtension(),
+            'file_size' => $file->getSize(),
         ]);
 
+        // 3. Register expense
         $register_expense = ExpenseModel::create([
             'jamiat_id' => $request->input('jamiat_id'),
-            'voucher_no' => $request->input('voucher_no'),
+            'voucher_no' => $voucherNumber,
             'year' => $request->input('year'),
             'name' => $request->input('name'),
             'date' => $request->input('date'),
             'cheque_no' => $request->input('cheque_no'),
             'description' => $request->input('description'),
-            'log_user' => $request->input('log_user'),
-            'attachment' => $request->input('attachment'),
+            'log_user' => auth()->user()->name,
+            'attachment' => $upload->id,
         ]);
+
+        DB::commit();
 
         unset($register_expense['id'], $register_expense['created_at'], $register_expense['updated_at']);
 
-        return $register_expense
-            ? response()->json(['message' => 'Expense created successfully!', 'data' => $register_expense], 201)
-            : response()->json(['message' => 'Failed to create expense!'], 400);
+        return response()->json([
+            'message' => 'Expense created successfully!',
+            'data' => $register_expense
+        ], 201);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'message' => 'Failed to create expense!',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     // view
     public function all_expense()
     {
-        $get_all_expenses = ExpenseModel::select('jamiat_id', 'voucher_no', 'year', 'name', 'date', 'cheque_no', 'description', 'log_user', 'attachment')->get();
+        $get_all_expenses = ExpenseModel::select('id','jamiat_id', 'voucher_no', 'year', 'name', 'date', 'cheque_no', 'description', 'log_user', 'attachment')->get();
 
         return $get_all_expenses->isNotEmpty()
             ? response()->json(['message' => 'Expenses fetched successfully!', 'data' => $get_all_expenses], 200)
