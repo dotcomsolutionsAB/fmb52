@@ -25,6 +25,8 @@ class Feedback extends Model
         'others',
         'remarks',
         'images',
+        'oily',
+        'spicy',
     ];
 
     // Enable timestamps
