@@ -485,7 +485,7 @@ public function register_expense(Request $request)
     // view
     public function all_payments()
     {
-        $get_all_payments = PaymentsModel::select('payment_no', 'jamiat_id', 'family_id', 'folio_no', 'name', 'its', 'sector_id', 'sub_sector_id', 'year', 'mode', 'date', 'bank_name', 'cheque_no', 'cheque_date', 'ifsc_code', 'transaction_id', 'transaction_date', 'amount', 'comments', 'status', 'cancellation_reason', 'log_user', 'attachment')->get();
+        $get_all_payments = PaymentsModel::select('id','payment_no', 'jamiat_id', 'family_id', 'folio_no', 'name', 'its', 'sector_id', 'sub_sector_id', 'year', 'mode', 'date', 'bank_name', 'cheque_no', 'cheque_date', 'ifsc_code', 'transaction_id', 'transaction_date', 'amount', 'comments', 'status', 'cancellation_reason', 'log_user', 'attachment')->get();
 
         return $get_all_payments->isNotEmpty()
             ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
