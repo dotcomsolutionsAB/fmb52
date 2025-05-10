@@ -162,7 +162,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [AccountsController::class, 'all_payments']);
         });
         Route::post('/', [AccountsController::class, 'register_payments'])->middleware('check-api-permission:payments.create');
-        Route::post('/update/{id}', [AccountsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.edit');
+        Route::post('/update', [AccountsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.edit');
         Route::delete('/{id}', [AccountsController::class, 'delete_payments'])->middleware('check-api-permission:payments.delete');
     });
 
