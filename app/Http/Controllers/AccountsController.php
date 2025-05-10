@@ -987,14 +987,24 @@ public function register_expense(Request $request)
 {
     // Validate the incoming request
     $validatedData = $request->validate([
+        'mode' => 'required|in:cheque,cash,neft,upi',
         'sector' => 'nullable|string|max:100',  // Sector filter (optional)
         'sub_sector' => 'nullable|string|max:100',  // Sub-sector filter (optional)
     ]);
 
+    if( $validatedData['mode']=='cash'){
     // Start building the query for cash receipts
     $query = DB::table('t_receipts')
         ->where('mode', 'cash')  // Filter by cash receipts
         ->where('status', 'pending');  // Filter by pending status
+    }
+    else
+    {
+        $query = DB::table('t_receipts')
+       
+        ->where('status', 'pending');  // Filter by pending status
+
+    }
 
     // If a sector is provided, filter by sector
     if ($request->has('sector')) {

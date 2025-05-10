@@ -140,7 +140,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/', [AccountsController::class, 'all_receipts']);
             Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
         });
-        Route::get('cash_pending', [AccountsController::class, 'getPendingCashReceipts']);
+        Route::get('/pending', [AccountsController::class, 'getPendingCashReceipts']);
         Route::post('/', [AccountsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.create');
         Route::post('/update/{id}', [AccountsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.edit');
         Route::delete('/{id}', [AccountsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.delete');
