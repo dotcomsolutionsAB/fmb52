@@ -21,7 +21,8 @@ class FeedbacksController extends Controller
             'food_taste' => 'required|integer|min:1|max:10',
             'food_quantity' => 'required|integer|min:1|max:10',
             'food_quality' => 'required|integer|min:1|max:10',
-            'others' => 'nullable|string',
+            'oily' => 'required|integer|min:0|max:1',
+            'spicy' => 'required|integer|min:0|max:1',
             'remarks' => 'nullable|string',
             'images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -42,7 +43,8 @@ class FeedbacksController extends Controller
             'food_taste' => $validated['food_taste'],
             'food_quantity' => $validated['food_quantity'],
             'food_quality' => $validated['food_quality'],
-            'others' => $validated['others'],
+            'oily' => $validated['oily'],
+            'spicy' => $validated['spicy'],
             'remarks' => $validated['remarks'],
             'images' => $imageUrl,
         ]);
@@ -67,7 +69,8 @@ class FeedbacksController extends Controller
             'food_taste' => 'required|integer|min:1|max:10',
             'food_quantity' => 'required|integer|min:1|max:10',
             'food_quality' => 'required|integer|min:1|max:10',
-            'others' => 'nullable|string',
+            'oily' => 'required|integer|min:0|max:1',
+            'spicy' => 'required|integer|min:0|max:1',
             'remarks' => 'nullable|string',
             'images' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -103,7 +106,8 @@ class FeedbacksController extends Controller
             'food_taste' => $validated['food_taste'],
             'food_quantity' => $validated['food_quantity'],
             'food_quality' => $validated['food_quality'],
-            'others' => $validated['others'],
+            'oily' => $validated['oily'],
+            'spicy' => $validated['spicy'],
             'remarks' => $validated['remarks'],
         ]);
 
