@@ -984,59 +984,57 @@ public function register_expense(Request $request)
         ], 200);
     }
     public function getPendingCashReceipts(Request $request)
-{
-    // Validate the incoming request
-    $validatedData = $request->validate([
-        'mode' => 'required|in:cheque,cash,neft,upi',
-        'sector' => 'nullable|string|max:100',  // Sector filter (optional)
-        'sub_sector' => 'nullable|string|max:100',  // Sub-sector filter (optional)
-    ]);
-
-    if( $validatedData['mode']=='cash'){
-    // Start building the query for cash receipts
-    $query = DB::table('t_receipts')
-        ->where('mode', 'cash')  // Filter by cash receipts
-        ->where('status', 'pending');  // Filter by pending status
-    }
-    else
     {
-        $query = DB::table('t_receipts')
-       
-        ->where('status', 'pending');  // Filter by pending status
-
-    }
-
-    // If a sector is provided, filter by sector
-    if ($request->has('sector')) {
-        $sectorId = DB::table('t_sector')->where('name', $request->sector)->value('id');
-        if ($sectorId) {
-            $query->where('sector_id', $sectorId);
+        // Validate the incoming request
+        $validatedData = $request->validate([
+            'mode' => 'required|in:cheque,cash,neft,upi', // Ensure mode is present and valid
+            'sector' => 'nullable|string|max:100',  // Sector filter (optional)
+            'sub_sector' => 'nullable|string|max:100',  // Sub-sector filter (optional)
+        ]);
+    
+        // Start building the query for cash receipts
+        if ($validatedData['mode'] == 'cash') {
+            // Filter by cash receipts only
+            $query = DB::table('t_receipts')
+                ->where('mode', 'cash')  // Filter by cash receipts
+                ->where('status', 'pending');  // Filter by pending status
         } else {
-            return response()->json(['message' => 'Invalid sector'], 400);
+            // If mode is not cash, consider any mode with pending status
+            $query = DB::table('t_receipts')
+                ->where('status', 'pending');  // Filter by pending status
         }
-    }
-
-    // If a sub-sector is provided, filter by sub-sector
-    if ($request->has('sub_sector')) {
-        $subSectorId = DB::table('t_sub_sector')
-            ->where('name', $request->sub_sector)
-            ->value('id');
-        if ($subSectorId) {
-            $query->where('sub_sector_id', $subSectorId);
-        } else {
-            return response()->json(['message' => 'Invalid sub-sector'], 400);
+    
+        // If a sector is provided, filter by sector
+        if ($request->has('sector') && !empty($request->sector)) {
+            $sectorId = DB::table('t_sector')->where('name', $request->sector)->value('id');
+            if ($sectorId) {
+                $query->where('sector_id', $sectorId);
+            } else {
+                return response()->json(['message' => 'Invalid sector'], 400);
+            }
         }
+    
+        // If a sub-sector is provided, filter by sub-sector
+        if ($request->has('sub_sector') && !empty($request->sub_sector)) {
+            $subSectorId = DB::table('t_sub_sector')
+                ->where('name', $request->sub_sector)
+                ->value('id');
+            if ($subSectorId) {
+                $query->where('sub_sector_id', $subSectorId);
+            } else {
+                return response()->json(['message' => 'Invalid sub-sector'], 400);
+            }
+        }
+    
+        // Fetch the cash receipts
+        $cashReceipts = $query->get(['id', 'receipt_no', 'name', 'amount', 'date', 'status', 'sector_id', 'sub_sector_id']);
+    
+        // Check if any receipts are found
+        if ($cashReceipts->isEmpty()) {
+            return response()->json(['message' => 'No pending cash receipts found.'], 404);
+        }
+    
+        // Return the found receipts
+        return response()->json(['message' => 'Pending cash receipts fetched successfully!', 'data' => $cashReceipts], 200);
     }
-
-    // Fetch the cash receipts
-    $cashReceipts = $query->get(['id', 'receipt_no', 'name', 'amount', 'date', 'status', 'sector_id', 'sub_sector_id']);
-
-    // Check if any receipts are found
-    if ($cashReceipts->isEmpty()) {
-        return response()->json(['message' => 'No pending cash receipts found.'], 404);
-    }
-
-    // Return the found receipts
-    return response()->json(['message' => 'Pending cash receipts fetched successfully!', 'data' => $cashReceipts], 200);
-}
 }
