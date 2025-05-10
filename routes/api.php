@@ -24,7 +24,10 @@ use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
 use App\Http\Controllers\MenuController;
 
-
+Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
+Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
+Route::post('/import_users', [CSVImportController::class, 'importUser']);
+Route::get('/import_its', [CSVImportController::class, 'importIts']); 
 // Public Routes
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);

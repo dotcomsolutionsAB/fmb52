@@ -576,205 +576,187 @@ public function register_expense(Request $request)
     // create
     public function register_receipts(Request $request)
     {
-        // Fetch jamiat_id from the logged-in user
-        $user = auth()->user();
-        $jamiat_id = $user->jamiat_id;
+        // Start a database transaction
+        DB::beginTransaction();
+        try {
+            // Fetch jamiat_id from the logged-in user
+            $user = auth()->user();
+            $jamiat_id = $user->jamiat_id;
     
-        // Fetch the counter for receipt generation
-        $counter = DB::table('t_counter')
-            ->where('jamiat_id', $jamiat_id)
-            ->where('type', 'receipt')
-            ->first();
+            // Fetch the counter for receipt generation
+            $counter = DB::table('t_counter')
+                ->where('jamiat_id', $jamiat_id)
+                ->where('type', 'receipt')
+                ->first();
     
-        if (!$counter) {
-            return response()->json(['message' => 'Counter not found for receipts!'], 400);
-        }
+            if (!$counter) {
+                return response()->json(['message' => 'Counter not found for receipts!'], 400);
+            }
     
-        // Generate receipt number using prefix, value, and postfix
-        $receipt_no = $counter->prefix . $counter->value . '/' . $counter->postfix;
-        $formatted_receipt_no = str_replace('/', '_', $receipt_no);
+            // Generate receipt number using prefix, value, and postfix
+            $receipt_no = $counter->prefix . $counter->value . '/' . $counter->postfix;
+            $formatted_receipt_no = str_replace('/', '_', $receipt_no);
     
-        $validatedData = $request->validate([
-            'family_id' => 'required|string|max:10',
-            'date' => 'required|date',
-            'its' => 'nullable|string|max:8',
-            'folio_no' => 'nullable|string|max:20',
-            'name' => 'required|string|max:100',
-            'sector_id' => 'nullable|string|max:100',
-            'sub_sector_id' => 'nullable|string|max:100',
-            'amount' => 'required|numeric',
-            'mode' => 'required|in:cheque,cash,neft,upi',
-            'bank_name' => 'nullable|string|max:100',
-            'cheque_no' => 'nullable|string|max:50',
-            'cheque_date' => 'nullable|date',
-            'ifsc_code' => 'nullable|string|max:11',
-            'transaction_id' => 'nullable|string|max:100',
-            'transaction_date' => 'nullable|date',
-            'year' => 'required|string|max:10',
-            'comments' => 'nullable|string',
-            'status' => 'required|in:pending,cancelled,paid',
-            'cancellation_reason' => 'nullable|string',
-            'collected_by' => 'nullable|string|max:100',
-            'log_user' => 'nullable|string|max:100',
-            'attachment' => 'nullable|integer',
-            'payment_id' => 'nullable|integer',
-        ]);
-    
-        $totalAmount = $request->input('amount');
-        $mode = $request->input('mode');
-        $maximumReceivable = ($mode === 'cash' && $totalAmount > 10000) ? 1000 : $totalAmount; // Logic for cash > 10K
-        $remainingAmount = $totalAmount;
-    
-        $receipts = [];
-    
-        // Loop through family members and distribute the amount
-        $get_family_member = User::select('name', 'its')
-            ->where('family_id', $request->input('family_id'))
-            ->get();
-    
-        if (count($get_family_member) < 1) {
-            return response()->json(['message' => 'Sorry, failed to get users!'], 400);
-        }
-    
-        foreach ($get_family_member as $member) {
-            $amountsForMembers = min($remainingAmount, $maximumReceivable);
-    
-            $register_receipt = ReceiptsModel::create([
-                'jamiat_id' => $jamiat_id,
-                'family_id' => $validatedData['family_id'],
-                'receipt_no' => $receipt_no,
-                'date' => $validatedData['date'],
-                'its' => $member->its,
-                'folio_no' => $validatedData['folio_no'],
-                'name' => $member->name,
-                'sector_id' => $validatedData['sector_id'],
-                'sub_sector_id' => $validatedData['sub_sector_id'],
-                'amount' => $amountsForMembers,
-                'mode' => $validatedData['mode'],
-                'bank_name' => $validatedData['bank_name'],
-                'cheque_no' => $validatedData['cheque_no'],
-                'cheque_date' => $validatedData['cheque_date'],
-                'ifsc_code' => $validatedData['ifsc_code'],
-                'transaction_id' => $validatedData['transaction_id'],
-                'transaction_date' => $validatedData['transaction_date'],
-                'year' => $validatedData['year'],
-                'comments' => $validatedData['comments'],
-                'status' => $validatedData['status'],
-                'cancellation_reason' => $validatedData['cancellation_reason'],
-                'collected_by' => $validatedData['collected_by'],
-                'log_user' => $user->name,
-                'attachment' => $validatedData['attachment'],
-                'payment_id' => $validatedData['payment_id'],
+            // Validate the incoming request
+            $validatedData = $request->validate([
+                'family_id' => 'required|string|max:10',
+                'date' => 'required|date',
+                'its' => 'nullable|string|max:8',
+                'folio_no' => 'nullable|string|max:20',
+                'name' => 'required|string|max:100',
+                'sector_id' => 'nullable|string|max:100',
+                'sub_sector_id' => 'nullable|string|max:100',
+                'amount' => 'required|numeric',
+                'mode' => 'required|in:cheque,cash,neft,upi',
+                'bank_name' => 'nullable|string|max:100',
+                'cheque_no' => 'nullable|string|max:50',
+                'cheque_date' => 'nullable|date',
+                'ifsc_code' => 'nullable|string|max:11',
+                'transaction_id' => 'nullable|string|max:100',
+                'transaction_date' => 'nullable|date',
+                'year' => 'required|string|max:10',
+                'comments' => 'nullable|string',
+                'status' => 'required|in:pending,cancelled,paid',
+                'cancellation_reason' => 'nullable|string',
+                'collected_by' => 'nullable|string|max:100',
+                'log_user' => 'nullable|string|max:100',
+                'attachment' => 'nullable|integer',
+                'payment_id' => 'nullable|integer',
             ]);
     
-            $receipts[] = $register_receipt;
+            // Initialize the remaining amount for distribution
+            $totalAmount = $request->input('amount');
+            $mode = $request->input('mode');
+            $maximumReceivable = ($mode === 'cash' && $totalAmount > 10000) ? 1000 : $totalAmount; // Logic for cash > 10K
+            $remainingAmount = $totalAmount;
     
-            if (in_array($register_receipt->mode, ['cheque', 'neft', 'upi'])) {
-                // For cheque, neft, or upi, create the payment entry
-                $receiptIds = $request->input('receipt_ids') ? $request->input('receipt_ids') : [$register_receipt->id];  // For cash, pass multiple ids
+            $receipts = [];
     
-                try {
-                    // Create payment entry
-                    $accountsController = app(\App\Http\Controllers\AccountsController::class);
+            // Loop through family members and distribute the amount
+            $get_family_member = User::select('name', 'its')
+                ->where('family_id', $request->input('family_id'))
+                ->get();
     
-                    // Call the register_payments method on the controller instance
-                    $paymentResponse = $accountsController->register_payments(new Request([
-                        'jamiat_id' => $register_receipt->jamiat_id,
-                        'family_id' => $register_receipt->family_id,
-                        'folio_no' => $register_receipt->folio_no,
-                        'name' => $register_receipt->name,
-                        'its' => $register_receipt->its,
-                        'sector_id' => $register_receipt->sector_id,
-                        'sub_sector_id' => $register_receipt->sub_sector_id,
-                        'year' => $register_receipt->year,
-                        'mode' => $register_receipt->mode,
-                        'date' => $register_receipt->date,
-                        'amount' => $register_receipt->amount,
-                        'status' => 'pending',
-                        'log_user' => auth()->user()->name,
-                        'bank_name' => $register_receipt->bank_name,
-                        'cheque_no' => $register_receipt->cheque_no,
-                        'cheque_date' => $register_receipt->cheque_date,
-                        'ifsc_code' => $register_receipt->ifsc_code,
-                        'transaction_id' => $register_receipt->transaction_id,
-                        'transaction_date' => $register_receipt->transaction_date,
-                        'receipt_ids' => $receiptIds  // Pass receipt ids to link them to payment
-                    ]));
+            if ($get_family_member->isEmpty()) {
+                return response()->json(['message' => 'Failed to find family members!'], 400);
+            }
     
-                    // If payment creation is successful, update the payment_id in t_receipts
-                    if ($paymentResponse->status() === 201) {
-                        DB::table('t_receipts')
-                            ->whereIn('id', $receiptIds)
-                            ->update(['payment_id' => $paymentResponse->json('data.id')]); // Update payment_id with the created payment's ID
-                    } else {
-                        throw new \Exception('Payment registration failed');
+            foreach ($get_family_member as $member) {
+                $amountForMember = min($remainingAmount, $maximumReceivable);
+    
+                // Register receipt for each family member
+                $register_receipt = ReceiptsModel::create([
+                    'jamiat_id' => $jamiat_id,
+                    'family_id' => $validatedData['family_id'],
+                    'receipt_no' => $receipt_no,
+                    'date' => $validatedData['date'],
+                    'its' => $member->its,
+                    'folio_no' => $validatedData['folio_no'],
+                    'name' => $member->name,
+                    'sector_id' => $validatedData['sector_id'],
+                    'sub_sector_id' => $validatedData['sub_sector_id'],
+                    'amount' => $amountForMember,
+                    'mode' => $validatedData['mode'],
+                    'bank_name' => $validatedData['bank_name'],
+                    'cheque_no' => $validatedData['cheque_no'],
+                    'cheque_date' => $validatedData['cheque_date'],
+                    'ifsc_code' => $validatedData['ifsc_code'],
+                    'transaction_id' => $validatedData['transaction_id'],
+                    'transaction_date' => $validatedData['transaction_date'],
+                    'year' => $validatedData['year'],
+                    'comments' => $validatedData['comments'],
+                    'status' => $validatedData['status'],
+                    'cancellation_reason' => $validatedData['cancellation_reason'],
+                    'collected_by' => $validatedData['collected_by'],
+                    'log_user' => $user->name,
+                    'attachment' => $validatedData['attachment'],
+                    'payment_id' => $validatedData['payment_id'],
+                ]);
+    
+                $receipts[] = $register_receipt;
+    
+                // If the mode is cheque, neft, or upi, create a payment entry
+                if (in_array($register_receipt->mode, ['cheque', 'neft', 'upi'])) {
+                    $receiptIds = $request->input('receipt_ids') ?: [$register_receipt->id]; // For cheque, neft, upi
+    
+                    try {
+                        // Create payment entry
+                        $paymentResponse = $this->createPaymentForReceipt($register_receipt, $request);
+    
+                        // If payment creation is successful, update the payment_id in t_receipts
+                        if ($paymentResponse['status'] === 'success') {
+                            DB::table('t_receipts')
+                                ->whereIn('id', $receiptIds)
+                                ->update(['payment_id' => $paymentResponse['payment_id']]); // Update payment_id
+                        } else {
+                            throw new \Exception('Payment registration failed');
+                        }
+    
+                    } catch (\Exception $e) {
+                        // Rollback receipt creation if payment fails
+                        $register_receipt->delete();
+                        return response()->json([
+                            'message' => 'Payment creation failed, receipt has been rolled back.',
+                            'error' => $e->getMessage(),
+                            'stack' => $e->getTraceAsString(),
+                        ], 500);
                     }
+                }
     
-                } catch (\Exception $e) {
-                    // If the payment registration fails, log the error and delete the created receipt
-                   
-                    $register_receipt->delete();
-                    return response()->json([
-                        'message' => 'Payment creation failed, receipt has been rolled back.',
-                        'error' => $e->getMessage(),
-                        
-                    ], 500);
+                // Add WhatsApp queue entry
+                $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
+    
+                // Call the receipt_print API to generate the PDF
+                $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->id}");
+    
+                if ($pdfResponse->successful()) {
+                    // Save the PDF in the public directory
+                    $pdfPath = "storage/{$jamiat_id}/receipts/{$formatted_receipt_no}.pdf";
+                    $publicPath = public_path($pdfPath);
+                    file_put_contents($publicPath, $pdfResponse->body());
+                }
+    
+                $remainingAmount -= $amountForMember;
+    
+                if ($remainingAmount <= 0) {
+                    break;
                 }
             }
     
-            // Add WhatsApp queue entry
-            $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
+            // Increment counter value after successful receipt creation
+            DB::table('t_counter')
+                ->where('jamiat_id', $jamiat_id)
+                ->where('type', 'receipt')
+                ->increment('value');
     
-            // Call the receipt_print API to generate the PDF
-            $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->id}");
+            // Handle advance receipt if remaining amount exists
+            if ($remainingAmount > 0) {
+                $get_hof_member = User::where('its', 'hof_its')
+                    ->where('family_id', $request->input('family_id'))
+                    ->first();
     
-            if ($pdfResponse->successful()) {
-                // Save the PDF in the public directory
-                $pdfPath = "storage/{$jamiat_id}/receipts/{$formatted_receipt_no}.pdf";
-                $publicPath = public_path($pdfPath);
-                file_put_contents($publicPath, $pdfResponse->body());
+                $dataForAdvanceReceipt = [
+                    'jamiat_id' => $jamiat_id,
+                    'family_id' => $validatedData['family_id'],
+                    'name' => $get_hof_member->name,
+                    'amount' => $remainingAmount,
+                    'sector' => $validatedData['sector'],
+                    'sub_sector' => $validatedData['sub_sector'],
+                ];
+    
+                $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
+                $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
+    
+                if ($advanceReceiptResponse->getStatusCode() !== 201) {
+                    return response()->json(['message' => 'Failed to create Advance Receipt!'], 400);
+                }
             }
     
-            $remainingAmount -= $amountsForMembers;
-    
-            if ($remainingAmount <= 0) {
-                break;
-            }
+            return response()->json([
+                'message' => 'Receipt created successfully!',
+                'receipts' => $receipts,
+            ], 201);
         }
-    
-        // Increment counter value after successful receipt creation
-        DB::table('t_counter')
-            ->where('jamiat_id', $jamiat_id)
-            ->where('type', 'receipt')
-            ->increment('value');
-    
-        // Handle advance receipt if remaining amount exists
-        if ($remainingAmount > 0) {
-            $get_hof_member = User::whereColumn('its', 'hof_its')
-                ->where('family_id', $request->input('family_id'))
-                ->first();
-    
-            $dataForAdvanceReceipt = [
-                'jamiat_id' => $jamiat_id,
-                'family_id' => $validatedData['family_id'],
-                'name' => $get_hof_member->name,
-                'amount' => $remainingAmount,
-                'sector' => $validatedData['sector'],
-                'sub_sector' => $validatedData['sub_sector'],
-            ];
-    
-            $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
-            $advanceReceiptResponse = $this->register_advance_receipt($newRequestAdvanceReceipt);
-    
-            if ($advanceReceiptResponse->getStatusCode() !== 201) {
-                return response()->json(['message' => 'Failed to create Advance Receipt!'], 400);
-            }
-        }
-    
-        return response()->json([
-            'message' => 'Receipt created successfully!',
-            'receipts' => $receipts,
-        ], 201);
     }
     // view
     public function all_receipts(Request $request)
