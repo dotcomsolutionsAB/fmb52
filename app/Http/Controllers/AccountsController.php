@@ -708,6 +708,7 @@ public function register_expense(Request $request)
                         return response()->json([
                             'message' => 'Payment creation failed, receipt has been rolled back.',
                             'error' => $e->getMessage(),
+                            'data'=> $paymentData ,
                             'stack' => $e->getTraceAsString(),
                         ], 500);
                     }
