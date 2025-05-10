@@ -576,8 +576,8 @@ public function register_expense(Request $request)
     // create
     public function register_receipts(Request $request)
     {
-        // Start a database transaction
         DB::beginTransaction();
+    
         try {
             // Fetch jamiat_id from the logged-in user
             $user = auth()->user();
@@ -695,6 +695,9 @@ public function register_expense(Request $request)
                     } catch (\Exception $e) {
                         // Rollback receipt creation if payment fails
                         $register_receipt->delete();
+                        DB::rollBack(); // Rollback all the changes
+    
+                        // Return a detailed error response
                         return response()->json([
                             'message' => 'Payment creation failed, receipt has been rolled back.',
                             'error' => $e->getMessage(),
@@ -752,10 +755,28 @@ public function register_expense(Request $request)
                 }
             }
     
+            // Commit transaction if everything is successful
+            DB::commit();
+    
             return response()->json([
                 'message' => 'Receipt created successfully!',
                 'receipts' => $receipts,
             ], 201);
+        } catch (\Exception $e) {
+            // Rollback all database changes in case of failure
+            DB::rollBack();
+    
+            // Log the error and send detailed response
+            Log::error('Receipt creation failed', [
+                'error' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+            ]);
+    
+            return response()->json([
+                'message' => 'Failed to create receipt!',
+                'error' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+            ], 500);
         }
     }
     // view
