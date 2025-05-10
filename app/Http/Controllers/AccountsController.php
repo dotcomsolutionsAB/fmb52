@@ -1067,4 +1067,33 @@ public function register_expense(Request $request)
         // Return the found receipts
         return response()->json(['message' => 'Pending cash receipts fetched successfully!', 'data' => $cashReceipts], 200);
     }
+    public function changePaymentStatus(Request $request)
+{
+    // Validate incoming data
+    $validatedData = $request->validate([
+        'payment_id' => 'required|integer|exists:t_payments,id',  // Ensure payment ID exists
+        'status' => 'required|in:pending,approved,cancelled',  // Valid statuses
+    ]);
+
+    // Fetch the payment record
+    $payment = DB::table('t_payments')->where('id', $validatedData['payment_id'])->first();
+
+    if (!$payment) {
+        return response()->json(['message' => 'Payment not found!'], 404);
+    }
+
+    // Update the payment status
+    $updatedStatus = DB::table('t_payments')
+        ->where('id', $validatedData['payment_id'])
+        ->update([
+            'status' => $validatedData['status'],
+            'updated_at' => now(),  // Update timestamp
+        ]);
+
+    if ($updatedStatus) {
+        return response()->json(['message' => 'Payment status updated successfully!'], 200);
+    }
+
+    return response()->json(['message' => 'Failed to update payment status.'], 500);
+}
 }
