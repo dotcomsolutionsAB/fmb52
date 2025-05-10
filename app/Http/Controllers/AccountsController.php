@@ -357,6 +357,8 @@ public function register_expense(Request $request)
         'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
         'transaction_date' => 'nullable|date',    // For UPI or NEFT
         'remarks' => 'nullable|string|max:255', // For remarks on cash payments
+        'sector_id'=>'nullabel|intteger',
+         'sub_sector_id'=>'nullabel|intteger'
     ]);
     
     DB::beginTransaction();
@@ -385,11 +387,9 @@ public function register_expense(Request $request)
         }
 
         // Map sector and sub-sector (optional fallback)
-        $sectorId = DB::table('t_sector')->where('name', $request->sector)->value('id');
-        $subSectorId = DB::table('t_sub_sector')
-            ->where('name', $request->sub_sector)
-            ->where('sector_id', $sectorId)
-            ->value('id');
+        $sectorId=$validatedData['sector_id'];
+        $subSectorId=$validatedData['sub_sector_id'];
+       
 
         // Prepare payment data based on the mode
         $paymentData = [
@@ -421,6 +421,8 @@ public function register_expense(Request $request)
                 $receipt = ReceiptsModel::find($receiptId);
                 if ($receipt) {
                     $totalAmount += $receipt->amount;
+                    $sectorId=$receipt->sector_id;
+                    $subSectorId=$receipt->sub_sector_id;
                 }
             }
 
@@ -431,7 +433,8 @@ public function register_expense(Request $request)
 
             // Set name as "cash" and use the sector of the receipts
             $paymentData['name'] = 'Cash Deposited';  // Name for cash payment
-            $paymentData['sector_id'] = $sectorId;  // Use the sector from receipts
+            $paymentData['sector_id'] = $sectorId; 
+            $paymentData['sub_sector_id'] = $subSectorId; // Use the sector from receipts
             $paymentData['amount'] = $totalAmount;  // Use the total of all receipts
         } else {
             // For cheque, upi, neft, we handle specific fields like cheque_no, transaction_id, etc.
@@ -681,8 +684,8 @@ public function register_expense(Request $request)
                         'folio_no' => $register_receipt->folio_no,
                         'name' => $register_receipt->name,
                         'its' => $register_receipt->its,
-                        'sector' => optional($register_receipt->sector)->name,
-                        'sub_sector' => optional($register_receipt->sub_sector)->name,
+                        'sector_id' => $register_receipt->sector_id,
+                        'sub_sector_id' => $register_receipt->sub_sector_id,
                         'year' => $register_receipt->year,
                         'mode' => $register_receipt->mode,
                         'date' => $register_receipt->date,
