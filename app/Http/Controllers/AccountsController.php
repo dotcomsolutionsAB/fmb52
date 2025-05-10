@@ -357,8 +357,8 @@ public function register_expense(Request $request)
         'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
         'transaction_date' => 'nullable|date',    // For UPI or NEFT
         'remarks' => 'nullable|string|max:255', // For remarks on cash payments
-        'sector_id'=>'nullable|intteger',
-        'sub_sector_id'=>'nullable|intteger'
+        'sector_id'=>'nullable|integer',
+        'sub_sector_id'=>'nullable|integer'
     ]);
     
     DB::beginTransaction();
