@@ -360,6 +360,7 @@ public function register_expense(Request $request)
         'sector_id'=>'nullable|integer',
         'sub_sector_id'=>'nullable|integer'
     ]);
+    $jamiat_id = $user->jamiat_id;
     
     DB::beginTransaction();
     try {
@@ -376,7 +377,7 @@ public function register_expense(Request $request)
             $filePath = $file->storeAs('uploads/payments', $fileName, 'public');
 
             $upload = \App\Models\UploadModel::create([
-                'jamiat_id'  => $request->jamiat_id,
+                'jamiat_id'  => $jamiat_id,
                 'file_name'  => $fileName,
                 'file_ext'   => $file->getClientOriginalExtension(),
                 'file_url'   => Storage::url($filePath),
@@ -394,7 +395,7 @@ public function register_expense(Request $request)
         // Prepare payment data based on the mode
         $paymentData = [
             'payment_no'         => $paymentNo,
-            'jamiat_id'          => $request->jamiat_id,
+            'jamiat_id'          => $jamiat_id,
             'family_id'          => $request->family_id,
             'folio_no'           => $request->folio_no,
             'name'               => $request->name,
