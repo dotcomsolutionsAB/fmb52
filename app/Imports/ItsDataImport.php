@@ -18,6 +18,8 @@ class ItsDataImport implements ToModel, WithHeadingRow, WithValidation
 
     public function model(array $row)
     {
+        ini_set('memory_limit', '1024M');
+
         $jamiat_id = auth()->user()->jamiat_id;
     
         if (!$jamiat_id) {

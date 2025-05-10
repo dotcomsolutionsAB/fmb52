@@ -231,6 +231,8 @@ class CSVImportController extends Controller
         ]);
     
         try {
+            ini_set('memory_limit', '1024M');
+
             // Get jamiat_id from the authenticated user
             $jamiat_id = auth()->user()->jamiat_id;
     
