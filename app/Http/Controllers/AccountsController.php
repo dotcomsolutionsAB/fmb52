@@ -687,10 +687,11 @@ public function register_expense(Request $request)
     
                         // If payment creation is successful, update the payment_id in t_receipts
                         $paymentData = $paymentResponse->getData(true);
+    
                         if ($paymentData['message'] === 'Payment created successfully!') {
                             // Access payment_id from the 'data' key
                             $paymentId = $paymentData['data']['id'];
-                        
+    
                             // Update the payment_id in t_receipts
                             DB::table('t_receipts')
                                 ->whereIn('id', $receiptIds)
@@ -698,7 +699,6 @@ public function register_expense(Request $request)
                         } else {
                             throw new \Exception('Payment registration failed');
                         }
-                       
     
                     } catch (\Exception $e) {
                         // Rollback receipt creation if payment fails
@@ -709,7 +709,6 @@ public function register_expense(Request $request)
                         return response()->json([
                             'message' => 'Payment creation failed, receipt has been rolled back.',
                             'error' => $e->getMessage(),
-                            'data'=> $paymentData ,
                             'stack' => $e->getTraceAsString(),
                         ], 500);
                     }
@@ -764,7 +763,7 @@ public function register_expense(Request $request)
                 }
             }
     
-            // Commit transaction if everything is successful
+            // Commit transaction after all receipts are created
             DB::commit();
     
             return response()->json([
@@ -772,12 +771,10 @@ public function register_expense(Request $request)
                 'receipts' => $receipts,
             ], 201);
         } catch (\Exception $e) {
-            // Rollback all database changes in case of failure
+            // Rollback all database changes if something goes wrong
             DB::rollBack();
     
-            // Log the error and send detailed response
-           
-    
+            // Log the error and return a detailed error response
             return response()->json([
                 'message' => 'Failed to create receipt!',
                 'error' => $e->getMessage(),
