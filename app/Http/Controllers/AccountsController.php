@@ -430,7 +430,7 @@ public function register_expense(Request $request)
             }
 
             // Set name as "cash" and use the sector of the receipts
-            $paymentData['name'] = 'cash';  // Name for cash payment
+            $paymentData['name'] = 'Cash Deposited';  // Name for cash payment
             $paymentData['sector_id'] = $sectorId;  // Use the sector from receipts
             $paymentData['amount'] = $totalAmount;  // Use the total of all receipts
         } else {
