@@ -776,10 +776,7 @@ public function register_expense(Request $request)
             DB::rollBack();
     
             // Log the error and send detailed response
-            Log::error('Receipt creation failed', [
-                'error' => $e->getMessage(),
-                'stack' => $e->getTraceAsString(),
-            ]);
+           
     
             return response()->json([
                 'message' => 'Failed to create receipt!',
