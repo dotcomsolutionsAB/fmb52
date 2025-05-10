@@ -709,7 +709,7 @@ public function register_expense(Request $request)
     
                 } catch (\Exception $e) {
                     // If the payment registration fails, log the error and delete the created receipt
-                    Log::error('Payment creation failed', ['error' => $e->getMessage()]);
+                   
                     $register_receipt->delete();
                     return response()->json([
                         'message' => 'Payment creation failed, receipt has been rolled back.',
