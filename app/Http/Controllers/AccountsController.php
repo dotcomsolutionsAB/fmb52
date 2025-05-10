@@ -681,7 +681,7 @@ public function register_expense(Request $request)
     
                     try {
                         // Create payment entry
-                        $paymentResponse = $this->createPaymentForReceipt($register_receipt, $request);
+                        $paymentResponse = $this->register_payments($register_receipt, $request);
     
                         // If payment creation is successful, update the payment_id in t_receipts
                         if ($paymentResponse['status'] === 'success') {
