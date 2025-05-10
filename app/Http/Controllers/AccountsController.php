@@ -663,30 +663,31 @@ public function register_expense(Request $request)
             $receiptIds = $request->input('receipt_ids') ? $request->input('receipt_ids') : [$register_receipt->id];  // For cash, pass multiple ids
     
             // Call the register_payments function to create a payment entry
-            app()->call([self::class, 'register_payments'], [
-                'request' => new Request([
-                    'jamiat_id' => $register_receipt->jamiat_id,
-                    'family_id' => $register_receipt->family_id,
-                    'folio_no' => $register_receipt->folio_no,
-                    'name' => $register_receipt->name,
-                    'its' => $register_receipt->its,
-                    'sector' => optional($register_receipt->sector)->name,
-                    'sub_sector' => optional($register_receipt->sub_sector)->name,
-                    'year' => $register_receipt->year,
-                    'mode' => $register_receipt->mode,
-                    'date' => $register_receipt->date,
-                    'amount' => $register_receipt->amount,
-                    'status' => 'pending',
-                    'log_user' => auth()->user()->name,
-                    'bank_name' => $register_receipt->bank_name,
-                    'cheque_no' => $register_receipt->cheque_no,
-                    'cheque_date' => $register_receipt->cheque_date,
-                    'ifsc_code' => $register_receipt->ifsc_code,
-                    'transaction_id' => $register_receipt->transaction_id,
-                    'transaction_date' => $register_receipt->transaction_date,
-                    'receipt_ids' => $receiptIds  // Pass receipt ids to link them to payment
-                ])
-            ]);
+            $accountsController = app(\App\Http\Controllers\AccountsController::class);
+
+            // Call the register_payments method on the controller instance
+            $accountsController->register_payments(new Request([
+                'jamiat_id' => $register_receipt->jamiat_id,
+                'family_id' => $register_receipt->family_id,
+                'folio_no' => $register_receipt->folio_no,
+                'name' => $register_receipt->name,
+                'its' => $register_receipt->its,
+                'sector' => optional($register_receipt->sector)->name,
+                'sub_sector' => optional($register_receipt->sub_sector)->name,
+                'year' => $register_receipt->year,
+                'mode' => $register_receipt->mode,
+                'date' => $register_receipt->date,
+                'amount' => $register_receipt->amount,
+                'status' => 'pending',
+                'log_user' => auth()->user()->name,
+                'bank_name' => $register_receipt->bank_name,
+                'cheque_no' => $register_receipt->cheque_no,
+                'cheque_date' => $register_receipt->cheque_date,
+                'ifsc_code' => $register_receipt->ifsc_code,
+                'transaction_id' => $register_receipt->transaction_id,
+                'transaction_date' => $register_receipt->transaction_date,
+                'receipt_ids' => $receiptIds  // Pass receipt ids to link them to payment
+            ]));
         }
     
 
@@ -1027,8 +1028,9 @@ public function register_expense(Request $request)
         }
     
         // Fetch the cash receipts
-        $cashReceipts = $query->get(['id', 'receipt_no', 'name', 'amount', 'date', 'status', 'sector_id', 'sub_sector_id']);
-    
+        $cashReceipts = $query->orderBy('date', 'desc') // Order by date in descending order
+        ->get(['id', 'receipt_no', 'name', 'amount', 'date', 'status', 'sector_id', 'sub_sector_id']);
+
         // Check if any receipts are found
         if ($cashReceipts->isEmpty()) {
             return response()->json(['message' => 'No pending cash receipts found.'], 404);
