@@ -360,7 +360,7 @@ public function register_expense(Request $request)
         'sector_id'=>'nullable|integer',
         'sub_sector_id'=>'nullable|integer'
     ]);
-    $jamiat_id = $user->jamiat_id;
+    $jamiat_id = Auth()->user()->jamiat_id;
     
     DB::beginTransaction();
     try {
