@@ -344,7 +344,7 @@ public function register_expense(Request $request)
     $validatedData = $request->validate([
         'jamiat_id' => 'nullable|integer',
         'family_id' => 'nullable|string|max:10',
-        'receipt_ids' => 'required|array', // Multiple receipt IDs for cash or single receipt for others
+        'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
         'mode' => 'required|in:cheque,cash,neft,upi',
         'amount' => 'required|numeric',
         'status' => 'required|in:pending,approved,cancelled',
