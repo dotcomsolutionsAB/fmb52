@@ -685,10 +685,7 @@ public function register_expense(Request $request)
                         $paymentResponse = $this->register_payments( $request);
     
                         // If payment creation is successful, update the payment_id in t_receipts
-                        $paymentData = $paymentResponse->json(); // Convert JsonResponse to an array
-
-                        $paymentData = $paymentResponse->json(); // Convert JsonResponse to an array
-
+                        $paymentData = $paymentResponse->getData(true);
                         if ($paymentData['message'] === 'Payment created successfully!') {
                             // Access payment_id from the 'data' key
                             $paymentId = $paymentData['data']['id'];
