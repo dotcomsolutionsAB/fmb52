@@ -662,32 +662,56 @@ public function register_expense(Request $request)
             // Pass the receipt ids to the payment registration if mode is cash
             $receiptIds = $request->input('receipt_ids') ? $request->input('receipt_ids') : [$register_receipt->id];  // For cash, pass multiple ids
     
-            // Call the register_payments function to create a payment entry
-            $accountsController = app(\App\Http\Controllers\AccountsController::class);
-
-            // Call the register_payments method on the controller instance
-            $accountsController->register_payments(new Request([
-                'jamiat_id' => $register_receipt->jamiat_id,
-                'family_id' => $register_receipt->family_id,
-                'folio_no' => $register_receipt->folio_no,
-                'name' => $register_receipt->name,
-                'its' => $register_receipt->its,
-                'sector' => optional($register_receipt->sector)->name,
-                'sub_sector' => optional($register_receipt->sub_sector)->name,
-                'year' => $register_receipt->year,
-                'mode' => $register_receipt->mode,
-                'date' => $register_receipt->date,
-                'amount' => $register_receipt->amount,
-                'status' => 'pending',
-                'log_user' => auth()->user()->name,
-                'bank_name' => $register_receipt->bank_name,
-                'cheque_no' => $register_receipt->cheque_no,
-                'cheque_date' => $register_receipt->cheque_date,
-                'ifsc_code' => $register_receipt->ifsc_code,
-                'transaction_id' => $register_receipt->transaction_id,
-                'transaction_date' => $register_receipt->transaction_date,
-                'receipt_ids' => $receiptIds  // Pass receipt ids to link them to payment
-            ]));
+            try {
+                // Create payment entry
+                $accountsController = app(\App\Http\Controllers\AccountsController::class);
+    
+                // Call the register_payments method on the controller instance
+                $accountsController->register_payments(new Request([
+                    'jamiat_id' => $register_receipt->jamiat_id,
+                    'family_id' => $register_receipt->family_id,
+                    'folio_no' => $register_receipt->folio_no,
+                    'name' => $register_receipt->name,
+                    'its' => $register_receipt->its,
+                    'sector' => optional($register_receipt->sector)->name,
+                    'sub_sector' => optional($register_receipt->sub_sector)->name,
+                    'year' => $register_receipt->year,
+                    'mode' => $register_receipt->mode,
+                    'date' => $register_receipt->date,
+                    'amount' => $register_receipt->amount,
+                    'status' => 'pending',
+                    'log_user' => auth()->user()->name,
+                    'bank_name' => $register_receipt->bank_name,
+                    'cheque_no' => $register_receipt->cheque_no,
+                    'cheque_date' => $register_receipt->cheque_date,
+                    'ifsc_code' => $register_receipt->ifsc_code,
+                    'transaction_id' => $register_receipt->transaction_id,
+                    'transaction_date' => $register_receipt->transaction_date,
+                    'receipt_ids' => $receiptIds  // Pass receipt ids to link them to payment
+                ]));
+    
+                // If payment registration is successful, proceed
+                // If the mode is cash, link the payment_id to the receipts
+                if ($register_receipt->mode == 'cash') {
+                    // Update all receipt records with the payment_id for cash mode
+                    DB::table('t_receipts')
+                        ->whereIn('id', $receiptIds)
+                        ->update(['payment_id' => $register_receipt->id]);
+                } else {
+                    // For cheque, upi, neft: Update only the relevant receipt(s) with the payment_id
+                    DB::table('t_receipts')
+                        ->whereIn('id', $receiptIds)
+                        ->update(['payment_id' => $register_receipt->id]);
+                }
+    
+            } catch (\Exception $e) {
+                // If the payment registration fails, delete the created receipt and return error
+                $register_receipt->delete();
+                return response()->json([
+                    'message' => 'Payment creation failed, receipt has been rolled back.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
         }
     
 
