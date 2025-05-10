@@ -357,8 +357,8 @@ public function register_expense(Request $request)
         'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
         'transaction_date' => 'nullable|date',    // For UPI or NEFT
         'remarks' => 'nullable|string|max:255', // For remarks on cash payments
-        'sector_id'=>'nullabel|intteger',
-         'sub_sector_id'=>'nullabel|intteger'
+        'sector_id'=>'nullable|intteger',
+         'sub_sector_id'=>'nullable|intteger'
     ]);
     
     DB::beginTransaction();
@@ -489,7 +489,7 @@ public function register_expense(Request $request)
     // view
     public function all_payments()
     {
-        $get_all_payments = PaymentsModel::select('payment_no', 'jamiat_id', 'family_id', 'folio_no', 'name', 'its', 'sector', 'sub_sector', 'year', 'mode', 'date', 'bank_name', 'cheque_no', 'cheque_date', 'ifsc_code', 'transaction_id', 'transaction_date', 'amount', 'comments', 'status', 'cancellation_reason', 'log_user', 'attachment')->get();
+        $get_all_payments = PaymentsModel::select('payment_no', 'jamiat_id', 'family_id', 'folio_no', 'name', 'its', 'sector_id', 'sub_sector_id', 'year', 'mode', 'date', 'bank_name', 'cheque_no', 'cheque_date', 'ifsc_code', 'transaction_id', 'transaction_date', 'amount', 'comments', 'status', 'cancellation_reason', 'log_user', 'attachment')->get();
 
         return $get_all_payments->isNotEmpty()
             ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
