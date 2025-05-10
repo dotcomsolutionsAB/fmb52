@@ -358,7 +358,7 @@ public function register_expense(Request $request)
         'transaction_date' => 'nullable|date',    // For UPI or NEFT
         'remarks' => 'nullable|string|max:255', // For remarks on cash payments
         'sector_id'=>'nullable|intteger',
-         'sub_sector_id'=>'nullable|intteger'
+        'sub_sector_id'=>'nullable|intteger'
     ]);
     
     DB::beginTransaction();
@@ -387,8 +387,8 @@ public function register_expense(Request $request)
         }
 
         // Map sector and sub-sector (optional fallback)
-        $sectorId=$validatedData['sector_id'];
-        $subSectorId=$validatedData['sub_sector_id'];
+        $sectorId=$request->sector_id??null;
+        $subSectorId=$request->sub_sector_id??null;
        
 
         // Prepare payment data based on the mode
