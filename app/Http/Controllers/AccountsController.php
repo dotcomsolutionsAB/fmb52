@@ -474,6 +474,7 @@ public function register_expense(Request $request)
         DB::commit();
 
         return response()->json([
+            
             'message' => 'Payment created successfully!',
             'data'    => $register_payment
         ], 201);
@@ -684,13 +685,22 @@ public function register_expense(Request $request)
                         $paymentResponse = $this->register_payments( $request);
     
                         // If payment creation is successful, update the payment_id in t_receipts
-                        if ($paymentResponse['status'] === 'success') {
+                        $paymentData = $paymentResponse->json(); // Convert JsonResponse to an array
+
+                        $paymentData = $paymentResponse->json(); // Convert JsonResponse to an array
+
+                        if ($paymentData['message'] === 'Payment created successfully!') {
+                            // Access payment_id from the 'data' key
+                            $paymentId = $paymentData['data']['id'];
+                        
+                            // Update the payment_id in t_receipts
                             DB::table('t_receipts')
                                 ->whereIn('id', $receiptIds)
-                                ->update(['payment_id' => $paymentResponse['payment_id']]); // Update payment_id
+                                ->update(['payment_id' => $paymentId]); // Update payment_id
                         } else {
                             throw new \Exception('Payment registration failed');
                         }
+                       
     
                     } catch (\Exception $e) {
                         // Rollback receipt creation if payment fails
