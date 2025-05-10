@@ -464,13 +464,7 @@ public function register_expense(Request $request)
             DB::table('t_receipts')
                 ->whereIn('id', $receiptIds)
                 ->update(['payment_id' => $register_payment->id]);
-        } else {
-            // For cheque, upi, neft: Update only the relevant receipt(s) with the payment_id
-            $receiptIds = $request->input('receipt_ids');
-            DB::table('t_receipts')
-                ->whereIn('id', $receiptIds)
-                ->update(['payment_id' => $register_payment->id]);
-        }
+        } 
 
         DB::commit();
 
