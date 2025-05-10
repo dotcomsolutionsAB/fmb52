@@ -46,7 +46,7 @@ class FeedbacksController extends Controller
             'oily' => $validated['oily'],
             'spicy' => $validated['spicy'],
             'remarks' => $validated['remarks'],
-            'images' => $imageUrl,
+            'images' => 'https://api.fmb52.com/storage/'.$imageUrl,
         ]);
 
         return response()->json([
