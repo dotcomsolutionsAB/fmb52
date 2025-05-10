@@ -702,7 +702,7 @@ public function register_expense(Request $request)
                     ]));
     
                     // If payment creation is successful, update the payment_id in t_receipts
-                    if ($paymentResponse->status() === 200) {
+                    if ($paymentResponse->status() === 201) {
                         DB::table('t_receipts')
                             ->whereIn('id', $receiptIds)
                             ->update(['payment_id' => $paymentResponse->json('data.id')]); // Update payment_id with the created payment's ID
@@ -717,6 +717,7 @@ public function register_expense(Request $request)
                     return response()->json([
                         'message' => 'Payment creation failed, receipt has been rolled back.',
                         'error' => $e->getMessage()
+                            'stack' => $e->getTraceAsString(),
                     ], 500);
                 }
             }
