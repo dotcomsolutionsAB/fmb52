@@ -455,14 +455,14 @@ class MumeneenController extends Controller
 
         $sub_sector = DB::table('t_sub_sector')
                         ->where('id', $get_user_records->sub_sector_id)
-                        ->value('name');
+                        ->select('name','notes');
 
         // Extract in-charge details from the string
         $inchargeDetails = $this->extractInchargeDetails($sub_sector->notes);
 
         // Add sector, sub-sector names, and in-charge details to the user data
         $get_user_records->sector_name = $sector;
-        $get_user_records->sub_sector_name = $sub_sector;
+        $get_user_records->sub_sector_name = $sub_sector->name;
         $get_user_records->incharge_name = $inchargeDetails['name'] ?? null;
         $get_user_records->incharge_mobile = $inchargeDetails['mobile'] ?? null;
 
@@ -1714,4 +1714,30 @@ public function update_user_details(Request $request, $id)
             'data' => $groupedData,
         ]);
     }
+
+    public function getUserNameByIts($its)
+{
+    // Search for the user by ITS (username)
+    $user = User::where('username', $its)->first();  // Searching by the username column which contains ITS
+
+    // If the user is not found, return a 404 response
+    if (!$user) {
+        return response()->json([
+            'code' => 404,
+            'status' => 'error',
+            'message' => 'User not found',
+            'data' => null
+        ], 404);
+    }
+
+    // Return the user's name if found
+    return response()->json([
+        'code' => 200,
+        'status' => 'success',
+        'message' => 'User found',
+        'data' => [
+            'name' => $user->name  // Only returning the user's name
+        ]
+    ], 200);
+}
 }
