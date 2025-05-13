@@ -127,6 +127,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('mumeneen')->middleware('check-api-permission:mumeneen.view,mumeneen.view_global')->group(function () {
         Route::get('/{year?}', [MumeneenController::class, 'usersWithHubData']);
         Route::get('/user/{id}', [MumeneenController::class, 'get_user']);
+        Route::post('/update_details/{id}', [MumeneenController::class, 'update_user_details']);
+
         Route::post('/family_members', [MumeneenController::class, 'usersByFamily'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
         Route::get('/hub_details/{family_id}', [MumeneenController::class, 'familyHubDetails'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
     });

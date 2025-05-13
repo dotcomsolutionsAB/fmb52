@@ -433,26 +433,120 @@ class MumeneenController extends Controller
 
 
     // dashboard
-    public function get_user($id)
-    {
-        $get_user_records = User::select('id' ,'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id')
-                                 ->where('family_id', $id)
-                                 ->where('mumeneen_type',"HOF")
-                                 ->with(['photo:id,file_url'])
-                                 ->get();
-    
-        if (isset($get_user_records) && $get_user_records->isNotEmpty()) {
-            return response()->json(
-                ['message' => 'User Record Fetched Successfully!', 'data' => $get_user_records],
-                200,
-                [],
-                JSON_UNESCAPED_SLASHES
-            );
-        } else {
-            return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
-        }
+   public function get_user($id)
+{
+    // Fetch the user records where mumeneen_type is HOF and family_id matches
+    $get_user_records = User::select(
+        'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+        'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
+        'role', 'username', 'photo_id'
+    )
+    ->where('family_id', $id)
+    ->where('mumeneen_type', "HOF")
+    ->with(['photo:id,file_url'])
+    ->first(); // Assuming you're getting a single record based on family_id
+
+    // Check if the user exists
+    if ($get_user_records) {
+        // Get sector and sub-sector names
+        $sector = DB::table('t_sector')
+                    ->where('id', $get_user_records->sector_id)
+                    ->value('name');
+
+        $sub_sector = DB::table('t_sub_sector')
+                        ->where('id', $get_user_records->sub_sector_id)
+                        ->value('name');
+
+        // Extract in-charge details from the string
+        $inchargeDetails = $this->extractInchargeDetails($get_user_records->building);
+
+        // Add sector, sub-sector names, and in-charge details to the user data
+        $get_user_records->sector_name = $sector;
+        $get_user_records->sub_sector_name = $sub_sector;
+        $get_user_records->incharge_name = $inchargeDetails['name'] ?? null;
+        $get_user_records->incharge_mobile = $inchargeDetails['mobile'] ?? null;
+
+        // Return the user data with sector and sub-sector names, and in-charge info
+        return response()->json(
+            ['message' => 'User Record Fetched Successfully!', 'data' => $get_user_records],
+            200,
+            [],
+            JSON_UNESCAPED_SLASHES
+        );
+    } else {
+        return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
+    }
+}
+
+/**
+ * Extract incharge details from the provided string.
+ * Assumes format: "Incharge: Name, Folio: X, Mobile: XXXXXXXXXX, Email: X"
+ */
+private function extractInchargeDetails($building)
+{
+    // Check if 'Incharge' is present in the string
+    if (strpos($building, 'Incharge:') !== false) {
+        // Use regex to capture the incharge name and mobile number
+        preg_match('/Incharge: (.*?), Folio:/', $building, $nameMatch);
+        preg_match('/Mobile: (\d{10})/', $building, $mobileMatch);
+
+        return [
+            'name' => $nameMatch[1] ?? null,  // Incharge name
+            'mobile' => $mobileMatch[1] ?? null // Incharge mobile number
+        ];
     }
 
+    return [];
+}
+
+public function update_user_details(Request $request, $id)
+{
+    // Fetch the record by ID
+    $get_user = User::find($id);
+
+    // Check if the record exists
+    if (!$get_user) {
+        return response()->json([
+            'code' => 404,
+            'status' => 'error',
+            'message' => 'Record not found!',
+            'data' => null
+        ], 404);
+    }
+
+    // Define validation rules - only for hof_its, mobile, and email
+    $rules = [
+        'name' => 'sometimes|string',  // If you want to update the name as well
+        'email' => 'sometimes|email|unique:users,email,' . $id,
+        'mobile' => ['sometimes', 'string', 'min:12', 'max:20'],  // Mobile validation
+    ];
+
+    // Validate only the fields present in the request
+    $validatedData = $request->validate($rules);
+
+    // Update only the fields provided in the request
+    if (isset($validatedData['password'])) {
+        $validatedData['password'] = bcrypt($validatedData['password']);
+    }
+
+    // Update the specific fields (name, mobile, and email) if provided in the request
+    $updated = $get_user->update($validatedData);
+
+    // Return appropriate response
+    return $updated
+        ? response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'Record updated successfully!',
+            'data' => $get_user
+        ], 200)
+        : response()->json([
+            'code' => 304,
+            'status' => 'info',
+            'message' => 'No changes detected',
+            'data' => null
+        ], 304);
+}
     // update
     public function update_record(Request $request, $id)
     {
