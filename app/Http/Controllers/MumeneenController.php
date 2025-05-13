@@ -470,13 +470,18 @@ class MumeneenController extends Controller
 
         // Return the user data with sector and sub-sector names, and in-charge info
         return response()->json(
-            ['message' => 'User Record Fetched Successfully!', 'data' => $get_user_records],
+            [
+                'code'=>200,
+                'status'=>true,
+                'message' => 'User Record Fetched Successfully!', 
+                'data' => $get_user_records],
             200,
             [],
             JSON_UNESCAPED_SLASHES
         );
     } else {
-        return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
+        return response()->json(['code'=>404,
+                'status'=>false,'message' => 'Sorry, failed to fetch records!'], 404);
     }
 }
 
