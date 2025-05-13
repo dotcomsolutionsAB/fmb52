@@ -458,7 +458,7 @@ class MumeneenController extends Controller
                         ->value('name');
 
         // Extract in-charge details from the string
-        $inchargeDetails = $this->extractInchargeDetails($get_user_records->building);
+        $inchargeDetails = $this->extractInchargeDetails($sub_sector->notes);
 
         // Add sector, sub-sector names, and in-charge details to the user data
         $get_user_records->sector_name = $sector;
