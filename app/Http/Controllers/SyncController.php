@@ -431,7 +431,66 @@ class SyncController extends Controller
     /**
      * Consolidated Sync Function: Runs all scenarios sequentially.
      */
-    public function consolidatedSync()
+
+public function updateHofData()
+{
+    DB::beginTransaction();
+
+    try {
+        // Fetch all users with mumeneen_type as HOF
+        $hofUsers = DB::table('users')
+            ->where('mumeneen_type', 'HOF')
+            ->get();
+
+        // Check if there are any HOF users
+        if ($hofUsers->isEmpty()) {
+            return response()->json(['message' => 'No HOF users found in the users table.'], 404);
+        }
+
+        // Loop through each HOF user and update the data
+        foreach ($hofUsers as $hofUser) {
+            // Find matching data from t_its_data where its matches the user's username
+            $hofData = DB::table('t_its_data')
+                ->where('its', $hofUser->username) // Match users.username to t_its_data.its
+                ->first();
+
+            // If HOF data exists, update the user
+            if ($hofData) {
+                // Prepare data for update
+                $updateData = [
+                    'name' => $hofData->name,
+                    'mobile' => $hofData->mobile,
+                    'email' => $hofData->email,
+                    'updated_at' => now(),  // Set the updated timestamp
+                ];
+
+                // Update user data in the users table
+                DB::table('users')
+                    ->where('its', $hofUser->username)
+                    ->update($updateData);
+            }
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        return response()->json([
+            'message' => 'HOF data updated successfully for all users.',
+        ], 200);
+        
+    } catch (\Exception $e) {
+        // Rollback in case of failure
+        DB::rollBack();
+
+        // Return the error message
+        return response()->json([
+            'message' => 'Failed to update HOF data!',
+            'error' => $e->getMessage(),
+            'stack' => $e->getTraceAsString(),
+        ], 500);
+    }
+}
+     public function consolidatedSync()
     {
         $missingHofs = $this->detectMissingHofInUsers();
         $invalidHofs = $this->detectInvalidHofInUsers();

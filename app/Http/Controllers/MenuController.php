@@ -19,12 +19,12 @@ class MenuController extends Controller
             'family_id' => 'nullable|integer',
             'date' => 'required|date',
             'menu' => 'required|string|max:255',
-            'addons' => 'required|string|max:255',
-            'niaz_by' => 'required|string|max:255',
+            'addons' => 'nullable|string|max:255',
+            'niaz_by' => 'nullable|string|max:255',
             'year' => 'required|string|max:10',
-            'slip_names' => 'required|string|max:255',
-            'category' => 'required|in:chicken,mutton,veg,dal,zabihat',
-            'status' => 'required|string|max:255',
+            'slip_names' => 'nullable|string|max:255',
+            'category' => 'nullable|in:chicken,mutton,veg,dal,zabihat',
+            'status' => 'required|in 0,1',
         ]);
 
         $register_menu = MenuModel::create([

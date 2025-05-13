@@ -65,6 +65,8 @@ Route::prefix('sync')->group(function () {
     // Scenario 6: Resolve role mismatches - HOF in users but FM in ITS data
     Route::get('/detect-hof-as-fm-in-its-data', [SyncController::class, 'detectHofMarkedAsFmInItsData']);
     Route::post('/confirm-fm-role-update', [SyncController::class, 'confirmFmRoleUpdate']);
+    Route::get('/update_hof', [SyncController::class, 'updateHofData']);
+    
 
     // Scenario 7: Consolidated Sync - Run all scenarios
     Route::get('/all', [SyncController::class, 'consolidatedSync']);

@@ -436,7 +436,8 @@ class MumeneenController extends Controller
     public function get_user($id)
     {
         $get_user_records = User::select('id' ,'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id')
-                                 ->where('id', $id)
+                                 ->where('family_id', $id)
+                                 ->where('mumeneen_type',"HOF")
                                  ->with(['photo:id,file_url'])
                                  ->get();
     

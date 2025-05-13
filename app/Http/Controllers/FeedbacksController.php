@@ -50,7 +50,8 @@ class FeedbacksController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
+            'code' =>200,
+            'status' => true,
             'message' => 'Feedback added successfully',
             'data' => $feedback
         ]);
@@ -79,7 +80,8 @@ class FeedbacksController extends Controller
         $feedback = Feedback::find($id);
         if (!$feedback) {
             return response()->json([
-                'success' => false,
+                'code'=>404,
+                'status' => false,
                 'message' => 'Feedback not found',
             ], 404);
         }
@@ -112,7 +114,8 @@ class FeedbacksController extends Controller
         ]);
 
         return response()->json([
-            'success' => true,
+            'code'=>404,
+            'status' => true,
             'message' => 'Feedback updated successfully',
             'data' => $feedback
         ]);
@@ -124,13 +127,16 @@ class FeedbacksController extends Controller
         $feedback = Feedback::find($id);
         if (!$feedback) {
             return response()->json([
+                'code' => 404,
                 'success' => false,
                 'message' => 'Feedback not found',
             ], 404);
         }
 
         return response()->json([
-            'success' => true,
+            'code'=>200,
+            'status' => true,
+            'message' => 'Feedback not found',
             'data' => $feedback
         ]);
     }
@@ -140,7 +146,9 @@ class FeedbacksController extends Controller
     {
         $feedbacks = Feedback::all();
         return response()->json([
-            'success' => true,
+            'code'=>200,
+            'status' => true,
+            'message'=>"Feedbacks Found",
             'data' => $feedbacks
         ]);
     }
