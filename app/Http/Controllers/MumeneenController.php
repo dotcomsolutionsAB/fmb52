@@ -453,9 +453,11 @@ class MumeneenController extends Controller
                     ->where('id', $get_user_records->sector_id)
                     ->value('name');
 
-        $sub_sector = DB::table('t_sub_sector')
-                        ->where('id', $get_user_records->sub_sector_id)
-                        ->select('name','notes');
+       $sub_sector = DB::table('t_sub_sector')
+    ->where('id', $get_user_records->sub_sector_id)
+    ->first(['name', 'notes']);  // Retrieve the full record (name and notes)
+
+                       
 
         // Extract in-charge details from the string
         $inchargeDetails = $this->extractInchargeDetails($sub_sector->notes);
