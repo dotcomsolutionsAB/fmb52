@@ -218,7 +218,9 @@ public function register_expense(Request $request)
             ->update(['value' => $voucherNumber]);
 
         // 2. Store attachment
+
         $file = $request->file('attachment');
+        if($file){
         $fileName = time() . '_' . $file->getClientOriginalName();
         $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
 
@@ -230,6 +232,7 @@ public function register_expense(Request $request)
             'file_size' => $file->getSize(),
             'type'      => 'feedback', // or 'profile' based on your use case
         ]);
+    }
 
         // 3. Register expense
         $register_expense = ExpenseModel::create([
