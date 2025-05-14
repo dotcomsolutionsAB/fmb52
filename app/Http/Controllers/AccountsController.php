@@ -202,7 +202,7 @@ public function register_expense(Request $request)
         // 1. Fetch & increment voucher number from t_counter
         $counter = DB::table('t_counter')
             ->where('type', 'Expense')
-            ->where('jamiat_id', $request->input('jamiat_id'))
+            ->where('jamiat_id', Auth()->user()->jamiat_id)
             ->where('year', $request->input('year'))
             ->lockForUpdate()
             ->first();
