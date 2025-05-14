@@ -236,7 +236,7 @@ public function register_expense(Request $request)
 
         // 3. Register expense
         $register_expense = ExpenseModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => Auth()->user()->jamiat_id,
             'voucher_no' => $voucherNumber,
             'year' => $request->input('year'),
             'name' => $request->input('name'),
