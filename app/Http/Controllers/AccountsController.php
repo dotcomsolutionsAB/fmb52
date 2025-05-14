@@ -211,7 +211,7 @@ public function register_expense(Request $request)
             return response()->json(['message' => 'Voucher counter not configured.'], 400);
         }
 
-        $voucherNumber = $counter->value + 1;
+        $voucherNumber = $counter->prefix.($counter->value + 1).$counter->postfix;
 
         DB::table('t_counter')
             ->where('id', $counter->id)
