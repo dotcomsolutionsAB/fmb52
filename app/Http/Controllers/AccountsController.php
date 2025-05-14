@@ -245,7 +245,7 @@ public function register_expense(Request $request)
             'cheque_no' => $request->input('cheque_no'),
             'description' => $request->input('description'),
             'log_user' => auth()->user()->name,
-            'attachment' => $upload->id,
+            'attachment' => $upload->id??null,
         ]);
 
         DB::commit();
