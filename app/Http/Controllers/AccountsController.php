@@ -187,7 +187,7 @@ class AccountsController extends Controller
 public function register_expense(Request $request)
 {
     $request->validate([
-        'jamiat_id' => 'required|integer',
+        'jamiat_id' => 'nullable|integer',
         'year' => 'required|string|max:10',
         'name' => 'required|string',
         'date' => 'required|date',
@@ -223,7 +223,7 @@ public function register_expense(Request $request)
         $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
 
         $upload = UploadModel::create([
-            'jamiat_id'  => $request->input('jamiat_id'),
+            'jamiat_id'  => Auth()->user()->jamiat_id,
             'file_name' => $fileName,
             'file_ext'  => $file->getClientOriginalExtension(),
             'file_url'  => Storage::url($filePath),
