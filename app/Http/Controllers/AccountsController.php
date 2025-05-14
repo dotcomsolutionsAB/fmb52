@@ -215,7 +215,7 @@ public function register_expense(Request $request)
 
         DB::table('t_counter')
             ->where('id', $counter->id)
-            ->update(['value' => $voucherNumber]);
+            ->update(['value' => $counter->value + 1]);
 
         // 2. Store attachment
 
