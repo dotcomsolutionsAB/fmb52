@@ -17,13 +17,19 @@ class ProcessItsImport implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $importJobId;
+    protected $filePath;
+    protected $jamiat_id;
 
-    public function __construct($importJobId)
+    /**
+     * Create a new job instance.
+     *
+     * @param string $filePath
+     * @param int $jamiat_id
+     */
+    public function __construct($filePath, $jamiat_id)
     {
-        $this->importJobId = $importJobId;
-    }
-
+        $this->filePath = $filePath;
+        $this->jamiat_id = $jamiat_id;
     }
 
     /**
@@ -32,29 +38,23 @@ class ProcessItsImport implements ShouldQueue
      * @return void
      */
     public function handle()
-{
-    $importJob = ImportJob::find($this->importJobId);
-    if (!$importJob) {
-        \Log::error("Import job not found: {$this->importJobId}");
-        return;
+    {
+        try {
+            // You can check existence of data here if needed
+            // For example, fetch from DB if data exists, and decide import accordingly
+            
+            Excel::import(new ItsDataImport(), $this->filePath);
+            Log::info("ITS data imported for Jamiat ID: {$this->jamiat_id}");
+
+            Excel::import(new SectorSubsectorImport(), $this->filePath);
+            Log::info("Sectors and Subsectors imported for Jamiat ID: {$this->jamiat_id}");
+
+            Excel::import(new UserImport($this->jamiat_id), $this->filePath);
+            Log::info("Users imported for Jamiat ID: {$this->jamiat_id}");
+
+        } catch (\Exception $e) {
+            Log::error("Error during import process: " . $e->getMessage());
+            // Optionally: notify admin or user about failure
+        }
     }
-
-    $jamiat_id = $importJob->jamiat_id;
-
-    $importJob->update(['status' => 'processing']);
-
-    try {
-        Excel::import(new ItsDataImport(), $importJob->file_path);
-        Excel::import(new SectorSubsectorImport(), $importJob->file_path);
-        Excel::import(new UserImport($jamiat_id), $importJob->file_path);
-
-        $importJob->update(['status' => 'completed', 'message' => 'Import completed successfully.']);
-    } catch (\Exception $e) {
-        \Log::error("Import job failed: " . $e->getMessage());
-        $importJob->update([
-            'status' => 'failed',
-            'message' => $e->getMessage(),
-        ]);
-    }
-}
 }
