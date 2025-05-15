@@ -69,7 +69,7 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
 
             // Add a zero entry in the t_hub table for new users
             $this->addHubEntry($family_id, $jamiat_id);
-             Log::info('Imported row', [
+             \Log::info('Imported row', [
             'its_id' => $row['its_id'] ?? 'N/A',
             'full_name' => $row['full_name'] ?? 'N/A',
         ]);
@@ -77,7 +77,7 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
 
         }  catch (\Exception $e) {
         // Log error with details
-        Log::error('Failed to import row', [
+        \Log::error('Failed to import row', [
             'its_id' => $row['its_id'] ?? 'N/A',
             'full_name' => $row['full_name'] ?? 'N/A',
             'error' => $e->getMessage(),
