@@ -16,8 +16,12 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
 {
     protected $errors = [];
 
+
     public function model(array $row)
+
     {
+        ini_set('max_execution_time', 600);  // 5 minutes or more
+ini_set('memory_limit', '2048M');    // you already set this, can increase if needed
         $jamiat_id = auth()->user()->jamiat_id;
 
         if (!$jamiat_id) {

@@ -226,6 +226,8 @@ class CSVImportController extends Controller
     
     public function uploadExcel(Request $request)
     {
+        ini_set('max_execution_time', 600);  // 5 minutes or more
+ini_set('memory_limit', '2048M');    // you already set this, can increase if needed
         $request->validate([
             'file' => 'required|mimes:xlsx,xls',
         ]);
