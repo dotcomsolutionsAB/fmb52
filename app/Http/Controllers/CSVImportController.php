@@ -298,33 +298,34 @@ public function uploadExcel(Request $request)
         'file' => 'required|mimes:xlsx,xls',
     ]);
 
-    // Get Jamiat ID from authenticated user
-    $jamiat_id = auth()->user()->jamiat_id;
-    if (!$jamiat_id) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Jamiat ID is required and missing for the authenticated user.',
-        ], 400);
-    }
+    $user = auth()->user();
 
     try {
-        // Store the uploaded file (local storage or s3, etc)
         $file = $request->file('file');
         $filePath = $file->store('imports');
 
-        // Dispatch job to process import asynchronously
-        ProcessItsImport::dispatch($filePath, $jamiat_id);
+        // Create DB record for import job
+       $importJob = ImportJob::create([
+    'user_id' => $user->id,
+    'jamiat_id' => $user->jamiat_id,   // pass jamiat_id here
+    'file_path' => $filePath,
+    'status' => 'pending',
+]);
+
+        // Dispatch job with import job ID
+        ProcessItsImport::dispatch($importJob->id);
 
         return response()->json([
             'success' => true,
-            'message' => 'Import started. You will be notified when the process completes.',
-        ], 200);
+            'message' => 'Import started.',
+            'import_job_id' => $importJob->id,
+        ]);
 
     } catch (\Exception $e) {
-        \Log::error('Failed to dispatch import job: ' . $e->getMessage());
+        \Log::error('Failed to start import: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Failed to start import process: ' . $e->getMessage(),
+            'message' => 'Failed to start import: ' . $e->getMessage(),
         ], 500);
     }
 }
