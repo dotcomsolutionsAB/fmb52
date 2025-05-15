@@ -13,6 +13,8 @@ use App\Imports\SectorSubsectorImport;
 use App\Imports\UserImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\ProcessItsImport;
+use Illuminate\Support\Facades\Storage;
 
 
 class CSVImportController extends Controller
@@ -224,69 +226,108 @@ class CSVImportController extends Controller
    
 
     
-    public function uploadExcel(Request $request)
-    {
-        ini_set('max_execution_time', 600);  // 5 minutes or more
-ini_set('memory_limit', '2048M');    // you already set this, can increase if needed
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls',
-        ]);
+//     public function uploadExcel(Request $request)
+//     {
+//         ini_set('max_execution_time', 600);  // 5 minutes or more
+// ini_set('memory_limit', '2048M');    // you already set this, can increase if needed
+//         $request->validate([
+//             'file' => 'required|mimes:xlsx,xls',
+//         ]);
     
-        try {
-            ini_set('memory_limit', '1024M');
+//         try {
+//             ini_set('memory_limit', '1024M');
 
-            // Get jamiat_id from the authenticated user
-            $jamiat_id = auth()->user()->jamiat_id;
+//             // Get jamiat_id from the authenticated user
+//             $jamiat_id = auth()->user()->jamiat_id;
     
-            if (!$jamiat_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Jamiat ID is required and missing for the authenticated user.',
-                ], 400);
-            }
+//             if (!$jamiat_id) {
+//                 return response()->json([
+//                     'success' => false,
+//                     'message' => 'Jamiat ID is required and missing for the authenticated user.',
+//                 ], 400);
+//             }
     
-            // Check if `t_sector`, `t_sub_sector`, and `t_its_data` tables have data for the given Jamiat ID
-            $sectorExists = DB::table('t_sector')->where('jamiat_id', $jamiat_id)->exists();
-            $userExists = DB::table('users')->where('jamiat_id', $jamiat_id)->where('role', 'mumeneen')->exists();
-            $itsExists = DB::table('t_its_data')->where('jamiat_id', $jamiat_id)->exists();
+//             // Check if `t_sector`, `t_sub_sector`, and `t_its_data` tables have data for the given Jamiat ID
+//             $sectorExists = DB::table('t_sector')->where('jamiat_id', $jamiat_id)->exists();
+//             $userExists = DB::table('users')->where('jamiat_id', $jamiat_id)->where('role', 'mumeneen')->exists();
+//             $itsExists = DB::table('t_its_data')->where('jamiat_id', $jamiat_id)->exists();
 
-            if (!$itsExists) {
-                Excel::import(new ItsDataImport(), $request->file('file'));
-                Log::info("ITS data imported for Jamiat ID: {$jamiat_id}");
-            } else {
-                Log::info("ITS data already exists for Jamiat ID: {$jamiat_id}. Import skipped.");
-            }
+//             if (!$itsExists) {
+//                 Excel::import(new ItsDataImport(), $request->file('file'));
+//                 Log::info("ITS data imported for Jamiat ID: {$jamiat_id}");
+//             } else {
+//                 Log::info("ITS data already exists for Jamiat ID: {$jamiat_id}. Import skipped.");
+//             }
     
-            // Import Sectors and Subsectors only if they don't already exist
-            if (!$sectorExists) {
-                Excel::import(new SectorSubsectorImport(), $request->file('file'));
-                Log::info("Sectors and Subsectors imported for Jamiat ID: {$jamiat_id}");
-            } else {
-                Log::info("Sectors and Subsectors already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
-            }
+//             // Import Sectors and Subsectors only if they don't already exist
+//             if (!$sectorExists) {
+//                 Excel::import(new SectorSubsectorImport(), $request->file('file'));
+//                 Log::info("Sectors and Subsectors imported for Jamiat ID: {$jamiat_id}");
+//             } else {
+//                 Log::info("Sectors and Subsectors already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
+//             }
     
-            // Import Users only if no mumeneen users exist
-            if (!$userExists) {
-                Excel::import(new UserImport($jamiat_id), $request->file('file'));
-                Log::info("Users imported for Jamiat ID: {$jamiat_id}");
-            } else {
-                Log::info("Users with role 'mumeneen' already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
-            }
+//             // Import Users only if no mumeneen users exist
+//             if (!$userExists) {
+//                 Excel::import(new UserImport($jamiat_id), $request->file('file'));
+//                 Log::info("Users imported for Jamiat ID: {$jamiat_id}");
+//             } else {
+//                 Log::info("Users with role 'mumeneen' already exist for Jamiat ID: {$jamiat_id}. Import skipped.");
+//             }
     
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Import process completed.',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error("Error during import process: " . $e->getMessage());
+//             return response()->json([
+//                 'success' => true,
+//                 'message' => 'Import process completed.',
+//             ], 200);
+//         } catch (\Exception $e) {
+//             Log::error("Error during import process: " . $e->getMessage());
     
-            return response()->json([
-                'success' => false,
-                'message' => 'Error during import process: ' . $e->getMessage(),
-            ], 500);
-        }
+//             return response()->json([
+//                 'success' => false,
+//                 'message' => 'Error during import process: ' . $e->getMessage(),
+//             ], 500);
+//         }
+//     }
+
+
+
+public function uploadExcel(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls',
+    ]);
+
+    // Get Jamiat ID from authenticated user
+    $jamiat_id = auth()->user()->jamiat_id;
+    if (!$jamiat_id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Jamiat ID is required and missing for the authenticated user.',
+        ], 400);
     }
+
+    try {
+        // Store the uploaded file (local storage or s3, etc)
+        $file = $request->file('file');
+        $filePath = $file->store('imports');
+
+        // Dispatch job to process import asynchronously
+        ProcessItsImport::dispatch($filePath, $jamiat_id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import started. You will be notified when the process completes.',
+        ], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Failed to dispatch import job: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to start import process: ' . $e->getMessage(),
+        ], 500);
+    }
+}
     public function deleteByJamiatId($jamiatId)
     {
         try {
