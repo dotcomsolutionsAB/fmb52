@@ -313,7 +313,7 @@ public function uploadExcel(Request $request)
         $filePath = $file->store('imports');
 
         // Dispatch job to process import asynchronously
-        ProcessItsImport::dispatch($filePath, $jamiat_id);
+        ProcessItsImport::dispatch($filePath, 1);
 
         return response()->json([
             'success' => true,
