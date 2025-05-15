@@ -12,7 +12,7 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class UserImport implements ToModel, WithHeadingRow, WithValidation
+class UserImport implements ToModel, WithHeadingRow, WithValidation, WithChunkReading, ShouldQueue
 {
     protected $errors = [];
 
@@ -170,5 +170,9 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
     public function getErrors()
     {
         return $this->errors;
+    }
+     public function chunkSize(): int
+    {
+        return 100;  // adjust this number based on memory & performance
     }
 }
