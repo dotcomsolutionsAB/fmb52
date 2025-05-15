@@ -39,6 +39,8 @@ class ProcessItsImport implements ShouldQueue
      */
     public function handle()
     {
+        ini_set('memory_limit', '1024M');
+set_time_limit(0);
         try {
             // You can check existence of data here if needed
             // For example, fetch from DB if data exists, and decide import accordingly
