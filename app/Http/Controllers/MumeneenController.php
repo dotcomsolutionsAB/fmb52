@@ -428,7 +428,7 @@ class MumeneenController extends Controller
             return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
         }
 
-        return response()->json(['message' => 'Sorry, failed to fetch records!'], 404);
+        return response()->json(['message' => 'Sorry, failed  fetch records!'], 404);
     }
 
 
@@ -481,7 +481,7 @@ class MumeneenController extends Controller
         );
     } else {
         return response()->json(['code'=>404,
-                'status'=>false,'message' => 'Sorry, failed to fetch records!'], 404);
+                'status'=>false,'message' => 'Sorry failed to fetch records!'], 404);
     }
 }
 
