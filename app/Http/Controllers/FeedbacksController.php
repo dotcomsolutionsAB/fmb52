@@ -152,4 +152,45 @@ class FeedbacksController extends Controller
             'data' => $feedbacks
         ]);
     }
+    public function dailyMenuReport(Request $request)
+{
+    // Optionally validate date range filters
+    $validated = $request->validate([
+        'date_from' => 'nullable|date',
+        'date_to' => 'nullable|date|after_or_equal:date_from',
+    ]);
+
+    $query = DB::table('t_feedbacks as f')
+        ->join('t_menu as m', 'f.menu_id', '=', 'm.id') // Assuming you have a 'menus' table with menu names
+        ->select(
+            'm.menu as menu_name',
+            DB::raw('DATE(f.date) as feedback_date'),
+            DB::raw('COUNT(f.id) as review_count'),
+            DB::raw('SUM(f.oily) as oily_count'),
+            DB::raw('SUM(f.spicy) as spicy_count'),
+            DB::raw('AVG(f.food_taste) as avg_taste'),
+            DB::raw('AVG(f.food_quality) as avg_quality'),
+            DB::raw('AVG(f.food_quantity) as avg_quantity')
+        )
+        ->groupBy('feedback_date', 'm.name')
+        ->orderBy('feedback_date', 'desc')
+        ->orderBy('m.name');
+
+    // Apply date filters if provided
+    if (!empty($validated['date_from'])) {
+        $query->whereDate('f.date', '>=', $validated['date_from']);
+    }
+    if (!empty($validated['date_to'])) {
+        $query->whereDate('f.date', '<=', $validated['date_to']);
+    }
+
+    $report = $query->get();
+
+    return response()->json([
+        'code' => 200,
+        'status' => true,
+        'message' => 'Daily menu feedback report generated successfully',
+        'data' => $report,
+    ]);
+}
 }
