@@ -173,9 +173,9 @@ class FeedbacksController extends Controller
             DB::raw('AVG(f.food_quality) as avg_quality'),
             DB::raw('AVG(f.food_quantity) as avg_quantity')
         )
-        ->groupBy('feedback_date', 'm.name')
+        ->groupBy('feedback_date', 'm.menu')
         ->orderBy('feedback_date', 'desc')
-        ->orderBy('m.name');
+        ->orderBy('m.menu');
 
     // Apply date filters if provided
     if (!empty($validated['date_from'])) {
