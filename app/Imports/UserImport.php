@@ -150,7 +150,7 @@ class UserImport implements ToModel, WithHeadingRow, WithValidation
     public function rules(): array
     {
         return [
-            'its_id' => 'required|string',
+            'its_id' => 'required|integer',
             'full_name' => 'required|string',
         ];
     }
