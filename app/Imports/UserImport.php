@@ -11,6 +11,9 @@ use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
 class UserImport implements ToModel, WithHeadingRow, WithValidation, WithChunkReading, ShouldQueue
 {
@@ -66,9 +69,19 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
 
             // Add a zero entry in the t_hub table for new users
             $this->addHubEntry($family_id, $jamiat_id);
+             Log::info('Imported row', [
+            'its_id' => $row['its_id'] ?? 'N/A',
+            'full_name' => $row['full_name'] ?? 'N/A',
+        ]);
 
-        } catch (\Exception $e) {
-            $this->errors[] = "Error processing row: " . $e->getMessage();
+
+        }  catch (\Exception $e) {
+        // Log error with details
+        Log::error('Failed to import row', [
+            'its_id' => $row['its_id'] ?? 'N/A',
+            'full_name' => $row['full_name'] ?? 'N/A',
+            'error' => $e->getMessage(),
+        ]);
         }
     }
 
