@@ -510,37 +510,35 @@ $rows = array_map(function ($line) use ($header) {
     }
 }
 public function importTransfersFromCSV(Request $request)
+
 {
     $request->validate([
-        'expense_file' => 'required|file|mimes:csv,txt',
-        'transfer_file' => 'required|file|mimes:csv,txt',
+        'expense_file' => 'required|file|mimes:json',
+        'transfer_file' => 'required|file|mimes:json',
     ]);
 
     try {
         $jamiat_id = auth()->user()->jamiat_id ?? 1;
 
-        // ------------------------------------------
-        // ✅ Process EXPENSE CSV
-        // ------------------------------------------
+        // ----------------------------- //
+        // ✅ Process Expense JSON File  //
+        // ----------------------------- //
+        $expenseJson = json_decode(file_get_contents($request->file('expense_file')->getRealPath()), true);
+        $expenseRows = $expenseJson[2]['data'] ?? [];
+
         $expenseData = [];
-        $expenseLines = file($request->file('expense_file')->getRealPath());
-        $expenseHeader = str_getcsv(array_shift($expenseLines), "\t", '"');
-
-        foreach ($expenseLines as $line) {
-            $row = array_combine($expenseHeader, str_getcsv($line, "\t", '"'));
-            if (!$row || empty($row['date'])) continue;
-
+        foreach ($expenseRows as $row) {
             $expenseData[] = [
                 'jamiat_id'   => $jamiat_id,
                 'voucher_no'  => $row['expense_no'] ?? null,
                 'year'        => $row['year'] ?? null,
                 'name'        => $row['paid_to'] ?? null,
-                'date'        => Carbon::parse($row['date'])->format('Y-m-d'),
+                'date'        => Carbon::parse($row['date']),
                 'amount'      => $row['amount'] ?? 0,
                 'cheque_no'   => $row['cheque_no'] ?? null,
                 'description' => $row['description'] ?? null,
                 'log_user'    => $row['log_user'] ?? 'system',
-                'created_at'  => isset($row['log_date']) ? Carbon::parse($row['log_date'])->format('Y-m-d') : now(),
+                'created_at'  => Carbon::parse($row['log_date']),
                 'updated_at'  => now(),
             ];
         }
@@ -549,17 +547,14 @@ public function importTransfersFromCSV(Request $request)
             DB::table('t_expense')->insert($expenseData);
         }
 
-        // ------------------------------------------
-        // ✅ Process TRANSFER CSV
-        // ------------------------------------------
+        // ----------------------------- //
+        // ✅ Process Transfer JSON File //
+        // ----------------------------- //
+        $transferJson = json_decode(file_get_contents($request->file('transfer_file')->getRealPath()), true);
+        $transferRows = $transferJson[2]['data'] ?? [];
+
         $transferData = [];
-        $transferLines = file($request->file('transfer_file')->getRealPath());
-        $transferHeader = str_getcsv(array_shift($transferLines), "\t", '"');
-
-        foreach ($transferLines as $line) {
-            $row = array_combine($transferHeader, str_getcsv($line, "\t", '"'));
-            if (!$row || empty($row['log_date'])) continue;
-
+        foreach ($transferRows as $row) {
             $sectorFromId = DB::table('t_sector')->where('name', trim($row['transfer_from']))->value('id');
             $sectorToId   = DB::table('t_sector')->where('name', trim($row['transfer_to']))->value('id');
 
@@ -568,7 +563,7 @@ public function importTransfersFromCSV(Request $request)
             $transferData[] = [
                 'jamiat_id'   => $jamiat_id,
                 'family_id'   => $row['family_id'],
-                'date'        => Carbon::parse($row['log_date'])->format('Y-m-d'),
+                'date'        => Carbon::parse($row['log_date']),
                 'sector_from' => $sectorFromId,
                 'sector_to'   => $sectorToId,
                 'log_user'    => $row['log_user'] ?? 'system',
@@ -579,7 +574,7 @@ public function importTransfersFromCSV(Request $request)
         }
 
         if (!empty($transferData)) {
-            DB::table('t_transfers')->insert($transferData);
+            DB::table('t_transfer')->insert($transferData);
         }
 
         return response()->json([
@@ -590,10 +585,9 @@ public function importTransfersFromCSV(Request $request)
 
     } catch (\Exception $e) {
         return response()->json([
-            'message' => 'Failed to import expenses or transfers.',
+            'message' => 'Failed to import data.',
             'error' => $e->getMessage()
         ], 500);
     }
 }
-
 }
