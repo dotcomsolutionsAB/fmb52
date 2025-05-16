@@ -461,6 +461,8 @@ public function updateHofData()
                     'name' => $hofData->name,
                     'mobile' => $hofData->mobile,
                     'email' => $hofData->email,
+                    'gender'=>$hofData->gender,
+                    'age'=>$hofData->age,
                     'updated_at' => now(),  // Set the updated timestamp
                 ];
 
