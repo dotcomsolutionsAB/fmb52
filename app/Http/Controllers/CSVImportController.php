@@ -574,7 +574,7 @@ public function importTransfersFromCSV(Request $request)
         }
 
         if (!empty($transferData)) {
-            DB::table('t_transfer')->insert($transferData);
+            DB::table('t_transfers')->insert($transferData);
         }
 
         return response()->json([
