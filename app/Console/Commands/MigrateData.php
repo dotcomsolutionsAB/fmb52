@@ -17,7 +17,7 @@ class MigrateData extends Command
     public function handle()
     {
         $url = 'https://www.faizkolkata.com/assets/custom/migrate/laravel/mumeneen.php';
-        $limit = 3000;
+        $limit = 500;
         $offset = 0;
 
         // Fetch sector and sub-sector mappings
@@ -31,7 +31,9 @@ $subSectorMapping = DB::table('t_sub_sector')
     ->toArray();
 
         while (true) {
-            $response = Http::get($url, ['limit' => $limit, 'offset' => $offset]);
+            // $response = Http::get($url, ['limit' => $limit, 'offset' => $offset]);
+            $response = Http::timeout(60)->get($url, ['limit' => $limit, 'offset' => $offset]);
+
 
             if ($response->failed()) {
                 $this->error("Failed to fetch data for offset $offset");
