@@ -52,7 +52,7 @@ class CSVImportController extends Controller
     private function processReceiptCSV($url, $sectorMapping, $subSectorMapping)
     {
         // Clear existing data in the receipt table
-        ReceiptsModel::truncate();
+        //ReceiptsModel::truncate();
 
         // Fetch the CSV content from the URL
         $csvContent = file_get_contents($url);
@@ -130,7 +130,7 @@ class CSVImportController extends Controller
     private function processPaymentCSV($url, $sectorMapping, $subSectorMapping)
     {
         // Clear existing data in the payment table
-        PaymentsModel::truncate();
+        //PaymentsModel::truncate();
 
         // Fetch the CSV content from the URL
         $csvContent = file_get_contents($url);

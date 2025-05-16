@@ -12,7 +12,7 @@ class HubModel extends Model
     protected $table = 't_hub';
 
     protected $fillable = [
-        'jamiat_id', 'family_id', 'year', 'thali_status', 'hub_amount', 'paid_amount', 'due_amount', 'log_user',
+        'jamiat_id', 'family_id', 'year', 'thali_status', 'hub_amount','overdue', 'paid_amount', 'due_amount', 'log_user',
     ];
 
     // Define the relationship with the Year model
