@@ -281,19 +281,25 @@ public function store_photo(Request $request)
     try {
         $role = Auth::user()->role;
 
-        if ($role == 'superadmin') {
+        if ($role === 'superadmin') {
             $request->validate(['jamiat_id' => 'required|numeric']);
             $jamiat_id = $request->input('jamiat_id');
         } else {
             $jamiat_id = Auth::user()->jamiat_id;
         }
 
-        $users = User::select('id', 'its')->get();
-
         $placeholder = UploadModel::where('file_name', 'placeholder')->first();
         if (!$placeholder) {
             return response()->json(['message' => 'Placeholder image not found.'], 404);
         }
+
+        // ✅ Only select users with photo_id = null or placeholder ID
+        $users = User::select('id', 'its')
+            ->where(function ($query) use ($placeholder) {
+                $query->whereNull('photo_id')
+                      ->orWhere('photo_id', $placeholder->id);
+            })
+            ->get();
 
         foreach ($users as $user) {
             try {
@@ -302,35 +308,32 @@ public function store_photo(Request $request)
                     ->first();
 
                 if (!$upload) {
-                    // Try to download from remote URL
                     $remoteUrl = "https://talabulilm.com/mumin_images/{$user->its}.png";
-                    $fileName = $user->its . '.png';
+                    $fileName = "{$user->its}.png";
                     $folder = "uploads/{$jamiat_id}/photoid";
                     $path = "{$folder}/{$fileName}";
 
-                    // Ensure folder exists
                     if (!Storage::disk('public')->exists($folder)) {
                         Storage::disk('public')->makeDirectory($folder);
                     }
 
-                    // Attempt download
                     $image = @file_get_contents($remoteUrl);
 
                     if ($image !== false) {
                         Storage::disk('public')->put($path, $image);
 
                         $upload = UploadModel::create([
-                            'jamiat_id' => $jamiat_id,
-                            'family_id' => null,
-                            'file_name' => $user->its,
-                            'file_ext' => 'png',
-                            'file_url' => asset("storage/{$path}"),
-                            'file_size' => Storage::disk('public')->size($path),
+                            'jamiat_id'   => $jamiat_id,
+                            'family_id'   => null,
+                            'file_name'   => $user->its,
+                            'file_ext'    => 'png',
+                            'file_url'    => asset("storage/{$path}"),
+                            'file_size'   => Storage::disk('public')->size($path),
                         ]);
                     }
                 }
 
-                // Update user's photo_id
+                // ✅ Update user with new upload ID or fallback to placeholder
                 User::where('id', $user->id)->update([
                     'photo_id' => $upload ? $upload->id : $placeholder->id
                 ]);
@@ -341,7 +344,7 @@ public function store_photo(Request $request)
         }
 
         return response()->json([
-            'message' => 'Photo IDs updated successfully with remote fallback.',
+            'message' => 'Photo IDs updated successfully where photo_id was null or placeholder.',
         ]);
     } catch (\Illuminate\Validation\ValidationException $e) {
         return response()->json(['message' => 'Validation error.', 'errors' => $e->errors()], 422);
@@ -350,6 +353,5 @@ public function store_photo(Request $request)
         return response()->json(['message' => 'Unexpected error occurred.'], 500);
     }
 }
-
 
 }
