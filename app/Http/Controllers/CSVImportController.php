@@ -391,7 +391,9 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
         $jamiat_id = auth()->user()->jamiat_id ?? 1;
 
         $file = $request->file('file');
-        $data = array_map('str_getcsv', file($file->getRealPath()));
+       $data = array_map(function ($line) {
+    return str_getcsv($line, "\t", '"');
+}, file($file->getRealPath()));
 
         // Assume first row is the header
         $header = array_map('trim', $data[0]);
@@ -435,4 +437,65 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
         ], 500);
     }
 }
+public function importTransfersFromCSV(Request $request)
+{
+    $request->validate([
+        'file' => 'required|file|mimes:csv,txt',
+    ]);
+
+    try {
+        $jamiat_id = auth()->user()->jamiat_id ?? 1;
+
+        $file = $request->file('file');
+        $rows = array_map(function ($line) {
+            return str_getcsv($line, "\t", '"');
+        }, file($file->getRealPath()));
+
+        $header = array_map('trim', $rows[0]);
+        unset($rows[0]);
+
+        $insertData = [];
+
+        foreach ($rows as $row) {
+            $row = array_combine($header, $row);
+
+            // Parse date
+            $convertedDate = Carbon::parse($row['log_date'])->format('Y-m-d');
+
+            // Convert sector names to IDs (you may use a map or query DB)
+            $sectorFromId = DB::table('t_sector')->where('name', trim($row['transfer_from']))->value('id');
+            $sectorToId = DB::table('t_sector')->where('name', trim($row['transfer_to']))->value('id');
+
+            if (!$sectorFromId || !$sectorToId) {
+                continue; // Skip if sectors not found
+            }
+
+            $insertData[] = [
+                'jamiat_id'   => $jamiat_id,
+                'family_id'   => $row['family_id'],
+                'date'        => $convertedDate,
+                'sector_from' => $sectorFromId,
+                'sector_to'   => $sectorToId,
+                'log_user'    => $row['log_user'],
+                'status'      => $row['status'],
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ];
+        }
+
+        DB::table('t_transfers')->insert($insertData);
+
+        return response()->json([
+            'message' => 'Transfer records imported successfully.',
+            'inserted' => count($insertData)
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Failed to import transfers.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }
