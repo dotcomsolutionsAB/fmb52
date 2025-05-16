@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\UploadModel;
 use App\Models\User;
 use Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+
 
 class UploadController extends Controller
 {
@@ -272,76 +275,81 @@ class UploadController extends Controller
     }
 
     // store photoid
-    public function store_photo(Request $request)
-    {
-        try {
-            $role = Auth::user()->role;
 
-            // Validate inputs based on the user's role
-            if ($role == 'superadmin') {
-                $request->validate([
-                    'jamiat_id' => 'required|numeric',
+public function store_photo(Request $request)
+{
+    try {
+        $role = Auth::user()->role;
+
+        if ($role == 'superadmin') {
+            $request->validate(['jamiat_id' => 'required|numeric']);
+            $jamiat_id = $request->input('jamiat_id');
+        } else {
+            $jamiat_id = Auth::user()->jamiat_id;
+        }
+
+        $users = User::select('id', 'its')->get();
+
+        $placeholder = UploadModel::where('file_name', 'placeholder')->first();
+        if (!$placeholder) {
+            return response()->json(['message' => 'Placeholder image not found.'], 404);
+        }
+
+        foreach ($users as $user) {
+            try {
+                $upload = UploadModel::where('file_name', $user->its)
+                    ->where('jamiat_id', $jamiat_id)
+                    ->first();
+
+                if (!$upload) {
+                    // Try to download from remote URL
+                    $remoteUrl = "https://talabulilm.com/mumin_images/{$user->its}.png";
+                    $fileName = $user->its . '.png';
+                    $folder = "uploads/{$jamiat_id}/photoid";
+                    $path = "{$folder}/{$fileName}";
+
+                    // Ensure folder exists
+                    if (!Storage::disk('public')->exists($folder)) {
+                        Storage::disk('public')->makeDirectory($folder);
+                    }
+
+                    // Attempt download
+                    $image = @file_get_contents($remoteUrl);
+
+                    if ($image !== false) {
+                        Storage::disk('public')->put($path, $image);
+
+                        $upload = UploadModel::create([
+                            'jamiat_id' => $jamiat_id,
+                            'family_id' => null,
+                            'file_name' => $user->its,
+                            'file_ext' => 'png',
+                            'file_url' => asset("storage/{$path}"),
+                            'file_size' => Storage::disk('public')->size($path),
+                        ]);
+                    }
+                }
+
+                // Update user's photo_id
+                User::where('id', $user->id)->update([
+                    'photo_id' => $upload ? $upload->id : $placeholder->id
                 ]);
 
-                $jamiat_id = $request->input('jamiat_id');
-            } else {
-                $jamiat_id = Auth::user()->jamiat_id;
+            } catch (\Exception $e) {
+                \Log::error("Error updating photo_id for user {$user->its}: {$e->getMessage()}");
             }
-
-            // Fetch all users' ITS and IDs
-            $get_its = User::select('id', 'its')->get();
-
-            // Get the placeholder upload ID
-            $get_placeholder = UploadModel::select('id')
-                ->where('file_name', 'placeholder')
-                ->first();
-
-            if (!$get_placeholder) {
-                return response()->json([
-                    'message' => 'Placeholder image not found in uploads table.',
-                ], 404);
-            }
-
-            foreach ($get_its as $user) {
-                try {
-                    // Check if the ITS matches a file in the uploads table
-                    $upload = UploadModel::select('id')
-                        ->where('file_name', $user->its)
-                        ->where('jamiat_id', $jamiat_id)
-                        ->first();
-
-                    if ($upload) {
-                        // Update photo_id with the matched upload ID
-                        User::where('id', $user->id)
-                            ->update(['photo_id' => $upload->id]);
-                    } else {
-                        // Update photo_id with the placeholder ID
-                        User::where('id', $user->id)
-                            ->update(['photo_id' => $get_placeholder->id]);
-                    }
-                } catch (\Exception $e) {
-                    // Log the error for individual user and continue processing
-                    \Log::error("Error updating photo_id for user ID {$user->id}. Error: {$e->getMessage()}");
-                }
-            }
-
-            return response()->json([
-                'message' => 'Photo IDs updated successfully where matching uploads exist.',
-            ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Handle validation errors
-            return response()->json([
-                'message' => 'Validation error.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            // Handle general exceptions
-            \Log::error("An unexpected error occurred: {$e->getMessage()}");
-            return response()->json([
-                'message' => 'An unexpected error occurred. Please try again later.',
-            ], 500);
         }
+
+        return response()->json([
+            'message' => 'Photo IDs updated successfully with remote fallback.',
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json(['message' => 'Validation error.', 'errors' => $e->errors()], 422);
+    } catch (\Exception $e) {
+        \Log::error("Unexpected error in store_photo: {$e->getMessage()}");
+        return response()->json(['message' => 'Unexpected error occurred.'], 500);
     }
+}
 
 
 }

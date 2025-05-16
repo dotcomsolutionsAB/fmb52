@@ -486,14 +486,53 @@ public function register_expense(Request $request)
     }
 }
     // view
-    public function all_payments()
-    {
-        $get_all_payments = PaymentsModel::select('id','payment_no', 'jamiat_id', 'family_id', 'folio_no', 'name', 'its', 'sector_id', 'sub_sector_id', 'year', 'mode', 'date', 'bank_name', 'cheque_no', 'cheque_date', 'ifsc_code', 'transaction_id', 'transaction_date', 'amount', 'comments', 'status', 'cancellation_reason', 'log_user', 'attachment')->get();
+   public function all_receipts(Request $request)
+{
+    $user = Auth::user();
 
-        return $get_all_payments->isNotEmpty()
-            ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
-            : response()->json(['message' => 'No payments found!'], 404);
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized.'], 403);
     }
+
+    // Decode sector and sub-sector access
+    $userSectorAccess = json_decode($user->sector_access_id, true);
+    $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
+
+    if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
+        return response()->json([
+            'message' => 'No access to any sectors or sub-sectors.',
+        ], 403);
+    }
+
+    $get_all_receipts = ReceiptsModel::select(
+            't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
+            't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
+            't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
+            't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date',
+            't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date',
+            't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
+            't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
+            'users.name as user_name', 'users.photo_id'
+        )
+        ->leftJoin('users', 't_receipts.its', '=', 'users.its')
+        ->whereIn('t_receipts.sector_id', $userSectorAccess)
+        ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess)
+        ->with([
+            'user.photo:id,file_url'
+        ])
+        ->orderBy('t_receipts.date', 'desc')
+        ->get();
+
+    // Append photo URL
+    $get_all_receipts->each(function ($receipt) {
+        $receipt->photo_url = $receipt->user && $receipt->user->photo ? $receipt->user->photo->file_url : null;
+        unset($receipt->user);
+    });
+
+    return $get_all_receipts->isNotEmpty()
+        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
+        : response()->json(['message' => 'No receipts found!'], 404);
+}
 
     // update
     public function update_payments(Request $request, $id)
@@ -814,7 +853,7 @@ public function register_expense(Request $request)
         ->with([
             'user.photo:id,file_url' // Load only the `photo` URL
         ])
-        ->orderBy('t_receipts.id', 'desc') // Order by `t_receipts.id` in descending order
+        ->orderBy('t_receipts.date', 'desc') // Order by `t_receipts.id` in descending order
         ->get();
     
         // Simplify the response to include only the photo URL
