@@ -517,7 +517,7 @@ public function register_expense(Request $request)
             'uploads.file_url as photo_url'
         )
         ->leftJoin('users', 't_payments.its', '=', 'users.username')
-        ->leftJoin('uploads', 'users.photo_id', '=', 'uploads.id')
+        ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
         ->whereIn('t_payments.sector_id', $userSectorAccess)
         ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess)
         ->orderBy('t_payments.date', 'desc')
