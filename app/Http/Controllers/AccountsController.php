@@ -494,7 +494,7 @@ public function register_expense(Request $request)
         return response()->json(['message' => 'Unauthorized.'], 403);
     }
 
-    // Decode access
+    // Decode access control
     $userSectorAccess = json_decode($user->sector_access_id, true);
     $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
 
@@ -504,8 +504,12 @@ public function register_expense(Request $request)
         ], 403);
     }
 
-    // Get all payments with user + photo ID from UploadModel
-    $get_all_payments = PaymentsModel::select(
+    // Optional filters
+    $year = $request->input('year');
+    $dateFrom = $request->input('date_from');
+    $dateTo = $request->input('date_to');
+
+    $query = PaymentsModel::select(
             't_payments.id', 't_payments.payment_no', 't_payments.jamiat_id', 't_payments.family_id',
             't_payments.folio_no', 't_payments.name', 't_payments.its', 't_payments.sector_id', 't_payments.sub_sector_id',
             't_payments.year', 't_payments.mode', 't_payments.date', 't_payments.bank_name',
@@ -519,9 +523,23 @@ public function register_expense(Request $request)
         ->leftJoin('users', 't_payments.its', '=', 'users.username')
         ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
         ->whereIn('t_payments.sector_id', $userSectorAccess)
-        ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess)
-        ->orderBy('t_payments.date', 'desc')
-        ->get();
+        ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess);
+
+    // Apply year filter if provided
+    if ($year) {
+        $query->where('t_payments.year', $year);
+    }
+
+    // Apply date range filter if both provided
+    if ($dateFrom && $dateTo) {
+        $query->whereBetween('t_payments.date', [$dateFrom, $dateTo]);
+    } elseif ($dateFrom) {
+        $query->where('t_payments.date', '>=', $dateFrom);
+    } elseif ($dateTo) {
+        $query->where('t_payments.date', '<=', $dateTo);
+    }
+
+    $get_all_payments = $query->orderBy('t_payments.date', 'desc')->get();
 
     return $get_all_payments->isNotEmpty()
         ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
@@ -814,24 +832,26 @@ public function register_expense(Request $request)
     }
     // view
     public function all_receipts(Request $request)
-    {
-        $user = Auth::user();
-    
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized.  11'], 403);
-        }
-    
-        // Get user's accessible sector and sub-sector IDs
-        $userSectorAccess = json_decode($user->sector_access_id, true); // Get user's sector access as an array
-        $userSubSectorAccess = json_decode($user->sub_sector_access_id, true); // Get user's sub-sector access as an array
-    
-        if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
-            return response()->json([
-                'message' => 'No access to any sectors or sub-sectors.',
-            ], 403);
-        }
-    
-        $get_all_receipts = ReceiptsModel::select(
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized.'], 403);
+    }
+
+    $userSectorAccess = json_decode($user->sector_access_id, true);
+    $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
+
+    if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
+        return response()->json(['message' => 'No access to any sectors or sub-sectors.'], 403);
+    }
+
+    // Optional filters
+    $year = $request->input('year');
+    $dateFrom = $request->input('date_from');
+    $dateTo = $request->input('date_to');
+
+    $query = ReceiptsModel::select(
             't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
             't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
             't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
@@ -839,27 +859,32 @@ public function register_expense(Request $request)
             't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date',
             't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
             't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
-            'users.name as user_name', 'users.photo_id'
+            'users.name as user_name', 'users.photo_id',
+            't_uploads.file_url as photo_url'
         )
-        ->leftJoin('users', 't_receipts.its', '=', 'users.its') // Match `its` fields
-        ->whereIn('t_receipts.sector_id', $userSectorAccess) // Filter by accessible sectors
-        ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess) // Filter by accessible sub-sectors
-        ->with([
-            'user.photo:id,file_url' // Load only the `photo` URL
-        ])
-        ->orderBy('t_receipts.date', 'desc') // Order by `t_receipts.id` in descending order
-        ->get();
-    
-        // Simplify the response to include only the photo URL
-        $get_all_receipts->each(function ($receipt) {
-            $receipt->photo_url = $receipt->user && $receipt->user->photo ? $receipt->user->photo->file_url : null;
-            unset($receipt->user); // Remove the full user object
-        });
-    
-        return $get_all_receipts->isNotEmpty()
-            ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
-            : response()->json(['message' => 'No receipts found!'], 404);
+        ->leftJoin('users', 't_receipts.its', '=', 'users.username') // if `users.username` is used as ITS
+        ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
+        ->whereIn('t_receipts.sector_id', $userSectorAccess)
+        ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess);
+
+    if ($year) {
+        $query->where('t_receipts.year', $year);
     }
+
+    if ($dateFrom && $dateTo) {
+        $query->whereBetween('t_receipts.date', [$dateFrom, $dateTo]);
+    } elseif ($dateFrom) {
+        $query->where('t_receipts.date', '>=', $dateFrom);
+    } elseif ($dateTo) {
+        $query->where('t_receipts.date', '<=', $dateTo);
+    }
+
+    $get_all_receipts = $query->orderBy('t_receipts.date', 'desc')->get();
+
+    return $get_all_receipts->isNotEmpty()
+        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
+        : response()->json(['message' => 'No receipts found!'], 404);
+}
     public function getReceiptsByFamilyIds(Request $request)
 {
     // Validate and retrieve the family_id array from the request

@@ -145,7 +145,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Receipts Routes
     Route::prefix('receipts')->group(function () {
         Route::middleware('check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print')->group(function () {
-            Route::get('/', [AccountsController::class, 'all_receipts']);
+            Route::post('/', [AccountsController::class, 'all_receipts']);
             Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
         });
         Route::post('/pending', [AccountsController::class, 'getPendingCashReceipts']);
@@ -164,7 +164,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Payments Routes
     Route::prefix('payments')->group(function () {
         Route::middleware('check-api-permission:payments.view,payments.view_global,payments.export,payments.print')->group(function () {
-            Route::get('/', [AccountsController::class, 'all_payments']);
+            Route::post('/', [AccountsController::class, 'all_payments']);
         });
         Route::post('/', [AccountsController::class, 'register_payments'])->middleware('check-api-permission:payments.create');
         Route::post('/update', [AccountsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.edit');
