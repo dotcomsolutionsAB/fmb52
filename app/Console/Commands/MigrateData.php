@@ -38,7 +38,8 @@ $subSectorMapping = DB::table('t_sub_sector')
                 break;
             }
 
-            $families = $response->json()['data'] ?? [];
+            $responseData = $response->json();
+          $families = is_array($responseData) ? $responseData : [];
 
             if (empty($families)) {
                 $this->info('No more data to process.');
