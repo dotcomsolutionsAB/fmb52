@@ -362,7 +362,7 @@ class MumeneenController extends Controller
         $get_all_users = User::select(
             'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
             'its_family_id', 'folio_no', 'label', 'mumeneen_type', 'title', 'gender', 'age',
-            'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id'
+            'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id','thali_status'
         )
         ->with([
             'photo:id,file_url', // Existing relationship
@@ -417,7 +417,7 @@ class MumeneenController extends Controller
                     $user->due_amount = $hub_record->due_amount ?? 'NA';
                 }
 
-                $user->thali_status = $hub_record->thali_status ?? 'NA'; // Assign thali_status
+                //$user->thali_status = $hub_record->thali_status ?? 'NA'; // Assign thali_status
 
                 $overdue_record = $overdue_data->get($user->family_id);
                 $user->overdue = $overdue_record->overdue ?? 0;
