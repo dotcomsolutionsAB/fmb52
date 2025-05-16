@@ -391,12 +391,15 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
         $jamiat_id = auth()->user()->jamiat_id ?? 1;
 
         $file = $request->file('file');
-       $data = array_map(function ($line) {
-    return str_getcsv($line, "\t", '"');
-}, file($file->getRealPath()));
+     $data = file($file->getRealPath());
 
-        // Assume first row is the header
-        $header = array_map('trim', $data[0]);
+// Proper header parsing
+$header = str_getcsv($data[0], "\t", '"');
+unset($data[0]);
+
+$rows = array_map(function ($line) use ($header) {
+    return array_combine($header, str_getcsv($line, "\t", '"'));
+}, $data);
         unset($data[0]);
 
         $insertData = [];
@@ -447,11 +450,15 @@ public function importTransfersFromCSV(Request $request)
         $jamiat_id = auth()->user()->jamiat_id ?? 1;
 
         $file = $request->file('file');
-        $rows = array_map(function ($line) {
-            return str_getcsv($line, "\t", '"');
-        }, file($file->getRealPath()));
+       $data = file($file->getRealPath());
 
-        $header = array_map('trim', $rows[0]);
+// Proper header parsing
+$header = str_getcsv($data[0], "\t", '"');
+unset($data[0]);
+
+$rows = array_map(function ($line) use ($header) {
+    return array_combine($header, str_getcsv($line, "\t", '"'));
+}, $data);
         unset($rows[0]);
 
         $insertData = [];
