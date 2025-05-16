@@ -534,7 +534,7 @@ public function importTransfersFromCSV(Request $request)
                 'year'        => $row['year'] ?? null,
                 'name'        => $row['paid_to'] ?? null,
                 'date'        => Carbon::parse($row['date']),
-                'amount'      => $row['amount'] ?? 0,
+               'amount' => (float) preg_replace('/[^\d.]/', '', $row['amount'] ?? 0),
                 'cheque_no'   => $row['cheque_no'] ?? null,
                 'description' => $row['description'] ?? null,
                 'log_user'    => $row['log_user'] ?? 'system',
