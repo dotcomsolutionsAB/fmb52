@@ -514,7 +514,7 @@ public function register_expense(Request $request)
             't_payments.comments', 't_payments.status', 't_payments.cancellation_reason',
             't_payments.log_user', 't_payments.attachment',
             'users.name as user_name', 'users.photo_id',
-            'uploads.file_url as photo_url'
+            't_uploads.file_url as photo_url'
         )
         ->leftJoin('users', 't_payments.its', '=', 'users.username')
         ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
