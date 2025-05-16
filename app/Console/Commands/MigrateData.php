@@ -21,14 +21,14 @@ class MigrateData extends Command
         $offset = 0;
 
         // Fetch sector and sub-sector mappings
-        $sectorMapping = DB::table('t_sector')->pluck('id', 'name')->toArray();
-        $subSectorMapping = DB::table('t_sub_sector')
-            ->select('id', 'name', 'sector')
-            ->get()
-            ->mapWithKeys(function ($item) {
-                return ["{$item->sector}:{$item->name}" => $item->id];
-            })
-            ->toArray();
+     $sectorMapping = DB::table('t_sector')->pluck('id', 'name')->toArray();
+$subSectorMapping = DB::table('t_sub_sector')
+    ->select('id', 'name', 'sector_id')
+    ->get()
+    ->mapWithKeys(function ($item) {
+        return ["{$item->sector_id}:{$item->name}" => $item->id];
+    })
+    ->toArray();
 
         while (true) {
             $response = Http::get($url, ['limit' => $limit, 'offset' => $offset]);
