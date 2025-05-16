@@ -273,6 +273,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/its_upload', [CSVImportController::class, 'uploadExcel']);
     Route::delete('/its-data/{jamiatId}', [CSVImportController::class, 'deleteByJamiatId']);
+     Route::post('/expense_migrate', [CSVImportController::class, 'importExpensesFromCSV']);
+    
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Feedback

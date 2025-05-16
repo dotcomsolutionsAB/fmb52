@@ -192,7 +192,7 @@ public function register_expense(Request $request)
         'name' => 'required|string',
         'date' => 'required|date',
         'amount' => 'required|integer',
-        'cheque_no' => 'nullable|string',
+        'cheque_no' => 'nullable|string|size:6',
         'description' => 'nullable|string',
         'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
     ]);
@@ -307,7 +307,7 @@ public function register_expense(Request $request)
             'name' => 'required|string',
             'date' => 'required|date',
             'amount' => 'required|integer',
-            'cheque_no' => 'nullable|string',
+            'cheque_no' => 'nullable|string|size:6',
             'description' => 'nullable|string',
             'log_user' => 'required|string',
            
@@ -354,7 +354,7 @@ public function register_expense(Request $request)
         
         'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         'bank_name' => 'nullable|string|max:100', // For cheque and neft
-        'cheque_no' => 'nullable|string|max:50',  // For cheque payments
+        'cheque_no' => 'nullable|string|size:6',  // For cheque payments
         'cheque_date' => 'nullable|date',         // For cheque payments
         'ifsc_code' => 'nullable|string|max:11',  // For cheque and neft
         'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
@@ -568,7 +568,7 @@ public function register_expense(Request $request)
             'mode' => 'required|in:cheque,cash,neft,upi',
             'date' => 'required|date',
             'bank_name' => 'nullable|string|max:100',
-            'cheque_no' => 'nullable|string|max:50',
+            'cheque_no' => 'nullable|string|size:6',
             'cheque_date' => 'nullable|date',
             'ifsc_code' => 'nullable|string|max:11',
             'transaction_id' => 'nullable|string|max:100',
@@ -659,7 +659,7 @@ public function register_expense(Request $request)
                 'amount' => 'required|numeric',
                 'mode' => 'required|in:cheque,cash,neft,upi',
                 'bank_name' => 'nullable|string|max:100',
-                'cheque_no' => 'nullable|string|max:50',
+                'cheque_no' => 'nullable|string|size:6',
                 'cheque_date' => 'nullable|date',
                 'ifsc_code' => 'nullable|string|max:11',
                 'transaction_id' => 'nullable|string|max:100',
@@ -931,7 +931,7 @@ public function register_expense(Request $request)
             'amount' => 'required|numeric',
             'mode' => 'required|in:cheque,cash,neft,upi',
             'bank_name' => 'nullable|string|max:100',
-            'cheque_no' => 'nullable|string|max:50',
+            'cheque_no' => 'nullable|string|size:6',
             'cheque_date' => 'nullable|date',
             'ifsc_code' => 'nullable|string|max:11',
             'transaction_id' => 'nullable|string|max:100',

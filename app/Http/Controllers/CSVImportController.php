@@ -378,4 +378,60 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
             ], 500);
         }
     }
+
+
+    public function importExpensesFromCSV(Request $request)
+{
+    $request->validate([
+        'file' => 'required|file|mimes:csv,txt',
+    ]);
+
+    try {
+        $jamiat_id = auth()->user()->jamiat_id ?? 1;
+
+        $file = $request->file('file');
+        $data = array_map('str_getcsv', file($file->getRealPath()));
+
+        // Assume first row is the header
+        $header = array_map('trim', $data[0]);
+        unset($data[0]);
+
+        $insertData = [];
+
+        foreach ($data as $row) {
+            $row = array_combine($header, $row);
+
+            // Convert date format to Y-m-d
+            $convertedDate = Carbon::createFromFormat('n/j/y', $row['date'])->format('Y-m-d');
+            $logDate = Carbon::createFromFormat('n/j/y', $row['log_date'])->format('Y-m-d');
+
+            $insertData[] = [
+                'jamiat_id'   => $jamiat_id,
+                'voucher_no'  => $row['expense_no'],
+                'year'        => $row['year'],
+                'name'        => $row['paid_to'],
+                'date'        => $convertedDate,
+                'amount'      => $row['amount'],
+                'cheque_no'   => $row['cheque_no'],
+                'description' => $row['description'],
+                'log_user'    => $row['log_user'],
+                'created_at'  => $logDate,
+                'updated_at'  => now(),
+            ];
+        }
+
+        DB::table('t_expense')->insert($insertData);
+
+        return response()->json([
+            'message' => 'Expenses imported successfully.',
+            'count' => count($insertData)
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Failed to import expenses.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }
