@@ -486,7 +486,7 @@ public function register_expense(Request $request)
     }
 }
     // view
-   public function all_payments(Request $request)
+  public function all_payments(Request $request)
 {
     $user = Auth::user();
 
@@ -494,7 +494,7 @@ public function register_expense(Request $request)
         return response()->json(['message' => 'Unauthorized.'], 403);
     }
 
-    // Decode access control lists
+    // Decode access
     $userSectorAccess = json_decode($user->sector_access_id, true);
     $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
 
@@ -504,6 +504,7 @@ public function register_expense(Request $request)
         ], 403);
     }
 
+    // Get all payments with user + photo ID from UploadModel
     $get_all_payments = PaymentsModel::select(
             't_payments.id', 't_payments.payment_no', 't_payments.jamiat_id', 't_payments.family_id',
             't_payments.folio_no', 't_payments.name', 't_payments.its', 't_payments.sector_id', 't_payments.sub_sector_id',
@@ -512,22 +513,15 @@ public function register_expense(Request $request)
             't_payments.transaction_id', 't_payments.transaction_date', 't_payments.amount',
             't_payments.comments', 't_payments.status', 't_payments.cancellation_reason',
             't_payments.log_user', 't_payments.attachment',
-            'users.name as user_name', 'users.photo_id'
+            'users.name as user_name', 'users.photo_id',
+            'uploads.file_url as photo_url'
         )
-        ->leftJoin('users', 't_payments.its', '=', 'users.its')
+        ->leftJoin('users', 't_payments.its', '=', 'users.username')
+        ->leftJoin('uploads', 'users.photo_id', '=', 'uploads.id')
         ->whereIn('t_payments.sector_id', $userSectorAccess)
         ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess)
-        ->with([
-            'user.photo:id,file_url'
-        ])
         ->orderBy('t_payments.date', 'desc')
         ->get();
-
-    // Attach photo URL and clean user object
-    $get_all_payments->each(function ($payment) {
-        $payment->photo_url = $payment->user && $payment->user->photo ? $payment->user->photo->file_url : null;
-        unset($payment->user);
-    });
 
     return $get_all_payments->isNotEmpty()
         ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
