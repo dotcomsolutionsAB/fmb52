@@ -65,9 +65,11 @@ class MigrateData extends Command
             $offset += $limit;
             $this->info("Batch completed: {$entriesProcessed} entries processed for offset $offset.");
 
-            ob_flush();
-            flush();
-            usleep(500000); // Optional short pause
+           if (ob_get_level() > 0) {
+    ob_flush();
+    flush();
+}
+usleep(500000); // Optional pause
         }
 
         $this->info('Data migration completed successfully.');
