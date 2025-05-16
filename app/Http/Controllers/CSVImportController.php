@@ -394,12 +394,17 @@ ini_set('memory_limit', '2048M');    // you already set this, can increase if ne
      $data = file($file->getRealPath());
 
 // Proper header parsing
-$header = str_getcsv($data[0], "\t", '"');
-unset($data[0]);
+$file = $request->file('file');
+$rawLines = file($file->getRealPath());
 
+// Step 1: Properly parse the header
+$header = str_getcsv(array_shift($rawLines), "\t", '"');
+
+// Step 2: Parse each row with same rules
 $rows = array_map(function ($line) use ($header) {
-    return array_combine($header, str_getcsv($line, "\t", '"'));
-}, $data);
+    $rowData = str_getcsv($line, "\t", '"');
+    return array_combine($header, $rowData);
+}, $rawLines);
         unset($data[0]);
 
         $insertData = [];
@@ -440,7 +445,7 @@ $rows = array_map(function ($line) use ($header) {
         ], 500);
     }
 }
-public function importTransfersFromCSV(Request $request)
+public function importTransfddersFromCSV(Request $request)
 {
     $request->validate([
         'file' => 'required|file|mimes:csv,txt',
@@ -500,6 +505,92 @@ $rows = array_map(function ($line) use ($header) {
     } catch (\Exception $e) {
         return response()->json([
             'message' => 'Failed to import transfers.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+public function importTransfersFromCSV(Request $request)
+{
+    $request->validate([
+        'expense_file' => 'required|file|mimes:csv,txt',
+        'transfer_file' => 'required|file|mimes:csv,txt',
+    ]);
+
+    try {
+        $jamiat_id = auth()->user()->jamiat_id ?? 1;
+
+        // ------------------------------------------
+        // ✅ Process EXPENSE CSV
+        // ------------------------------------------
+        $expenseData = [];
+        $expenseLines = file($request->file('expense_file')->getRealPath());
+        $expenseHeader = str_getcsv(array_shift($expenseLines), "\t", '"');
+
+        foreach ($expenseLines as $line) {
+            $row = array_combine($expenseHeader, str_getcsv($line, "\t", '"'));
+            if (!$row || empty($row['date'])) continue;
+
+            $expenseData[] = [
+                'jamiat_id'   => $jamiat_id,
+                'voucher_no'  => $row['expense_no'] ?? null,
+                'year'        => $row['year'] ?? null,
+                'name'        => $row['paid_to'] ?? null,
+                'date'        => Carbon::parse($row['date'])->format('Y-m-d'),
+                'amount'      => $row['amount'] ?? 0,
+                'cheque_no'   => $row['cheque_no'] ?? null,
+                'description' => $row['description'] ?? null,
+                'log_user'    => $row['log_user'] ?? 'system',
+                'created_at'  => isset($row['log_date']) ? Carbon::parse($row['log_date'])->format('Y-m-d') : now(),
+                'updated_at'  => now(),
+            ];
+        }
+
+        if (!empty($expenseData)) {
+            DB::table('t_expense')->insert($expenseData);
+        }
+
+        // ------------------------------------------
+        // ✅ Process TRANSFER CSV
+        // ------------------------------------------
+        $transferData = [];
+        $transferLines = file($request->file('transfer_file')->getRealPath());
+        $transferHeader = str_getcsv(array_shift($transferLines), "\t", '"');
+
+        foreach ($transferLines as $line) {
+            $row = array_combine($transferHeader, str_getcsv($line, "\t", '"'));
+            if (!$row || empty($row['log_date'])) continue;
+
+            $sectorFromId = DB::table('t_sector')->where('name', trim($row['transfer_from']))->value('id');
+            $sectorToId   = DB::table('t_sector')->where('name', trim($row['transfer_to']))->value('id');
+
+            if (!$sectorFromId || !$sectorToId) continue;
+
+            $transferData[] = [
+                'jamiat_id'   => $jamiat_id,
+                'family_id'   => $row['family_id'],
+                'date'        => Carbon::parse($row['log_date'])->format('Y-m-d'),
+                'sector_from' => $sectorFromId,
+                'sector_to'   => $sectorToId,
+                'log_user'    => $row['log_user'] ?? 'system',
+                'status'      => $row['status'] ?? 'approved',
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ];
+        }
+
+        if (!empty($transferData)) {
+            DB::table('t_transfers')->insert($transferData);
+        }
+
+        return response()->json([
+            'message' => 'Expenses and transfers imported successfully.',
+            'expenses_imported' => count($expenseData),
+            'transfers_imported' => count($transferData)
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Failed to import expenses or transfers.',
             'error' => $e->getMessage()
         ], 500);
     }
