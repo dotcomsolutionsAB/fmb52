@@ -94,7 +94,8 @@ class DashboardController extends Controller
        $summaryData = DB::table('t_hub')
     ->leftJoin('users', function ($join) {
         $join->on('t_hub.family_id', '=', 'users.family_id')
-             ->where('users.status', '=', 'active');
+             ->where('users.status', '=', 'active')
+             ->where('users.mumeneen_type', '=', 'HOF');
     })
     ->selectRaw("
         COUNT(DISTINCT t_hub.family_id) AS total_houses,
