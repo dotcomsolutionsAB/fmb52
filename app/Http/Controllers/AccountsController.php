@@ -1080,7 +1080,8 @@ class AccountsController extends Controller
     
         // Fetch the cash receipts
         $cashReceipts = $query->orderBy('date', 'desc') // Order by date in descending order
-        ->get(['id', 'receipt_no', 'name', 'amount', 'date', 'status', 'sector_id', 'sub_sector_id']);
+        ->get(['id', 'receipt_no', 'name', 'amount', 'date', ])
+        ->limit(100);
 
         // Check if any receipts are found
         if ($cashReceipts->isEmpty()) {
