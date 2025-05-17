@@ -92,9 +92,8 @@ class DashboardController extends Controller
     
         // Summary Data Query
        $summaryData = DB::table('t_hub')
-    ->leftJoin('users', function($join) {
+    ->leftJoin('users', function ($join) {
         $join->on('t_hub.family_id', '=', 'users.family_id')
-             ->where('users.thali_status', '<>', 'joint')
              ->where('users.status', '=', 'active');
     })
     ->selectRaw("
@@ -105,17 +104,16 @@ class DashboardController extends Controller
         SUM(t_hub.paid_amount) AS total_paid_amount,
         SUM(t_hub.due_amount) AS total_due_amount
     ")
-    
-            ->where('t_hub.year', $year)
-            ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
-                $query->select(DB::raw(1))
-                    ->from('users')
-                    ->whereColumn('users.family_id', 't_hub.family_id')
-                    ->where('users.jamiat_id', $jamiatId)
-                    ->where('users.role', 'mumeneen') // Include only mumeneen users
-                    ->whereIn('users.sub_sector_id', $subSectorFilter);
-            })
-            ->first();
+    ->where('t_hub.year', $year)
+    ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
+        $query->select(DB::raw(1))
+              ->from('users')
+              ->whereColumn('users.family_id', 't_hub.family_id')
+              ->where('users.jamiat_id', $jamiatId)
+              ->where('users.role', 'mumeneen')
+              ->whereIn('users.sub_sector_id', $subSectorFilter);
+    })
+    ->first();
     
         // Payment Modes Query
         $paymentModes = DB::table('t_receipts')
@@ -144,7 +142,7 @@ class DashboardController extends Controller
         $thaaliTakingCount = DB::table('users')
             ->where('jamiat_id', $jamiatId)
             ->where('mumeneen_type', 'HOF') // Include only mumeneen users
-            ->where('thali_status', 'taking')
+            ->whereIn('thali_status', ['taking','once_a_week','joint','other_centre'])
             ->where('status', 'active')
             ->whereIn('sub_sector_id', $subSectorFilter)
             ->distinct('family_id')
@@ -174,7 +172,6 @@ class DashboardController extends Controller
                 'total_sectors_count' => $totalSectorsCount,
                 'total_sub_sectors_count' => $totalSubSectorsCount,
                 'total_houses' => $summaryData->total_houses,
-                'hub_not_set' => $summaryData->hub_not_set,
                 'hub_due' => $summaryData->hub_due,
                 'total_hub_amount' => $summaryData->total_hub_amount,
                 'total_paid_amount' => $summaryData->total_paid_amount,
