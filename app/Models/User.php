@@ -64,4 +64,8 @@ class User extends Authenticatable
     {
         return $this->belongsTo(SubSectorModel::class, 'sub_sector_id');
     }
+      public function hubs()
+{
+    return $this->hasMany(HubModel::class, 'family_id', 'family_id');
+}
 }

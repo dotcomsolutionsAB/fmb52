@@ -10,6 +10,7 @@ use App\Models\YearModel;
 use App\Models\SectorModel;
 use App\Models\SubSectorModel;
 
+
 class HubController extends Controller
 {
     public function hub_distribution(Request $request)
@@ -296,51 +297,41 @@ class HubController extends Controller
         // Fetch mohalla-wise data
        
 
-// Step 1: Aggregate hub data grouped by family_id for the current year
-$hubAggregated = DB::table('t_hub')
-    ->select(
-        'family_id',
-        DB::raw('MAX(hub_amount) as hub_amount'),   // assuming one record per family/year, max just to be safe
-        DB::raw('MAX(thali_status) as thali_status')
-    )
-    ->where('year', $currentYear)
-    ->groupBy('family_id');
-
-// Step 2: Join aggregated hub data with users and group by sector
-$sectorData = DB::table('users')
-    ->select(
-        'users.sector_id',
-        DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
-        // Count distinct family_id where hub_amount = 0
-        DB::raw('COUNT(DISTINCT CASE WHEN hub.hub_amount = 0 THEN hub.family_id END) as done'),
-        // Sum distinct hub_amounts where hub_amount > 0
-        DB::raw('SUM(DISTINCT CASE WHEN hub.hub_amount > 0 THEN hub.hub_amount ELSE 0 END) as amount')
-    )
-    ->leftJoinSub($hubAggregated, 'hub', function ($join) {
-        $join->on('users.family_id', '=', 'hub.family_id');
-    })
-    ->where('users.jamiat_id', $jamiatId)
-    ->whereIn('users.sector_id', $requestedSectors)
-    ->whereIn('users.sub_sector_id', $requestedSubSectors)
-    ->groupBy('users.sector_id')
-    ->orderBy('users.sector_id')
+$users = User::select('sector_id', 'family_id')
+    ->with(['hubs' => function ($query) use ($currentYear) {
+        $query->where('year', $currentYear);
+    }])
+    ->where('jamiat_id', $jamiatId)
+    ->whereIn('sector_id', $requestedSectors)
+    ->whereIn('sub_sector_id', $requestedSubSectors)
     ->get();
 
-        // Process data into required response format
-        $responseData = [];
-        foreach ($sectorData as $data) {
-            $sectorName = DB::table('t_sector')->where('id', $data->sector_id)->value('name'); // Fetch sector name
-            $sectorName = DB::table('t_sector')->where('id', $data->sector_id)->value('name'); // Fetch sector name
+$groupedBySector = $users->groupBy('sector_id');
 
-            $responseData[] = [
-                'sector_id' => $data->sector_id,
-                'sector' => $sectorName ?? 'Unknown',
-                'total_hof' => (string) $data->total_hof,
-                'done' => (string) $data->done,
-                'pending' => (string) ($data->total_hof - $data->done),
-                'amount' => (string) $data->amount,
-            ];
-        }
+$responseData = $groupedBySector->map(function ($usersInSector, $sectorId) {
+    $distinctFamilies = $usersInSector->unique('family_id');
+    $allHubs = $distinctFamilies->pluck('hubs')->flatten();
+
+    $total_hof = $distinctFamilies->count();
+
+    $done = $allHubs->where('hub_amount', '<=', 0)
+                    ->unique('family_id')
+                    ->count();
+
+    $amount = $allHubs->where('hub_amount', '>', 0)
+                      ->unique('family_id')
+                      ->sum('hub_amount');
+
+    return [
+        'sector_id' => $sectorId,
+        'sector' => SectorModel::where('id', $sectorId)->value('name') ?? 'Unknown',
+        'total_hof' => (string) $total_hof,
+        'done' => (string) $done,
+        'pending' => (string) ($total_hof - $done),
+        'amount' => (string) $amount,
+    ];
+                })
+    ->values();
 
         return response()->json([
             'code' => 200,

@@ -20,4 +20,9 @@ class HubModel extends Model
     {
         return $this->belongsTo(YearModel::class, 'year', 'year'); 
     }
+  
+public function user()
+{
+    return $this->belongsTo(User::class, 'family_id', 'family_id');
+}
 }
