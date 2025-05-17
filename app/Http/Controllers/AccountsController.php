@@ -679,7 +679,7 @@ class AccountsController extends Controller
             $hof_details = User::select('*')
                 ->where('family_id', $request->input('family_id'))
                 ->where('mumeneen_type', 'HOF')
-                ->get();
+                ->first();
     
             if ($get_family_member->isEmpty()) {
                 return response()->json(['message' => 'Failed to find family members!'], 400);
