@@ -50,7 +50,7 @@ Route::prefix('sync')->group(function () {
     Route::post('/add-missing-hof', [SyncController::class, 'addMissingHofInUsers']);
 
     // Scenario 2: Confirm and add missing FMs from ITS data
-    Route::post('/confirm-fm-from-its-data', [SyncController::class, 'confirmFmFromItsData']);
+    Route::get('/confirm-fm-from-its-data', [SyncController::class, 'confirmFmFromItsData']);
 
     // Scenario 3: Detect invalid HOFs in users
     Route::get('/detect-invalid-hof', [SyncController::class, 'detectInvalidHofInUsers']);
