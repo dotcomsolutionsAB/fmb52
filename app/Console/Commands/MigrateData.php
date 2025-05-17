@@ -206,31 +206,47 @@ class MigrateData extends Command
 
         if (!empty($usersData)) {
             try {
-                DB::transaction(function () use ($usersData) {
-                    User::upsert($usersData, ['family_id'], [
-                        'name', 'email', 'password', 'jamiat_id', 'family_id', 'title', 'hof_its',
-                        'its_family_id', 'mumeneen_type', 'mobile', 'gender', 'folio_no', 'sector_id',
-                        'sub_sector_id', 'thali_status', 'status', 'username', 'role', 'updated_at'
-                    ]);
+                // Get all existing family_ids
+                $existingFamilyIds = User::whereIn('family_id', array_column($usersData, 'family_id'))
+                    ->pluck('family_id')
+                    ->toArray();
+        
+                // Filter out users whose family_id already exists
+                $filteredUsers = array_filter($usersData, function ($user) use ($existingFamilyIds) {
+                    return !in_array($user['family_id'], $existingFamilyIds);
                 });
-                $totalProcessed += count($usersData);
-                $this->info("Inserted/Updated " . count($usersData) . " users");
+        
+                if (!empty($filteredUsers)) {
+                    DB::transaction(function () use ($filteredUsers) {
+                        User::upsert($filteredUsers, ['family_id'], [
+                            'name', 'email', 'password', 'jamiat_id', 'family_id', 'title', 'hof_its',
+                            'its_family_id', 'mumeneen_type', 'mobile', 'gender', 'folio_no', 'sector_id',
+                            'sub_sector_id', 'thali_status', 'status', 'username', 'role', 'updated_at'
+                        ]);
+                    });
+                    $totalProcessed += count($filteredUsers);
+                    $this->info("Inserted " . count($filteredUsers) . " new users (skipped existing family_ids)");
+                } else {
+                    $this->warn("All users skipped: family_id already exists.");
+                }
+        
             } catch (\Exception $e) {
                 DB::table('mylogs')->insert([
-                    'message' => "Failed to upsert users: " . $e->getMessage(),
+                    'message' => "Failed to insert users: " . $e->getMessage(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                $this->error("Failed to upsert users: " . $e->getMessage());
+                $this->error("Failed to insert users: " . $e->getMessage());
             }
         } else {
             DB::table('mylogs')->insert([
-                'message' => "No user data to upsert",
+                'message' => "No user data to insert",
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            $this->warn("No user data to upsert");
+            $this->warn("No user data to insert");
         }
+        
 
         return $totalProcessed;
     }
