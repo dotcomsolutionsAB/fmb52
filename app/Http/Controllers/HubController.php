@@ -84,6 +84,7 @@ class HubController extends Controller
         ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
             $query->select('family_id')
                 ->from('users')
+                ->where('status','active')
                 ->where('jamiat_id', $jamiatId)
                 ->whereIn('sector_id', $requestedSectors)
                 ->whereIn('sub_sector_id', $finalSubSectors);
