@@ -814,37 +814,34 @@ class AccountsController extends Controller
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
 
-        $query = ReceiptsModel::with([
-            'sector:id,name',                   // eager load sector (id, name only)
-            'subSector:id,name'                 // eager load sub-sector (id, name only)
-        ]);
-        
-        // Filter by sector and sub-sector access
-        $query->whereIn('sector_id', $userSectorAccess)
-              ->whereIn('sub_sector_id', $userSubSectorAccess);
-        
-        // Filter by year
+        $query = ReceiptsModel::select(
+                't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
+                't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
+                't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
+                't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date', 't_receipts.transaction_id', 't_receipts.transaction_date',
+                't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
+                't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
+                'users.name as user_name', 'users.photo_id',
+                't_uploads.file_url as photo_url'
+            )
+            ->leftJoin('users', 't_receipts.its', '=', 'users.username') // if `users.username` is used as ITS
+            ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
+            ->whereIn('t_receipts.sector_id', $userSectorAccess)
+            ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess);
+
         if ($year) {
-            $query->where('year', $year);
+            $query->where('t_receipts.year', $year);
         }
-        
-        // Filter by date range
+
         if ($dateFrom && $dateTo) {
-            $query->whereBetween('date', [$dateFrom, $dateTo]);
+            $query->whereBetween('t_receipts.date', [$dateFrom, $dateTo]);
         } elseif ($dateFrom) {
-            $query->where('date', '>=', $dateFrom);
+            $query->where('t_receipts.date', '>=', $dateFrom);
         } elseif ($dateTo) {
-            $query->where('date', '<=', $dateTo);
+            $query->where('t_receipts.date', '<=', $dateTo);
         }
-        
-        // Optionally eager load user photo URLs from uploads by using a relationship on User model:
-        $query->with(['user' => function($q) {
-            $q->select('id', 'username', 'name', 'photo_id'); // select only needed user fields
-        }, 'user.photo' => function($q) {
-            $q->select('id', 'file_url'); // select only needed photo fields
-        }]);        
-        
-        $get_all_receipts = $query->orderBy('date', 'desc')->get();
+
+        $get_all_receipts = $query->orderBy('t_receipts.date', 'desc')->get();
 
         return $get_all_receipts->isNotEmpty()
             ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
