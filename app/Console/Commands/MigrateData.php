@@ -55,7 +55,7 @@ class MigrateData extends Command
                 break;
             }
 
-            $entriesProcessed = $this->processBatch($families, $sectorMapping, $subSectorMapping);
+            // $entriesProcessed = $this->processBatch($families, $sectorMapping, $subSectorMapping);
 
             if ($entriesProcessed === 0) {
                 $this->warn("No entries processed at offset $offset. Breaking to avoid infinite loop.");
