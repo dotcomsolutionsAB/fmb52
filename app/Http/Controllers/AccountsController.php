@@ -615,7 +615,7 @@ class AccountsController extends Controller
             }
     
             // Generate receipt number using prefix, value, and postfix
-            $receipt_no = $counter->prefix . $counter->value . '/' . $counter->postfix;
+            $receipt_no = $counter->prefix . $counter->value . $counter->postfix;
             $formatted_receipt_no = str_replace('/', '_', $receipt_no);
     
             // Validate the incoming request
@@ -645,15 +645,15 @@ class AccountsController extends Controller
                 ->where('family_id', $request->input('family_id'))
                 ->orderBy('mumeneen_type', 'ASC')
                 ->get();
+    
+            if ($get_family_member->isEmpty()) {
+                return response()->json(['message' => 'Failed to find family members!'], 400);
+            }
 
             $hof_details = User::select('*')
                 ->where('family_id', $request->input('family_id'))
                 ->where('mumeneen_type', 'HOF')
                 ->first();
-    
-            if ($get_family_member->isEmpty()) {
-                return response()->json(['message' => 'Failed to find family members!'], 400);
-            }
     
             foreach ($get_family_member as $member) {
                 $amountForMember = min($remainingAmount, $maximumReceivable);
