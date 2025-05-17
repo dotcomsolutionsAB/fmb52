@@ -217,7 +217,7 @@ class SyncController extends Controller
     //     return response()->json(['message' => 'Missing Family Members have been added successfully!']);
     // }
 
-    public function confirmFmFromItsData()
+public function confirmFmFromItsData()
 {
     // Fetch all HOF records from users table and index by its
     $hofs = DB::table('users')
@@ -234,6 +234,7 @@ class SyncController extends Controller
 
     $usersData = [];
     $insertedCount = 0;
+    $chunkSize = 500; // Process 500 FMs at a time to reduce lock contention
 
     foreach ($missingFms as $fm) {
         // Skip if there is no HOF for the FM
@@ -302,36 +303,60 @@ class SyncController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ];
+
+        // Process in chunks
+        if (count($usersData) >= $chunkSize) {
+            $this->insertUsersChunk($usersData, $insertedCount);
+            $usersData = []; // Clear the array after insertion
+        }
     }
 
-    // Batch insert users
+    // Insert any remaining users
     if (!empty($usersData)) {
-        try {
-            DB::transaction(function () use ($usersData, &$insertedCount) {
-                DB::table('users')->insert($usersData);
-                $insertedCount = count($usersData);
-            });
-            \Log::info("Inserted {$insertedCount} family members into users table");
-        } catch (\Exception $e) {
-            DB::table('mylogs')->insert([
-                'message' => "Failed to insert family members: " . $e->getMessage(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            \Log::error("Failed to insert family members: " . $e->getMessage());
-        }
-    } else {
-        DB::table('mylogs')->insert([
-            'message' => "No valid family members to insert",
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        \Log::warning("No valid family members to insert");
+        $this->insertUsersChunk($usersData, $insertedCount);
     }
 
     return response()->json(['message' => "Inserted {$insertedCount} missing Family Members successfully!"]);
 }
 
+protected function insertUsersChunk(array $usersData, &$insertedCount)
+{
+    $maxRetries = 3;
+    $retryCount = 0;
+
+    while ($retryCount < $maxRetries) {
+        try {
+            DB::transaction(function () use ($usersData, &$insertedCount) {
+                DB::table('users')->insert($usersData);
+                $insertedCount += count($usersData);
+                \Log::info("Inserted " . count($usersData) . " family members into users table");
+            });
+            return; // Success, exit the retry loop
+        } catch (\Exception $e) {
+            $retryCount++;
+            $errorMessage = "Failed to insert users (attempt {$retryCount}/{$maxRetries}): " . $e->getMessage();
+            DB::table('mylogs')->insert([
+                'message' => $errorMessage,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \Log::error($errorMessage);
+
+            if ($retryCount < $maxRetries) {
+                sleep(1); // Wait 1 second before retrying
+                continue;
+            }
+
+            // Log specific ITS values for debugging
+            $itsList = implode(', ', array_column($usersData, 'its'));
+            DB::table('mylogs')->insert([
+                'message' => "Failed to insert users after {$maxRetries} attempts for ITS: {$itsList}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+}
     public function syncFamilyMembers()
     {
         DB::beginTransaction();
