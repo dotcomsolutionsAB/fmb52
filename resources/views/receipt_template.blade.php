@@ -5,7 +5,7 @@
     <style>
         /* A5 page size in mm for print */
         @page {
-            size: A5 portrait;
+            size: A5 landscape;
             margin: 0;
         }
 
