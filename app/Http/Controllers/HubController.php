@@ -109,7 +109,7 @@ class HubController extends Controller
 $thaliJointCount = User::where('jamiat_id', $jamiatId)
     ->whereIn('sector_id', $requestedSectors)
     ->whereIn('sub_sector_id', $finalSubSectors)
-    ->where('thali_status', 'joint')
+    ->whereIn('thali_status', ['joint', 'other_centre'])
     ->where('status', 'active')
     ->distinct('family_id')
     ->count();
