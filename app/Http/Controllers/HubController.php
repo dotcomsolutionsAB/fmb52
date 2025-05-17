@@ -297,7 +297,8 @@ class HubController extends Controller
         // Fetch mohalla-wise data
        
 
-$users = User::select('sector_id', 'family_id')
+
+$users = User::select('sector_id', 'family_id', 'status')
     ->with(['hubs' => function ($query) use ($currentYear) {
         $query->where('year', $currentYear);
     }])
@@ -309,29 +310,37 @@ $users = User::select('sector_id', 'family_id')
 $groupedBySector = $users->groupBy('sector_id');
 
 $responseData = $groupedBySector->map(function ($usersInSector, $sectorId) {
-    $distinctFamilies = $usersInSector->unique('family_id');
-    $allHubs = $distinctFamilies->pluck('hubs')->flatten();
+    // Count distinct family_id for users with status 'active'
+    $activeFamilies = $usersInSector->where('status', 'active')->unique('family_id');
+    
+    // Collect all hubs for distinct families
+    $allHubs = $usersInSector->unique('family_id')->pluck('hubs')->flatten();
 
-    $total_hof = $distinctFamilies->count();
+    $total_hof = $activeFamilies->count();
 
-    $done = $allHubs->where('hub_amount', '<=', 0)
+    // Count families with hub_amount <= 0 (distinct family_id)
+    $done = $allHubs->where('hub_amount', '==', 0)
                     ->unique('family_id')
                     ->count();
 
+    // Sum of hub_amount for hub_amount > 0 (distinct family_id)
     $amount = $allHubs->where('hub_amount', '>', 0)
                       ->unique('family_id')
                       ->sum('hub_amount');
 
+    $sectorName = SectorModel::where('id', $sectorId)->value('name') ?? 'Unknown';
+
     return [
         'sector_id' => $sectorId,
-        'sector' => SectorModel::where('id', $sectorId)->value('name') ?? 'Unknown',
+        'sector' => $sectorName,
         'total_hof' => (string) $total_hof,
         'done' => (string) $done,
         'pending' => (string) ($total_hof - $done),
         'amount' => (string) $amount,
     ];
-                })
-    ->values();
+})
+->sortBy('sector')  // Sort alphabetically by sector name
+->values();
 
         return response()->json([
             'code' => 200,
