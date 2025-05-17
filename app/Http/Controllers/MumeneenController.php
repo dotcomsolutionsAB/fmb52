@@ -1368,66 +1368,65 @@ public function update_user_details(Request $request, $id)
     }
 
     // update
-    public function update_hub(Request $request, $family_id)
-    {
-        // Validate the incoming request
-        $request->validate([
-            'year' => 'required|string|max:10', // Ensure the year is provided
-            'hub_amount' => 'required', // Ensure the hub slab ID exists
-            'thali_status' => 'nullable', // Ensure the hub slab ID exists
-        ]);
+   public function update_hub(Request $request, $family_id)
+{
+    // Validate the incoming request
+    $request->validate([
+        'year' => 'required|string|max:10', // Ensure the year is provided
+        'hub_amount' => 'required',          // Ensure the hub slab ID exists
+        'thali_status' => 'nullable',        // Thali status can be null
+    ]);
 
-        // Get jamiat_id from authenticated user
-        $jamiat_id = auth()->user()->jamiat_id;
+    // Get jamiat_id from authenticated user
+    $jamiat_id = auth()->user()->jamiat_id;
 
-        if (!$jamiat_id) {
-            return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
-        }
-
-        // Find or create the hub record
-        $get_hub = HubModel::firstOrCreate(
-            [
-                'jamiat_id' => $jamiat_id,
-                'family_id' => $family_id,
-                'year' => $request->input('year'),
-            ],
-            [
-                'hub_amount' => $request->input('hub_amount'),
-                'paid_amount' => 0,
-                'due_amount' => $request->input('hub_amount'),
-                'log_user' => auth()->user()->username,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
-    
-        // If the record already existed, update only the hub_amount and thali_status fields
-        if (!$get_hub->wasRecentlyCreated) {
-            $get_hub->update([
-                'hub_amount' => $request->input('hub_amount'),
-                'thali_status' => $request->input('thali_status'),
-            ]);
-        }
-
-        // If the hub record exists, update the hub amount
-        if (!$get_hub->wasRecentlyCreated) {
-            $get_hub->hub_amount = $request->input('hub_amount');
-            $get_hub->due_amount = $request->input('hub_amount'); // Reset due amount
-            $get_hub->save();
-        }
-
-        // Generate Niyaz entries based on the hub slab count
-        // $this->addNiyazEntries($family_id, $jamiat_id, $hubSlab, $get_hub->hub_amount);
-
-        // Return a success response
-        return response()->json([
-            'message' => 'Hub record updated successfully, and Niyaz entries were made!',
-            'data' => [
-                'hub' => $get_hub,
-                'hub_amount' => $request->input('hub_amount'),
-            ],
-        ], 200);
+    if (!$jamiat_id) {
+        return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
     }
+
+    // Find or create the hub record
+    $get_hub = HubModel::firstOrCreate(
+        [
+            'jamiat_id' => $jamiat_id,
+            'family_id' => $family_id,
+            'year' => $request->input('year'),
+        ],
+        [
+            'hub_amount' => $request->input('hub_amount'),
+            'paid_amount' => 0,
+            'due_amount' => $request->input('hub_amount'),
+            'log_user' => auth()->user()->username,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]
+    );
+
+    // If the record already existed, update only the hub_amount and thali_status fields
+    if (!$get_hub->wasRecentlyCreated) {
+        $get_hub->update([
+            'hub_amount' => $request->input('hub_amount'),
+            'thali_status' => $request->input('thali_status'),
+        ]);
+        // Also update due_amount on update
+        $get_hub->due_amount = $request->input('hub_amount');
+        $get_hub->save();
+    }
+
+    // Update thali_status in users table for the given family_id
+    if ($request->has('thali_status')) {
+        \App\Models\User::where('family_id', $family_id)
+            ->update(['thali_status' => $request->input('thali_status')]);
+    }
+
+    // Return a success response
+    return response()->json([
+        'message' => 'Hub record updated successfully, and thali status updated for family users!',
+        'data' => [
+            'hub' => $get_hub,
+            'hub_amount' => $request->input('hub_amount'),
+        ],
+    ], 200);
+}
 
     private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
     {
