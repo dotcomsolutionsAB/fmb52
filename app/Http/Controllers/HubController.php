@@ -13,7 +13,7 @@ use App\Models\SubSectorModel;
 
 class HubController extends Controller
 {
-   public function hub_distribution(Request $request)
+  public function hub_distribution(Request $request)
 {
     // Get authenticated user
     $user = auth()->user();
@@ -120,7 +120,7 @@ class HubController extends Controller
     return response()->json([
         'code' => 200,
         'status' => true,
-        'message' => 'Details fetched successfully',
+        'message' => 'Details fetched really successfully',
         'data' => [
             'total_hof' => $total_hof,
             'hub_done' => $hub_done,
