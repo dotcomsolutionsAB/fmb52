@@ -695,10 +695,10 @@ class AccountsController extends Controller
                     'receipt_no' => $receipt_no,
                     'date' => now()->timezone('Asia/Kolkata')->toDateString(),
                     'its' => $member->its,
-                    'folio_no' => $hof_details['folio_no'],
+                    'folio_no' => $hof_details->folio_no,
                     'name' => $member->name,
-                    'sector_id' => $hof_details['sector_id'],
-                    'sub_sector_id' => $hof_details['sub_sector_id'],
+                    'sector_id' => $hof_details->sector_id,
+                    'sub_sector_id' => $hof_details->sub_sector_id,
                     'amount' => $amountForMember,
                     'mode' => $validatedData['mode'],
                     'bank_name' => $validatedData['bank_name'],
@@ -792,8 +792,8 @@ class AccountsController extends Controller
                     'family_id' => $validatedData['family_id'],
                     'name' => $get_hof_member->name,
                     'amount' => $remainingAmount,
-                    'sector' => $hof_details['sector'],
-                    'sub_sector' => $hof_details['sub_sector'],
+                    'sector' => $hof_details->sector,
+                    'sub_sector' => $hof_details->sub_sector,
                 ];
     
                 $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
