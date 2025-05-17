@@ -21,7 +21,7 @@
         body {
             /* Background image set here */
             background-image: url('{{ $background }}');
-            background-size: cover;   /* Cover entire page */
+            background-size: contain;   /* Cover entire page */
             background-position: center center;
             background-repeat: no-repeat;
 
