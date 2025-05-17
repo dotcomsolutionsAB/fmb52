@@ -18,6 +18,29 @@ class PDFController extends Controller
 
         return $pdf->download('document.pdf'); // Change to stream() to display in the browser
     }
+    // public function printReceipt($id)
+    // {
+    //     // Fetch the receipt data by ID
+    //     $receipt = ReceiptsModel::findOrFail($id);
+
+    //     // Convert the amount to words
+    //     $amountInWords = $this->convertNumberToWords($receipt->amount);
+
+    //     // Prepare data for the PDF
+    //     $data = [
+    //         'background' => public_path('images/receipt_bg.jpg'), // Replace with the actual header image path
+    //         'receipt' => $receipt,
+    //         'amount_in_words' => $amountInWords,
+    //     ];
+    //     $filename = preg_replace('/[^A-Za-z0-9_\-]/', '_', 'receipt_' . $receipt->receipt_no) . '.pdf';
+    //     // Load the Blade view and generate the PDF
+    //     $pdf = Pdf::loadView('receipt_template', $data)
+    //     ->setPaper('a5', 'landscape'); // Land
+
+    //     // Stream the PDF in the browser or force a download
+    //     return $pdf->download($filename);
+    // }
+
     public function printReceipt($id)
     {
         // Fetch the receipt data by ID
@@ -28,18 +51,21 @@ class PDFController extends Controller
 
         // Prepare data for the PDF
         $data = [
-            'background' => public_path('images/receipt_bg.jpg'), // Replace with the actual header image path
+            'background' => public_path('images/receipt_bg.jpg'), // full path to background image
             'receipt' => $receipt,
             'amount_in_words' => $amountInWords,
         ];
+
         $filename = preg_replace('/[^A-Za-z0-9_\-]/', '_', 'receipt_' . $receipt->receipt_no) . '.pdf';
+
         // Load the Blade view and generate the PDF
         $pdf = Pdf::loadView('receipt_template', $data)
-        ->setPaper('a5', 'landscape'); // Land
+            ->setPaper('a5', 'portrait');  // change to portrait if needed
 
-        // Stream the PDF in the browser or force a download
-        return $pdf->download($filename);
+        // Stream the PDF to browser (opens inline)
+        return $pdf->stream($filename);
     }
+
 
     /**
      * Convert a number into words.
