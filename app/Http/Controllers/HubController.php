@@ -294,21 +294,35 @@ class HubController extends Controller
         }
 
         // Fetch mohalla-wise data
-       $sectorData = User::select(
-    'users.sector_id as sector_id',
-    DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
-    DB::raw('COUNT(DISTINCT CASE WHEN hub.hub_amount = 0 THEN hub.family_id END) as done'),
-    DB::raw('SUM(DISTINCT CASE WHEN hub.hub_amount > 0 THEN hub.hub_amount ELSE 0 END) as amount')
-)
-->leftJoin('t_hub as hub', function ($join) use ($currentYear) {
-    $join->on('users.family_id', '=', 'hub.family_id')
-         ->where('hub.year', $currentYear);
-})
-->where('users.jamiat_id', $jamiatId)
-->whereIn('users.sector_id', $requestedSectors)
-->whereIn('users.sub_sector_id', $requestedSubSectors)
-->groupBy('users.sector_id')
-->get();
+       
+
+// Step 1: Aggregate hub data grouped by family_id for the current year
+$hubAggregated = DB::table('t_hub')
+    ->select(
+        'family_id',
+        DB::raw('MAX(hub_amount) as hub_amount'),   // assuming one record per family/year, max just to be safe
+        DB::raw('MAX(thali_status) as thali_status')
+    )
+    ->where('year', $currentYear)
+    ->groupBy('family_id');
+
+// Step 2: Join aggregated hub data with users and group by sector
+$sectorData = DB::table('users')
+    ->select(
+        'users.sector_id',
+        DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
+        DB::raw('COUNT(DISTINCT CASE WHEN hub.hub_amount = 0 THEN hub.family_id END) as done'),
+        DB::raw('SUM(DISTINCT CASE WHEN hub.hub_amount > 0 THEN hub.hub_amount ELSE 0 END) as amount')
+    )
+    ->leftJoinSub($hubAggregated, 'hub', function ($join) {
+        $join->on('users.family_id', '=', 'hub.family_id');
+    })
+    ->where('users.jamiat_id', $jamiatId)
+    ->whereIn('users.sector_id', $requestedSectors)
+    ->whereIn('users.sub_sector_id', $requestedSubSectors)
+    ->groupBy('users.sector_id')
+    ->orderBy('users.sector_id')
+    ->get();
 
         // Process data into required response format
         $responseData = [];
