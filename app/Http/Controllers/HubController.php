@@ -92,26 +92,29 @@ class HubController extends Controller
         ->count();
 
     // Count families where hub is done: hub_amount > 0 or thali_status = 'joint' and user status = 'active'
-    $hub_done = HubModel::where('year', $currentYear)
-        ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
-            $query->select('family_id')
-                ->from('users')
-                ->where('jamiat_id', $jamiatId)
-                ->whereIn('sector_id', $requestedSectors)
-                ->whereIn('sub_sector_id', $finalSubSectors);
-        })
-        ->where(function ($query) {
-            $query->where('hub_amount', '>', 0)
-                ->orWhere(function ($q) {
-                    $q->where('thali_status', 'joint')
-                      ->whereIn('family_id', function ($subquery) {
-                          $subquery->select('family_id')
-                                   ->from('users')
-                                   ->where('status', 'active');
-                      });
-                });
-        })
-        ->count();
+   $hubAmountCount = HubModel::where('year', $currentYear)
+    ->whereIn('family_id', function ($query) use ($requestedSectors, $finalSubSectors, $jamiatId) {
+        $query->select('family_id')
+            ->from('users')
+            ->where('jamiat_id', $jamiatId)
+            ->whereIn('sector_id', $requestedSectors)
+            ->whereIn('sub_sector_id', $finalSubSectors);
+    })
+    ->where('hub_amount', '>', 0)
+    ->distinct('family_id')
+    ->count();
+
+// Count of families from users where thali_status = 'joint' and status = 'active'
+$thaliJointCount = User::where('jamiat_id', $jamiatId)
+    ->whereIn('sector_id', $requestedSectors)
+    ->whereIn('sub_sector_id', $finalSubSectors)
+    ->where('thali_status', 'joint')
+    ->where('status', 'active')
+    ->distinct('family_id')
+    ->count();
+
+// Sum both counts
+$hub_done = $hubAmountCount + $thaliJointCount;
 
     // Calculate pending hubs
     $hub_pending = $total_hof - $hub_done;
@@ -120,7 +123,7 @@ class HubController extends Controller
     return response()->json([
         'code' => 200,
         'status' => true,
-        'message' => 'Details fetched really successfully',
+        'message' => 'Details fetched successfully',
         'data' => [
             'total_hof' => $total_hof,
             'hub_done' => $hub_done,
