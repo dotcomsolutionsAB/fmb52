@@ -346,18 +346,13 @@ class AccountsController extends Controller
     public function register_payments(Request $request)
     {
         $validatedData = $request->validate([
-            'jamiat_id' => 'nullable|integer',
             'family_id' => 'nullable|string|max:10',
             'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
-            'mode' => 'required|in:cheque,cash,neft,upi',
+            'mode' => 'required|in:cheque,cash,neft',
             'amount' => 'required|numeric',
-            'status' => 'required|in:pending,approved,cancelled',
-            
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'bank_name' => 'nullable|string|max:100', // For cheque and neft
             'cheque_no' => 'nullable|string|size:6',  // For cheque payments
             'cheque_date' => 'nullable|date',         // For cheque payments
-            'ifsc_code' => 'nullable|string|max:11',  // For cheque and neft
             'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
             'transaction_date' => 'nullable|date',    // For UPI or NEFT
             'remarks' => 'nullable|string|max:255', // For remarks on cash payments
