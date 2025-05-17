@@ -902,7 +902,7 @@ public function update_user_details(Request $request, $id)
         $get_all_sector = \DB::table('t_sector')
             ->whereIn('id', $permittedSectorIds)
             ->where('status','active')
-            ->select('id', 'jamiat_id', 'name', 'notes', 'log_user')
+            ->select('id', 'jamiat_id', 'name', 'log_user')
             ->get();
     
         return $get_all_sector->isNotEmpty()
