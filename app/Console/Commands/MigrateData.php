@@ -66,10 +66,10 @@ class MigrateData extends Command
             $this->info("Batch completed: {$entriesProcessed} entries processed for offset $offset.");
 
            if (ob_get_level() > 0) {
-    ob_flush();
-    flush();
-}
-usleep(500000); // Optional pause
+                ob_flush();
+                flush();
+            }
+            usleep(500000); // Optional pause
         }
 
         $this->info('Data migration completed successfully.');
@@ -107,7 +107,7 @@ usleep(500000); // Optional pause
             if (!empty($address)) {
                 $buildingsData[] = [
                     'jamiat_id' => 1,
-                    'name' => $address['address_2'] ?? 'Unknown',
+                    'name' => $address['address_2'] ?? '',
                     'address_lime_1' => $address['address_1'] ?? null,
                     'address_lime_2' => $address['address_2'] ?? null,
                     'city' => $address['city'] ?? null,
@@ -207,7 +207,7 @@ usleep(500000); // Optional pause
         if (!empty($usersData)) {
             try {
                 DB::transaction(function () use ($usersData) {
-                    User::upsert($usersData, ['its'], [
+                    User::upsert($usersData, ['family_id'], [
                         'name', 'email', 'password', 'jamiat_id', 'family_id', 'title', 'hof_its',
                         'its_family_id', 'mumeneen_type', 'mobile', 'gender', 'folio_no', 'sector_id',
                         'sub_sector_id', 'thali_status', 'status', 'username', 'role', 'updated_at'
