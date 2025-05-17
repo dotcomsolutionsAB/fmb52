@@ -1394,7 +1394,7 @@ public function update_user_details(Request $request, $id)
         [
             'hub_amount' => $request->input('hub_amount'),
             'paid_amount' => 0,
-            'due_amount' => $request->input('hub_amount'),
+            'due_amount' => 0,
             'log_user' => auth()->user()->username,
             'created_at' => now(),
             'updated_at' => now(),
