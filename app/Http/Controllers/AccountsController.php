@@ -673,7 +673,7 @@ class AccountsController extends Controller
             // Loop through family members and distribute the amount
             $get_family_member = User::select('name', 'its')
                 ->where('family_id', $request->input('family_id'))
-                ->orderBy('mumeneen_type', 'desc')
+                ->orderBy('mumeneen_type', 'ASC')
                 ->get();
 
             $hof_details = User::select('*')
