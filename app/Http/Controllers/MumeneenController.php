@@ -901,6 +901,7 @@ public function update_user_details(Request $request, $id)
         // Fetch sector details based on permitted sector IDs
         $get_all_sector = \DB::table('t_sector')
             ->whereIn('id', $permittedSectorIds)
+            ->where('status','active')
             ->select('id', 'jamiat_id', 'name', 'notes', 'log_user')
             ->get();
     
@@ -1047,6 +1048,7 @@ public function update_user_details(Request $request, $id)
         )
         ->join('t_sector', 't_sector.id', '=', 't_sub_sector.sector_id') // Join with t_sector table
         ->where('t_sub_sector.sector_id', $sector)
+         ->where('t_sector.status', 'active') 
         ->get();
     
         return $subSectors->isNotEmpty()
