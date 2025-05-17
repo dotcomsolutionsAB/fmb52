@@ -1057,31 +1057,32 @@ class AccountsController extends Controller
         }
     
         // If a sector is provided, filter by sector
-        if ($request->has('sector') && !empty($request->sector)) {
-            $sectorId = DB::table('t_sector')->where('name', $request->sector)->value('id');
-            if ($sectorId) {
-                $query->where('sector_id', $sectorId);
-            } else {
-                return response()->json(['message' => 'Invalid sector'], 400);
-            }
-        }
-    
-        // If a sub-sector is provided, filter by sub-sector
-        if ($request->has('sub_sector') && !empty($request->sub_sector)) {
-            $subSectorId = DB::table('t_sub_sector')
-                ->where('name', $request->sub_sector)
-                ->value('id');
-            if ($subSectorId) {
-                $query->where('sub_sector_id', $subSectorId);
-            } else {
-                return response()->json(['message' => 'Invalid sub-sector'], 400);
-            }
-        }
+      if ($request->has('sector') && !empty($request->sector)) {
+    $sectorId = (int) $request->sector;
+    $sectorExists = DB::table('t_sector')->where('id', $sectorId)->exists();
+    if ($sectorExists) {
+        $query->where('sector_id', $sectorId);
+    } else {
+        return response()->json(['message' => 'Invalid sector ID'], 400);
+    }
+}
+
+// If a sub-sector ID is provided, filter by sub-sector
+if ($request->has('sub_sector') && !empty($request->sub_sector)) {
+    $subSectorId = (int) $request->sub_sector;
+    $subSectorExists = DB::table('t_sub_sector')->where('id', $subSectorId)->exists();
+    if ($subSectorExists) {
+        $query->where('sub_sector_id', $subSectorId);
+    } else {
+        return response()->json(['message' => 'Invalid sub-sector ID'], 400);
+    }
+}
     
         // Fetch the cash receipts
         $cashReceipts = $query->orderBy('date', 'desc') // Order by date in descending order
+        ->limit(100)
         ->get(['id', 'receipt_no', 'name', 'amount', 'date', ])
-        ->limit(100);
+        ;
 
         // Check if any receipts are found
         if ($cashReceipts->isEmpty()) {
