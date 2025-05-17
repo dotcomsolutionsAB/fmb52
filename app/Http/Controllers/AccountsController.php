@@ -346,18 +346,11 @@ class AccountsController extends Controller
     public function register_payments(Request $request)
     {
         $validatedData = $request->validate([
-            'family_id' => 'nullable|string|max:10',
-            'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
-            'mode' => 'required|in:cheque,cash,neft',
+            'date' => 'required|date', // Multiple receipt IDs for cash or single receipt for others
+            'receipt_ids' => 'required|array', // Multiple receipt IDs for cash or single receipt for others
             'amount' => 'required|numeric',
-            'bank_name' => 'nullable|string|max:100', // For cheque and neft
-            'cheque_no' => 'nullable|string|size:6',  // For cheque payments
-            'cheque_date' => 'nullable|date',         // For cheque payments
-            'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
-            'transaction_date' => 'nullable|date',    // For UPI or NEFT
+            'year' => 'required|string',
             'remarks' => 'nullable|string|max:255', // For remarks on cash payments
-            'sector_id'=>'nullable|integer',
-            'sub_sector_id'=>'nullable|integer'
         ]);
         $jamiat_id = Auth()->user()->jamiat_id;
         
@@ -370,40 +363,38 @@ class AccountsController extends Controller
 
             // Handle attachment upload (if exists)
             $uploadId = null;
-            if ($request->hasFile('attachment')) {
-                $file = $request->file('attachment');
-                $fileName = time() . '_' . $file->getClientOriginalName();
-                $filePath = $file->storeAs('uploads/payments', $fileName, 'public');
+            // if ($request->hasFile('attachment')) {
+            //     $file = $request->file('attachment');
+            //     $fileName = time() . '_' . $file->getClientOriginalName();
+            //     $filePath = $file->storeAs('uploads/payments', $fileName, 'public');
 
-                $upload = \App\Models\UploadModel::create([
-                    'jamiat_id'  => $jamiat_id,
-                    'file_name'  => $fileName,
-                    'file_ext'   => $file->getClientOriginalExtension(),
-                    'file_url'   => Storage::url($filePath),
-                    'file_size'  => $file->getSize(),
-                    'type'       => 'feedback',
-                ]);
-                $uploadId = $upload->id;
-            }
+            //     $upload = \App\Models\UploadModel::create([
+            //         'jamiat_id'  => $jamiat_id,
+            //         'file_name'  => $fileName,
+            //         'file_ext'   => $file->getClientOriginalExtension(),
+            //         'file_url'   => Storage::url($filePath),
+            //         'file_size'  => $file->getSize(),
+            //         'type'       => 'feedback',
+            //     ]);
+            //     $uploadId = $upload->id;
+            // }
 
             // Map sector and sub-sector (optional fallback)
             $sectorId=$request->sector_id??null;
             $subSectorId=$request->sub_sector_id??null;
         
-
             // Prepare payment data based on the mode
             $paymentData = [
                 'payment_no'         => $paymentNo,
                 'jamiat_id'          => $jamiat_id,
-                'family_id'          => $request->family_id,
-                'folio_no'           => $request->folio_no,
-                'name'               => $request->name,
-                'its'                => $request->its,
+                'family_id'          => $request->family_id ?? null,
+                'name'               => $request->name ?? "Cash Deposited",
+                'its'                => $request->its ?? null,
                 'sector_id'          => $sectorId,
                 'sub_sector_id'      => $subSectorId,
                 'year'               => $request->year,
-                'mode'               => $request->mode,
-                'date'               => now(),
+                'mode'               => $request->mode??"cash",
+                'date'               => $request->date,
                 'amount'             => $request->amount,
                 'comments'           => $request->remarks ?? null,
                 'status'             => 'pending',
@@ -421,8 +412,8 @@ class AccountsController extends Controller
                     $receipt = ReceiptsModel::find($receiptId);
                     if ($receipt) {
                         $totalAmount += $receipt->amount;
-                        $sectorId=$receipt->sector_id;
-                        $subSectorId=$receipt->sub_sector_id;
+                        $sectorId = $receipt->sector_id;
+                        $subSectorId = $receipt->sub_sector_id;
                     }
                 }
 
@@ -436,22 +427,6 @@ class AccountsController extends Controller
                 $paymentData['sector_id'] = $sectorId; 
                 $paymentData['sub_sector_id'] = $subSectorId; // Use the sector from receipts
                 $paymentData['amount'] = $totalAmount;  // Use the total of all receipts
-            } else {
-                // For cheque, upi, neft, we handle specific fields like cheque_no, transaction_id, etc.
-                if ($request->mode == 'cheque' || $request->mode == 'neft' || $request->mode == 'upi') {
-                    $paymentData['cheque_no'] = $request->cheque_no ?? null;
-                    $paymentData['bank_name'] = $request->bank_name ?? null;
-                    $paymentData['transaction_id'] = $request->transaction_id ?? null;
-                    $paymentData['ifsc_code'] = $request->ifsc_code ?? null;
-                    $paymentData['transaction_date'] = $request->transaction_date ?? null;
-                } else {
-                    // For cash, we leave cheque_no, bank_name, transaction_id, ifsc_code, transaction_date as null
-                    $paymentData['cheque_no'] = null;
-                    $paymentData['bank_name'] = null;
-                    $paymentData['transaction_id'] = null;
-                    $paymentData['ifsc_code'] = null;
-                    $paymentData['transaction_date'] = null;
-                }
             }
 
             // Register the payment
