@@ -1212,6 +1212,8 @@ public function update_user_details(Request $request, $id)
         // Fetch years only for the logged-in user's jamiat_id
         $get_all_years = YearModel::select('year', 'jamiat_id', 'is_current')
             ->where('jamiat_id', $jamiatId)
+            ->orderByDesc('id')
+            ->limit(5)
             ->get();
 
         return $get_all_years->isNotEmpty()
