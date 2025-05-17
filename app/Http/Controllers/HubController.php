@@ -294,21 +294,21 @@ class HubController extends Controller
         }
 
         // Fetch mohalla-wise data
-        $sectorData = User::select(
-                'users.sector_id as sector_id',
-                DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
-                DB::raw('SUM(CASE WHEN hub.hub_amount > 0 OR hub.thali_status = "joint" THEN 1 ELSE 0 END) as done'),
-                DB::raw('SUM(hub.hub_amount) as amount')
-            )
-            ->leftJoin('t_hub as hub', function ($join) use ($currentYear) {
-                $join->on('users.family_id', '=', 'hub.family_id')
-                    ->where('hub.year', $currentYear);
-            })
-            ->where('users.jamiat_id', $jamiatId)
-            ->whereIn('users.sector_id', $requestedSectors)
-            ->whereIn('users.sub_sector_id', $requestedSubSectors)
-            ->groupBy('users.sector_id')
-            ->get();
+       $sectorData = User::select(
+    'users.sector_id as sector_id',
+    DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
+    DB::raw('COUNT(DISTINCT CASE WHEN hub.hub_amount = 0 THEN hub.family_id END) as done'),
+    DB::raw('SUM(hub.hub_amount) as amount')
+)
+->leftJoin('t_hub as hub', function ($join) use ($currentYear) {
+    $join->on('users.family_id', '=', 'hub.family_id')
+         ->where('hub.year', $currentYear);
+})
+->where('users.jamiat_id', $jamiatId)
+->whereIn('users.sector_id', $requestedSectors)
+->whereIn('users.sub_sector_id', $requestedSubSectors)
+->groupBy('users.sector_id')
+->get();
 
         // Process data into required response format
         $responseData = [];
