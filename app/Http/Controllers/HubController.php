@@ -109,13 +109,13 @@ class HubController extends Controller
 $thaliJointCount = User::where('jamiat_id', $jamiatId)
     ->whereIn('sector_id', $requestedSectors)
     ->whereIn('sub_sector_id', $finalSubSectors)
-    ->whereIn('thali_status', ['joint', 'other_centre'])
+    ->whereIn('thali_status', ['joint', 'other_centre','not_taking'])
     ->where('status', 'active')
     ->distinct('family_id')
     ->count();
 
 // Sum both counts
-$hub_done = $hubAmountCount ;
+$hub_done = $hubAmountCount - $thaliJointCount;
 
     // Calculate pending hubs
     $hub_pending = $total_hof - $hub_done;
