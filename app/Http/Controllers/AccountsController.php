@@ -19,6 +19,7 @@ use App\Models\WhatsAppQueue;
 use App\Models\WhatsappQueueModel;
 use Auth;
 use App\Models\CurrencyModel;
+
 class AccountsController extends Controller
 {
     public function user()
@@ -184,87 +185,87 @@ class AccountsController extends Controller
 
 
 
-public function register_expense(Request $request)
-{
-    $request->validate([
-        'jamiat_id' => 'nullable|integer',
-        'year' => 'required|string|max:10',
-        'name' => 'required|string',
-        'date' => 'required|date',
-        'amount' => 'required|integer',
-        'cheque_no' => 'nullable|string|size:6',
-        'description' => 'nullable|string',
-        'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
-    ]);
+    public function register_expense(Request $request)
+    {
+        $request->validate([
+            'jamiat_id' => 'nullable|integer',
+            'year' => 'required|string|max:10',
+            'name' => 'required|string',
+            'date' => 'required|date',
+            'amount' => 'required|integer',
+            'cheque_no' => 'nullable|string|size:6',
+            'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+        ]);
 
-    DB::beginTransaction();
-    try {
-        // 1. Fetch & increment voucher number from t_counter
-        $counter = DB::table('t_counter')
-            ->where('type', 'Expense')
-            ->where('jamiat_id', Auth()->user()->jamiat_id)
-            ->where('year', $request->input('year'))
-            ->lockForUpdate()
-            ->first();
+        DB::beginTransaction();
+        try {
+            // 1. Fetch & increment voucher number from t_counter
+            $counter = DB::table('t_counter')
+                ->where('type', 'Expense')
+                ->where('jamiat_id', Auth()->user()->jamiat_id)
+                ->where('year', $request->input('year'))
+                ->lockForUpdate()
+                ->first();
 
-        if (!$counter) {
-            return response()->json(['message' => 'Voucher counter not configured.'], 400);
+            if (!$counter) {
+                return response()->json(['message' => 'Voucher counter not configured.'], 400);
+            }
+
+            $voucherNumber = $counter->prefix.($counter->value + 1).$counter->postfix;
+
+            DB::table('t_counter')
+                ->where('id', $counter->id)
+                ->update(['value' => $counter->value + 1]);
+
+            // 2. Store attachment
+
+            $file = $request->file('attachment');
+            if($file){
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
+
+            $upload = UploadModel::create([
+                'jamiat_id'  => Auth()->user()->jamiat_id,
+                'file_name' => $fileName,
+                'file_ext'  => $file->getClientOriginalExtension(),
+                'file_url'  => Storage::url($filePath),
+                'file_size' => $file->getSize(),
+                'type'      => 'feedback', // or 'profile' based on your use case
+            ]);
         }
 
-        $voucherNumber = $counter->prefix.($counter->value + 1).$counter->postfix;
+            // 3. Register expense
+            $register_expense = ExpenseModel::create([
+                'jamiat_id' => Auth()->user()->jamiat_id,
+                'voucher_no' => $voucherNumber,
+                'year' => $request->input('year'),
+                'name' => $request->input('name'),
+                'date' => $request->input('date'),
+                'amount'=>$request->input('amount'),
+                'cheque_no' => $request->input('cheque_no'),
+                'description' => $request->input('description'),
+                'log_user' => auth()->user()->name,
+                'attachment' => $upload->id??null,
+            ]);
 
-        DB::table('t_counter')
-            ->where('id', $counter->id)
-            ->update(['value' => $counter->value + 1]);
+            DB::commit();
 
-        // 2. Store attachment
+            unset($register_expense['id'], $register_expense['created_at'], $register_expense['updated_at']);
 
-        $file = $request->file('attachment');
-        if($file){
-        $fileName = time() . '_' . $file->getClientOriginalName();
-        $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
+            return response()->json([
+                'message' => 'Expense created successfully!',
+                'data' => $register_expense
+            ], 201);
 
-        $upload = UploadModel::create([
-            'jamiat_id'  => Auth()->user()->jamiat_id,
-            'file_name' => $fileName,
-            'file_ext'  => $file->getClientOriginalExtension(),
-            'file_url'  => Storage::url($filePath),
-            'file_size' => $file->getSize(),
-            'type'      => 'feedback', // or 'profile' based on your use case
-        ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to create expense!',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-
-        // 3. Register expense
-        $register_expense = ExpenseModel::create([
-            'jamiat_id' => Auth()->user()->jamiat_id,
-            'voucher_no' => $voucherNumber,
-            'year' => $request->input('year'),
-            'name' => $request->input('name'),
-            'date' => $request->input('date'),
-            'amount'=>$request->input('amount'),
-            'cheque_no' => $request->input('cheque_no'),
-            'description' => $request->input('description'),
-            'log_user' => auth()->user()->name,
-            'attachment' => $upload->id??null,
-        ]);
-
-        DB::commit();
-
-        unset($register_expense['id'], $register_expense['created_at'], $register_expense['updated_at']);
-
-        return response()->json([
-            'message' => 'Expense created successfully!',
-            'data' => $register_expense
-        ], 201);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'Failed to create expense!',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
 
     // view
 
@@ -343,208 +344,208 @@ public function register_expense(Request $request)
 
     // create
     public function register_payments(Request $request)
-{
-    $validatedData = $request->validate([
-        'jamiat_id' => 'nullable|integer',
-        'family_id' => 'nullable|string|max:10',
-        'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
-        'mode' => 'required|in:cheque,cash,neft,upi',
-        'amount' => 'required|numeric',
-        'status' => 'required|in:pending,approved,cancelled',
+    {
+        $validatedData = $request->validate([
+            'jamiat_id' => 'nullable|integer',
+            'family_id' => 'nullable|string|max:10',
+            'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
+            'mode' => 'required|in:cheque,cash,neft,upi',
+            'amount' => 'required|numeric',
+            'status' => 'required|in:pending,approved,cancelled',
+            
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'bank_name' => 'nullable|string|max:100', // For cheque and neft
+            'cheque_no' => 'nullable|string|size:6',  // For cheque payments
+            'cheque_date' => 'nullable|date',         // For cheque payments
+            'ifsc_code' => 'nullable|string|max:11',  // For cheque and neft
+            'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
+            'transaction_date' => 'nullable|date',    // For UPI or NEFT
+            'remarks' => 'nullable|string|max:255', // For remarks on cash payments
+            'sector_id'=>'nullable|integer',
+            'sub_sector_id'=>'nullable|integer'
+        ]);
+        $jamiat_id = Auth()->user()->jamiat_id;
         
-        'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        'bank_name' => 'nullable|string|max:100', // For cheque and neft
-        'cheque_no' => 'nullable|string|size:6',  // For cheque payments
-        'cheque_date' => 'nullable|date',         // For cheque payments
-        'ifsc_code' => 'nullable|string|max:11',  // For cheque and neft
-        'transaction_id' => 'nullable|string|max:100', // For UPI or NEFT
-        'transaction_date' => 'nullable|date',    // For UPI or NEFT
-        'remarks' => 'nullable|string|max:255', // For remarks on cash payments
-        'sector_id'=>'nullable|integer',
-        'sub_sector_id'=>'nullable|integer'
-    ]);
-    $jamiat_id = Auth()->user()->jamiat_id;
-    
-    DB::beginTransaction();
-    try {
-        // Generate payment number: P_<counter>_<YYYYMMDD>
-        $counter = DB::table('t_payments')->count() + 1;
-        $today = \Carbon\Carbon::parse($request->date ?? now())->format('Y-m-d');
-        $paymentNo = "P_{$counter}_{$today}";
+        DB::beginTransaction();
+        try {
+            // Generate payment number: P_<counter>_<YYYYMMDD>
+            $counter = DB::table('t_payments')->count() + 1;
+            $today = \Carbon\Carbon::parse($request->date ?? now())->format('Y-m-d');
+            $paymentNo = "P_{$counter}_{$today}";
 
-        // Handle attachment upload (if exists)
-        $uploadId = null;
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('uploads/payments', $fileName, 'public');
+            // Handle attachment upload (if exists)
+            $uploadId = null;
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('uploads/payments', $fileName, 'public');
 
-            $upload = \App\Models\UploadModel::create([
-                'jamiat_id'  => $jamiat_id,
-                'file_name'  => $fileName,
-                'file_ext'   => $file->getClientOriginalExtension(),
-                'file_url'   => Storage::url($filePath),
-                'file_size'  => $file->getSize(),
-                'type'       => 'feedback',
-            ]);
-            $uploadId = $upload->id;
-        }
+                $upload = \App\Models\UploadModel::create([
+                    'jamiat_id'  => $jamiat_id,
+                    'file_name'  => $fileName,
+                    'file_ext'   => $file->getClientOriginalExtension(),
+                    'file_url'   => Storage::url($filePath),
+                    'file_size'  => $file->getSize(),
+                    'type'       => 'feedback',
+                ]);
+                $uploadId = $upload->id;
+            }
 
-        // Map sector and sub-sector (optional fallback)
-        $sectorId=$request->sector_id??null;
-        $subSectorId=$request->sub_sector_id??null;
-       
+            // Map sector and sub-sector (optional fallback)
+            $sectorId=$request->sector_id??null;
+            $subSectorId=$request->sub_sector_id??null;
+        
 
-        // Prepare payment data based on the mode
-        $paymentData = [
-            'payment_no'         => $paymentNo,
-            'jamiat_id'          => $jamiat_id,
-            'family_id'          => $request->family_id,
-            'folio_no'           => $request->folio_no,
-            'name'               => $request->name,
-            'its'                => $request->its,
-            'sector_id'          => $sectorId,
-            'sub_sector_id'      => $subSectorId,
-            'year'               => $request->year,
-            'mode'               => $request->mode,
-            'date'               => now(),
-            'amount'             => $request->amount,
-            'comments'           => $request->remarks ?? null,
-            'status'             => 'pending',
-            'log_user'           => Auth()->user()->name,
-            'attachment'         => $uploadId,
-        ];
+            // Prepare payment data based on the mode
+            $paymentData = [
+                'payment_no'         => $paymentNo,
+                'jamiat_id'          => $jamiat_id,
+                'family_id'          => $request->family_id,
+                'folio_no'           => $request->folio_no,
+                'name'               => $request->name,
+                'its'                => $request->its,
+                'sector_id'          => $sectorId,
+                'sub_sector_id'      => $subSectorId,
+                'year'               => $request->year,
+                'mode'               => $request->mode,
+                'date'               => now(),
+                'amount'             => $request->amount,
+                'comments'           => $request->remarks ?? null,
+                'status'             => 'pending',
+                'log_user'           => Auth()->user()->name,
+                'attachment'         => $uploadId,
+            ];
 
-        // For cash payments, we will set a few different fields
-        if ($request->mode == 'cash') {
-            $receiptIds = $request->input('receipt_ids');
+            // For cash payments, we will set a few different fields
+            if ($request->mode == 'cash') {
+                $receiptIds = $request->input('receipt_ids');
 
-            // Sum up the total amount from the receipts
-            $totalAmount = 0;
-            foreach ($receiptIds as $receiptId) {
-                $receipt = ReceiptsModel::find($receiptId);
-                if ($receipt) {
-                    $totalAmount += $receipt->amount;
-                    $sectorId=$receipt->sector_id;
-                    $subSectorId=$receipt->sub_sector_id;
+                // Sum up the total amount from the receipts
+                $totalAmount = 0;
+                foreach ($receiptIds as $receiptId) {
+                    $receipt = ReceiptsModel::find($receiptId);
+                    if ($receipt) {
+                        $totalAmount += $receipt->amount;
+                        $sectorId=$receipt->sector_id;
+                        $subSectorId=$receipt->sub_sector_id;
+                    }
+                }
+
+                // Ensure that the total amount of receipts matches the provided payment amount
+                if ($totalAmount !== $request->amount) {
+                    throw new \Exception("Total amount of receipts does not match the cash payment amount.");
+                }
+
+                // Set name as "cash" and use the sector of the receipts
+                $paymentData['name'] = 'Cash Deposited';  // Name for cash payment
+                $paymentData['sector_id'] = $sectorId; 
+                $paymentData['sub_sector_id'] = $subSectorId; // Use the sector from receipts
+                $paymentData['amount'] = $totalAmount;  // Use the total of all receipts
+            } else {
+                // For cheque, upi, neft, we handle specific fields like cheque_no, transaction_id, etc.
+                if ($request->mode == 'cheque' || $request->mode == 'neft' || $request->mode == 'upi') {
+                    $paymentData['cheque_no'] = $request->cheque_no ?? null;
+                    $paymentData['bank_name'] = $request->bank_name ?? null;
+                    $paymentData['transaction_id'] = $request->transaction_id ?? null;
+                    $paymentData['ifsc_code'] = $request->ifsc_code ?? null;
+                    $paymentData['transaction_date'] = $request->transaction_date ?? null;
+                } else {
+                    // For cash, we leave cheque_no, bank_name, transaction_id, ifsc_code, transaction_date as null
+                    $paymentData['cheque_no'] = null;
+                    $paymentData['bank_name'] = null;
+                    $paymentData['transaction_id'] = null;
+                    $paymentData['ifsc_code'] = null;
+                    $paymentData['transaction_date'] = null;
                 }
             }
 
-            // Ensure that the total amount of receipts matches the provided payment amount
-            if ($totalAmount !== $request->amount) {
-                throw new \Exception("Total amount of receipts does not match the cash payment amount.");
-            }
+            // Register the payment
+            $register_payment = PaymentsModel::create($paymentData);
 
-            // Set name as "cash" and use the sector of the receipts
-            $paymentData['name'] = 'Cash Deposited';  // Name for cash payment
-            $paymentData['sector_id'] = $sectorId; 
-            $paymentData['sub_sector_id'] = $subSectorId; // Use the sector from receipts
-            $paymentData['amount'] = $totalAmount;  // Use the total of all receipts
-        } else {
-            // For cheque, upi, neft, we handle specific fields like cheque_no, transaction_id, etc.
-            if ($request->mode == 'cheque' || $request->mode == 'neft' || $request->mode == 'upi') {
-                $paymentData['cheque_no'] = $request->cheque_no ?? null;
-                $paymentData['bank_name'] = $request->bank_name ?? null;
-                $paymentData['transaction_id'] = $request->transaction_id ?? null;
-                $paymentData['ifsc_code'] = $request->ifsc_code ?? null;
-                $paymentData['transaction_date'] = $request->transaction_date ?? null;
-            } else {
-                // For cash, we leave cheque_no, bank_name, transaction_id, ifsc_code, transaction_date as null
-                $paymentData['cheque_no'] = null;
-                $paymentData['bank_name'] = null;
-                $paymentData['transaction_id'] = null;
-                $paymentData['ifsc_code'] = null;
-                $paymentData['transaction_date'] = null;
-            }
+            // Handle cash receipts, if applicable
+            if ($request->mode == 'cash') {
+                // Update all receipt records with the payment_id for cash payments
+                DB::table('t_receipts')
+                    ->whereIn('id', $receiptIds)
+                    ->update(['payment_id' => $register_payment->id]);
+            } 
+
+            DB::commit();
+
+            return response()->json([
+                
+                'message' => 'Payment created successfully!',
+                'data'    => $register_payment
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to create payment!',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+    // view
+    public function all_payments(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        // Register the payment
-        $register_payment = PaymentsModel::create($paymentData);
+        // Decode access control
+        $userSectorAccess = json_decode($user->sector_access_id, true);
+        $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
 
-        // Handle cash receipts, if applicable
-        if ($request->mode == 'cash') {
-            // Update all receipt records with the payment_id for cash payments
-            DB::table('t_receipts')
-                ->whereIn('id', $receiptIds)
-                ->update(['payment_id' => $register_payment->id]);
-        } 
+        if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
+            return response()->json([
+                'message' => 'No access to any sectors or sub-sectors.',
+            ], 403);
+        }
 
-        DB::commit();
+        // Optional filters
+        $year = $request->input('year');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
 
-        return response()->json([
-            
-            'message' => 'Payment created successfully!',
-            'data'    => $register_payment
-        ], 201);
+        $query = PaymentsModel::select(
+                't_payments.id', 't_payments.payment_no', 't_payments.jamiat_id', 't_payments.family_id',
+                't_payments.folio_no', 't_payments.name', 't_payments.its', 't_payments.sector_id', 't_payments.sub_sector_id',
+                't_payments.year', 't_payments.mode', 't_payments.date', 't_payments.bank_name',
+                't_payments.cheque_no', 't_payments.cheque_date', 't_payments.ifsc_code',
+                't_payments.transaction_id', 't_payments.transaction_date', 't_payments.amount',
+                't_payments.comments', 't_payments.status', 't_payments.cancellation_reason',
+                't_payments.log_user', 't_payments.attachment',
+                'users.name as user_name', 'users.photo_id',
+                't_uploads.file_url as photo_url'
+            )
+            ->leftJoin('users', 't_payments.its', '=', 'users.username')
+            ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
+            ->whereIn('t_payments.sector_id', $userSectorAccess)
+            ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return response()->json([
-            'message' => 'Failed to create payment!',
-            'error'   => $e->getMessage()
-        ], 500);
+        // Apply year filter if provided
+        if ($year) {
+            $query->where('t_payments.year', $year);
+        }
+
+        // Apply date range filter if both provided
+        if ($dateFrom && $dateTo) {
+            $query->whereBetween('t_payments.date', [$dateFrom, $dateTo]);
+        } elseif ($dateFrom) {
+            $query->where('t_payments.date', '>=', $dateFrom);
+        } elseif ($dateTo) {
+            $query->where('t_payments.date', '<=', $dateTo);
+        }
+
+        $get_all_payments = $query->orderBy('t_payments.date', 'desc')->get();
+
+        return $get_all_payments->isNotEmpty()
+            ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
+            : response()->json(['message' => 'No payments found!'], 404);
     }
-}
-    // view
-  public function all_payments(Request $request)
-{
-    $user = Auth::user();
-
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized.'], 403);
-    }
-
-    // Decode access control
-    $userSectorAccess = json_decode($user->sector_access_id, true);
-    $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
-
-    if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
-        return response()->json([
-            'message' => 'No access to any sectors or sub-sectors.',
-        ], 403);
-    }
-
-    // Optional filters
-    $year = $request->input('year');
-    $dateFrom = $request->input('date_from');
-    $dateTo = $request->input('date_to');
-
-    $query = PaymentsModel::select(
-            't_payments.id', 't_payments.payment_no', 't_payments.jamiat_id', 't_payments.family_id',
-            't_payments.folio_no', 't_payments.name', 't_payments.its', 't_payments.sector_id', 't_payments.sub_sector_id',
-            't_payments.year', 't_payments.mode', 't_payments.date', 't_payments.bank_name',
-            't_payments.cheque_no', 't_payments.cheque_date', 't_payments.ifsc_code',
-            't_payments.transaction_id', 't_payments.transaction_date', 't_payments.amount',
-            't_payments.comments', 't_payments.status', 't_payments.cancellation_reason',
-            't_payments.log_user', 't_payments.attachment',
-            'users.name as user_name', 'users.photo_id',
-            't_uploads.file_url as photo_url'
-        )
-        ->leftJoin('users', 't_payments.its', '=', 'users.username')
-        ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
-        ->whereIn('t_payments.sector_id', $userSectorAccess)
-        ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess);
-
-    // Apply year filter if provided
-    if ($year) {
-        $query->where('t_payments.year', $year);
-    }
-
-    // Apply date range filter if both provided
-    if ($dateFrom && $dateTo) {
-        $query->whereBetween('t_payments.date', [$dateFrom, $dateTo]);
-    } elseif ($dateFrom) {
-        $query->where('t_payments.date', '>=', $dateFrom);
-    } elseif ($dateTo) {
-        $query->where('t_payments.date', '<=', $dateTo);
-    }
-
-    $get_all_payments = $query->orderBy('t_payments.date', 'desc')->get();
-
-    return $get_all_payments->isNotEmpty()
-        ? response()->json(['message' => 'Payments fetched successfully!', 'data' => $get_all_payments], 200)
-        : response()->json(['message' => 'No payments found!'], 404);
-}
 
     // update
     public function update_payments(Request $request, $id)
@@ -650,28 +651,15 @@ public function register_expense(Request $request)
             // Validate the incoming request
             $validatedData = $request->validate([
                 'family_id' => 'required|string|max:10',
-                'date' => 'required|date',
-                'its' => 'nullable|string|max:8',
-                'folio_no' => 'nullable|string|max:20',
                 'name' => 'required|string|max:100',
-                'sector_id' => 'nullable|string|max:100',
-                'sub_sector_id' => 'nullable|string|max:100',
                 'amount' => 'required|numeric',
-                'mode' => 'required|in:cheque,cash,neft,upi',
+                'mode' => 'required|in:cheque,cash,neft',
                 'bank_name' => 'nullable|string|max:100',
                 'cheque_no' => 'nullable|string|size:6',
                 'cheque_date' => 'nullable|date',
-                'ifsc_code' => 'nullable|string|max:11',
                 'transaction_id' => 'nullable|string|max:100',
                 'transaction_date' => 'nullable|date',
-                'year' => 'required|string|max:10',
                 'comments' => 'nullable|string',
-                'status' => 'required|in:pending,cancelled,paid',
-                'cancellation_reason' => 'nullable|string',
-                'collected_by' => 'nullable|string|max:100',
-                'log_user' => 'nullable|string|max:100',
-                'attachment' => 'nullable|integer',
-                'payment_id' => 'nullable|integer',
             ]);
     
             // Initialize the remaining amount for distribution
@@ -685,6 +673,12 @@ public function register_expense(Request $request)
             // Loop through family members and distribute the amount
             $get_family_member = User::select('name', 'its')
                 ->where('family_id', $request->input('family_id'))
+                ->orderBy('mumeneen_type', 'desc')
+                ->get();
+
+            $hof_details = User::select('*')
+                ->where('family_id', $request->input('family_id'))
+                ->where('mumeneen_type', 'HOF')
                 ->get();
     
             if ($get_family_member->isEmpty()) {
@@ -699,34 +693,33 @@ public function register_expense(Request $request)
                     'jamiat_id' => $jamiat_id,
                     'family_id' => $validatedData['family_id'],
                     'receipt_no' => $receipt_no,
-                    'date' => $validatedData['date'],
+                    'date' => now()->timezone('Asia/Kolkata')->toDateString(),
                     'its' => $member->its,
-                    'folio_no' => $validatedData['folio_no'],
+                    'folio_no' => $hof_details['folio_no'],
                     'name' => $member->name,
-                    'sector_id' => $validatedData['sector_id'],
-                    'sub_sector_id' => $validatedData['sub_sector_id'],
+                    'sector_id' => $hof_details['sector_id'],
+                    'sub_sector_id' => $hof_details['sub_sector_id'],
                     'amount' => $amountForMember,
                     'mode' => $validatedData['mode'],
                     'bank_name' => $validatedData['bank_name'],
                     'cheque_no' => $validatedData['cheque_no'],
                     'cheque_date' => $validatedData['cheque_date'],
-                    'ifsc_code' => $validatedData['ifsc_code'],
                     'transaction_id' => $validatedData['transaction_id'],
                     'transaction_date' => $validatedData['transaction_date'],
-                    'year' => $validatedData['year'],
+                    'year' => '1446-1447',
                     'comments' => $validatedData['comments'],
-                    'status' => $validatedData['status'],
-                    'cancellation_reason' => $validatedData['cancellation_reason'],
-                    'collected_by' => $validatedData['collected_by'],
+                    'status' => 'pending',
+                    'cancellation_reason' => null,
+                    'collected_by' => '',
                     'log_user' => $user->name,
-                    'attachment' => $validatedData['attachment'],
-                    'payment_id' => $validatedData['payment_id'],
+                    'attachment' => null,
+                    'payment_id' => null,
                 ]);
     
                 $receipts[] = $register_receipt;
     
                 // If the mode is cheque, neft, or upi, create a payment entry
-                if (in_array($register_receipt->mode, ['cheque', 'neft', 'upi'])) {
+                if (in_array($register_receipt->mode, ['cheque', 'neft'])) {
                     $receiptIds = $request->input('receipt_ids') ?: [$register_receipt->id]; // For cheque, neft, upi
     
                     try {
@@ -799,8 +792,8 @@ public function register_expense(Request $request)
                     'family_id' => $validatedData['family_id'],
                     'name' => $get_hof_member->name,
                     'amount' => $remainingAmount,
-                    'sector' => $validatedData['sector'],
-                    'sub_sector' => $validatedData['sub_sector'],
+                    'sector' => $hof_details['sector'],
+                    'sub_sector' => $hof_details['sub_sector'],
                 ];
     
                 $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
@@ -832,83 +825,83 @@ public function register_expense(Request $request)
     }
     // view
     public function all_receipts(Request $request)
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized.'], 403);
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $userSectorAccess = json_decode($user->sector_access_id, true);
+        $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
+
+        if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
+            return response()->json(['message' => 'No access to any sectors or sub-sectors.'], 403);
+        }
+
+        // Optional filters
+        $year = $request->input('year');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        $query = ReceiptsModel::select(
+                't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
+                't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
+                't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
+                't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date',
+                't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date',
+                't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
+                't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
+                'users.name as user_name', 'users.photo_id',
+                't_uploads.file_url as photo_url'
+            )
+            ->leftJoin('users', 't_receipts.its', '=', 'users.username') // if `users.username` is used as ITS
+            ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
+            ->whereIn('t_receipts.sector_id', $userSectorAccess)
+            ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess);
+
+        if ($year) {
+            $query->where('t_receipts.year', $year);
+        }
+
+        if ($dateFrom && $dateTo) {
+            $query->whereBetween('t_receipts.date', [$dateFrom, $dateTo]);
+        } elseif ($dateFrom) {
+            $query->where('t_receipts.date', '>=', $dateFrom);
+        } elseif ($dateTo) {
+            $query->where('t_receipts.date', '<=', $dateTo);
+        }
+
+        $get_all_receipts = $query->orderBy('t_receipts.date', 'desc')->get();
+
+        return $get_all_receipts->isNotEmpty()
+            ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
+            : response()->json(['message' => 'No receipts found!'], 404);
     }
-
-    $userSectorAccess = json_decode($user->sector_access_id, true);
-    $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
-
-    if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
-        return response()->json(['message' => 'No access to any sectors or sub-sectors.'], 403);
-    }
-
-    // Optional filters
-    $year = $request->input('year');
-    $dateFrom = $request->input('date_from');
-    $dateTo = $request->input('date_to');
-
-    $query = ReceiptsModel::select(
-            't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
-            't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
-            't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
-            't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date',
-            't_receipts.ifsc_code', 't_receipts.transaction_id', 't_receipts.transaction_date',
-            't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
-            't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
-            'users.name as user_name', 'users.photo_id',
-            't_uploads.file_url as photo_url'
-        )
-        ->leftJoin('users', 't_receipts.its', '=', 'users.username') // if `users.username` is used as ITS
-        ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
-        ->whereIn('t_receipts.sector_id', $userSectorAccess)
-        ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess);
-
-    if ($year) {
-        $query->where('t_receipts.year', $year);
-    }
-
-    if ($dateFrom && $dateTo) {
-        $query->whereBetween('t_receipts.date', [$dateFrom, $dateTo]);
-    } elseif ($dateFrom) {
-        $query->where('t_receipts.date', '>=', $dateFrom);
-    } elseif ($dateTo) {
-        $query->where('t_receipts.date', '<=', $dateTo);
-    }
-
-    $get_all_receipts = $query->orderBy('t_receipts.date', 'desc')->get();
-
-    return $get_all_receipts->isNotEmpty()
-        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
-        : response()->json(['message' => 'No receipts found!'], 404);
-}
     public function getReceiptsByFamilyIds(Request $request)
-{
-    // Validate and retrieve the family_id array from the request
-    $family_ids = $request->input('family_ids');
+    {
+        // Validate and retrieve the family_id array from the request
+        $family_ids = $request->input('family_ids');
 
-    if (empty($family_ids) || !is_array($family_ids)) {
-        return response()->json(['message' => 'Invalid or missing family_ids.'], 400);
+        if (empty($family_ids) || !is_array($family_ids)) {
+            return response()->json(['message' => 'Invalid or missing family_ids.'], 400);
+        }
+
+        // Fetch receipts matching the provided family_id values
+        $get_receipts = ReceiptsModel::select(
+            'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+            'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
+            'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
+            'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
+        )
+        ->whereIn('family_id', $family_ids)
+        ->orderBy('id', 'desc')
+        ->get();
+
+        return $get_receipts->isNotEmpty()
+            ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_receipts], 200)
+            : response()->json(['message' => 'No receipts found for the provided family IDs.'], 404);
     }
-
-    // Fetch receipts matching the provided family_id values
-    $get_receipts = ReceiptsModel::select(
-        'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
-        'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
-        'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
-        'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
-    )
-    ->whereIn('family_id', $family_ids)
-    ->orderBy('id', 'desc')
-    ->get();
-
-    return $get_receipts->isNotEmpty()
-        ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_receipts], 200)
-        : response()->json(['message' => 'No receipts found for the provided family IDs.'], 404);
-}
     // update
     public function update_receipts(Request $request, $id)
     {
@@ -1129,32 +1122,32 @@ public function register_expense(Request $request)
         return response()->json(['message' => 'Pending cash receipts fetched successfully!', 'data' => $cashReceipts], 200);
     }
     public function changePaymentStatus(Request $request)
-{
-    // Validate incoming data
-    $validatedData = $request->validate([
-        'payment_id' => 'required|integer|exists:t_payments,id',  // Ensure payment ID exists
-        'status' => 'required|in:pending,approved,cancelled',  // Valid statuses
-    ]);
-
-    // Fetch the payment record
-    $payment = DB::table('t_payments')->where('id', $validatedData['payment_id'])->first();
-
-    if (!$payment) {
-        return response()->json(['message' => 'Payment not found!'], 404);
-    }
-
-    // Update the payment status
-    $updatedStatus = DB::table('t_payments')
-        ->where('id', $validatedData['payment_id'])
-        ->update([
-            'status' => $validatedData['status'],
-            'updated_at' => now(),  // Update timestamp
+    {
+        // Validate incoming data
+        $validatedData = $request->validate([
+            'payment_id' => 'required|integer|exists:t_payments,id',  // Ensure payment ID exists
+            'status' => 'required|in:pending,approved,cancelled',  // Valid statuses
         ]);
 
-    if ($updatedStatus) {
-        return response()->json(['message' => 'Payment status updated successfully!'], 200);
-    }
+        // Fetch the payment record
+        $payment = DB::table('t_payments')->where('id', $validatedData['payment_id'])->first();
 
-    return response()->json(['message' => 'Failed to update payment status.'], 500);
-}
+        if (!$payment) {
+            return response()->json(['message' => 'Payment not found!'], 404);
+        }
+
+        // Update the payment status
+        $updatedStatus = DB::table('t_payments')
+            ->where('id', $validatedData['payment_id'])
+            ->update([
+                'status' => $validatedData['status'],
+                'updated_at' => now(),  // Update timestamp
+            ]);
+
+        if ($updatedStatus) {
+            return response()->json(['message' => 'Payment status updated successfully!'], 200);
+        }
+
+        return response()->json(['message' => 'Failed to update payment status.'], 500);
+    }
 }
