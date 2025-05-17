@@ -1080,8 +1080,8 @@ if ($request->has('sub_sector') && !empty($request->sub_sector)) {
     
         // Fetch the cash receipts
         $cashReceipts = $query->orderBy('date', 'desc') // Order by date in descending order
-        ->limit(100)
-        ->get(['id', 'receipt_no', 'name', 'amount', 'date', ])
+        ->limit(1000)
+        ->get(['id', 'receipt_no', 'name', 'amount' ])
         ;
 
         // Check if any receipts are found
