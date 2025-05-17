@@ -311,7 +311,9 @@ $sectorData = DB::table('users')
     ->select(
         'users.sector_id',
         DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
+        // Count distinct family_id where hub_amount = 0
         DB::raw('COUNT(DISTINCT CASE WHEN hub.hub_amount = 0 THEN hub.family_id END) as done'),
+        // Sum distinct hub_amounts where hub_amount > 0
         DB::raw('SUM(DISTINCT CASE WHEN hub.hub_amount > 0 THEN hub.hub_amount ELSE 0 END) as amount')
     )
     ->leftJoinSub($hubAggregated, 'hub', function ($join) {
