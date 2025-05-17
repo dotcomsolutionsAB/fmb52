@@ -3,55 +3,91 @@
 <head>
     <title>Receipt</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
+        /* A5 page size in mm for print */
+        @page {
+            size: A5 portrait;
+            margin: 0;
         }
+
+        /* Reset */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 148mm;  /* A5 height */
+            width: 210mm;   /* A5 width */
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            /* Background image set here */
+            background-image: url('{{ $background }}');
+            background-size: cover;   /* Cover entire page */
+            background-position: center center;
+            background-repeat: no-repeat;
+
+            /* Padding inside the page for content */
+            padding: 20mm 15mm;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Header styling */
         .header {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
+            background: transparent;
         }
+        /* Remove inline <img> because background image is already set on body */
+        /* Or if you still want the logo inside content, keep but no conflict */
+
         .header img {
-            width: 60px; /* Adjust size for the logo */
+            width: 60px; /* Adjust size */
             margin-right: 10px;
         }
         .header-title {
             font-size: 16px;
             font-weight: bold;
+            color: #000;
         }
         .header-subtitle {
             font-size: 10px;
             margin-top: -5px;
+            color: #000;
         }
         .header-ac {
             font-size: 12px;
             margin-top: -5px;
+            color: #000;
         }
+
         .content table {
             width: 100%;
             margin-top: 20px;
             border-collapse: collapse;
+            background: transparent;
+            color: #000;
         }
         .content th, .content td {
             text-align: left;
             padding: 5px;
         }
+
         .footer {
             position: fixed;
-            bottom: 0;
-            width: 100%;
+            bottom: 5mm;
+            width: calc(100% - 30mm);
             font-size: 10px;
             text-align: center;
             border-top: 1px solid #000;
             padding-top: 5px;
+            background: transparent;
+            color: #000;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <img src="{{ $logo_image }}" alt="Logo">
         <div>
             <div class="header-title">DAWOODI BOHRA JAMAAT TRUST (KOLKATA)</div>
             <div class="header-subtitle">
