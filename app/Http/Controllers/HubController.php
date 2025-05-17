@@ -298,7 +298,7 @@ class HubController extends Controller
     'users.sector_id as sector_id',
     DB::raw('COUNT(DISTINCT users.family_id) as total_hof'),
     DB::raw('COUNT(DISTINCT CASE WHEN hub.hub_amount = 0 THEN hub.family_id END) as done'),
-    DB::raw('SUM(hub.hub_amount) as amount')
+    DB::raw('SUM(DISTINCT CASE WHEN hub.hub_amount > 0 THEN hub.hub_amount ELSE 0 END) as amount')
 )
 ->leftJoin('t_hub as hub', function ($join) use ($currentYear) {
     $join->on('users.family_id', '=', 'hub.family_id')
