@@ -26,7 +26,7 @@
             background-repeat: no-repeat;
 
             /* Padding inside the page for content */
-            padding: 20mm 15mm;
+            padding: 0;
             box-sizing: border-box;
             position: relative;
         }
@@ -46,48 +46,64 @@
             margin-right: 10px;
         }
         .header-title {
-            font-size: 16px;
+            font-size: 40px;
             font-weight: bold;
-            color: #000;
+            color: #a52a2a;
         }
         .header-subtitle {
-            font-size: 10px;
-            margin-top: -5px;
-            color: #000;
+            font-size: 30px;
+            color: #a52a2a;
         }
         .header-ac {
-            font-size: 12px;
-            margin-top: -5px;
-            color: #000;
+            font-size: 30px;
+            color: #a52a2a;
         }
+		
+		.receipt-table {
+			width: 90%;
+			margin: 2mm 10mm 0 10mm;
+			border-collapse: collapse;
+			font-family: Arial, sans-serif;
+			font-size: 32px;
+			color: #a52a2a;
+		}
 
-        .content table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            background: transparent;
-            color: #000;
-        }
-        .content th, .content td {
-            text-align: left;
-            padding: 5px;
-        }
+		.receipt-table td {
+			padding: 10px 10px;
+			vertical-align: middle;
+		}
 
-        .footer {
-            position: fixed;
-            bottom: 5mm;
-            width: calc(100% - 30mm);
-            font-size: 10px;
-            text-align: center;
-            border-top: 1px solid #000;
-            padding-top: 5px;
-            background: transparent;
-            color: #000;
-        }
+		.receipt-table .label {
+			font-weight: bold;
+			width: 18%;
+		}
+
+		.receipt-table .value {
+			font-weight: bold;
+			color: #000;
+			width: 44%;
+		}
+		
+		.receipt-table tr {
+			padding : 1px;	
+		}
+
+		.receipt-table tr td:nth-child(3) {
+			font-weight: bold;
+			width: 18%;
+		}
+
+		.receipt-table tr td:nth-child(4) {
+			font-weight: bold;
+			color: #000;
+			width: 20%;
+		}
+
     </style>
 </head>
 <body>
-    <div class="header">
+	<br/><br/><br/><br/><br/><br/><br/><br/>
+    <div class="header" style="text-align: center">
         <div>
             <div class="header-title">DAWOODI BOHRA JAMAAT TRUST (KOLKATA)</div>
             <div class="header-subtitle">
@@ -97,72 +113,60 @@
         </div>
     </div>
 
-    <div class="content">
-        <table>
-            <tr>
-                <th>Date:</th>
-                <td>{{ \Carbon\Carbon::parse($receipt->date)->format('d/m/Y') }}</td>
-            </tr>
-            <tr>
-                <th>Receipt No:</th>
-                <td>{{ $receipt->receipt_no }}</td>
-            </tr>
-            <tr>
-                <th>Year:</th>
-                <td>{{ $receipt->year }}</td>
-            </tr>
-            <tr>
-                <th>Name:</th>
-                <td>{{ $receipt->name }} ({{ $receipt->folio_no }})</td>
-            </tr>
-            <tr>
-                <th>ITS No:</th>
-                <td>{{ $receipt->its }}</td>
-            </tr>
-            <tr>
-                <th>Mohalla:</th>
-                <td>{{ $receipt->sector }}</td>
-            </tr>
-            <tr>
-                <th>Amount:</th>
-                <td>Rs. {{ number_format($receipt->amount, 2) }} ({{ $amount_in_words }} Only)</td>
-            </tr>
-            <tr>
-                <th>Paid By:</th>
-                <td>{{ ucfirst($receipt->mode) }}</td>
-            </tr>
-            @if($receipt->mode == 'cheque')
-                <tr>
-                    <th>Cheque No:</th>
-                    <td>{{ $receipt->cheque_no }}</td>
-                </tr>
-                <tr>
-                    <th>Cheque Date:</th>
-                    <td>{{ \Carbon\Carbon::parse($receipt->cheque_date)->format('d/m/Y') }}</td>
-                </tr>
-            @elseif($receipt->mode == 'neft')
-                <tr>
-                    <th>Transaction ID:</th>
-                    <td>{{ $receipt->transaction_id }}</td>
-                </tr>
-                <tr>
-                    <th>Transaction Date:</th>
-                    <td>{{ \Carbon\Carbon::parse($receipt->transaction_date)->format('d/m/Y') }}</td>
-                </tr>
-            @endif
-            <tr>
-                <th>Comments:</th>
-                <td>{{ $receipt->comments }}</td>
-            </tr>
-            <tr>
-                <th>Received By:</th>
-                <td>{{ $receipt->collected_by }}</td>
-            </tr>
-        </table>
-    </div>
+    <table class="receipt-table">
+		<tbody>
+			<tr>
+				<td class="label">Name :</td>
+				<td class="value">{{ $receipt->name }}</td>
+				<td class="label">Receipt No :</td>
+				<td class="value">{{ $receipt->receipt_no }}</td>
+			</tr>
+			<tr>
+				<td class="label">ITS No :</td>
+				<td class="value">{{ $receipt->its }}</td>
+				<td class="label">Date :</td>
+				<td class="value">{{ \Carbon\Carbon::parse($receipt->date)->format('d-m-Y') }}</td>
+			</tr>
+			<tr>
+				<td class="label">Sector :</td>
+				<td class="value">{{ $receipt->sector->name }}</td>
+				<td class="label">Sub Sector :</td>
+				<td class="value">{{ $receipt->sub_sector ?? '-' }}</td>
+			</tr>
+			<tr>
+				<td class="label">Folio :</td>
+				<td class="value">{{ $receipt->folio_no }}</td>
+				<td class="label">Year :</td>
+				<td class="value">{{ $receipt->year }}</td>
+			</tr>
+			<tr>
+				<td class="label">Mode :</td>
+				<td class="value">{{ ucfirst($receipt->mode) }}</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="label">Amount :</td>
+				<td class="value">Rs. {{ number_format($receipt->amount, 2) }} ({{ $amount_in_words }} Only)</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="label">Received By :</td>
+				<td class="value">{{ $receipt->collected_by }}</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="label">Comments :</td>
+				<td class="value">{{ $receipt->comments }}</td>
+				<td></td>
+				<td></td>
+			</tr>
+		</tbody>
+	</table>
 
-    <div class="footer">
-        THIS RECEIPT IS COMPUTER GENERATED AND DOES NOT REQUIRE SIGNATURE
-    </div>
+
+
 </body>
 </html>
