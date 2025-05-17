@@ -91,15 +91,21 @@ class DashboardController extends Controller
             ->count();
     
         // Summary Data Query
-        $summaryData = DB::table('t_hub')
-            ->selectRaw("
-                COUNT(DISTINCT t_hub.family_id) AS total_houses,
-                SUM(CASE WHEN t_hub.hub_amount = 0 THEN 1 ELSE 0 END) AS hub_not_set,
-                SUM(CASE WHEN t_hub.due_amount > 0 THEN 1 ELSE 0 END) AS hub_due,
-                SUM(t_hub.hub_amount) AS total_hub_amount,
-                SUM(t_hub.paid_amount) AS total_paid_amount,
-                SUM(t_hub.due_amount) AS total_due_amount
-            ")
+       $summaryData = DB::table('t_hub')
+    ->leftJoin('users', function($join) {
+        $join->on('t_hub.family_id', '=', 'users.family_id')
+             ->where('users.thali_status', '<>', 'joint')
+             ->where('users.status', '=', 'active');
+    })
+    ->selectRaw("
+        COUNT(DISTINCT t_hub.family_id) AS total_houses,
+        SUM(CASE WHEN t_hub.hub_amount = 0 AND users.id IS NOT NULL THEN 1 ELSE 0 END) AS hub_not_set,
+        SUM(CASE WHEN t_hub.due_amount > 0 THEN 1 ELSE 0 END) AS hub_due,
+        SUM(t_hub.hub_amount) AS total_hub_amount,
+        SUM(t_hub.paid_amount) AS total_paid_amount,
+        SUM(t_hub.due_amount) AS total_due_amount
+    ")
+    
             ->where('t_hub.year', $year)
             ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
                 $query->select(DB::raw(1))
