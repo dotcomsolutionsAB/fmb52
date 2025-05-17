@@ -838,13 +838,11 @@ class AccountsController extends Controller
         }
         
         // Optionally eager load user photo URLs from uploads by using a relationship on User model:
-        
         $query->with(['user' => function($q) {
-            $q->select('photo_id'); // select only needed user fields
+            $q->select('id', 'username', 'name', 'photo_id'); // select only needed user fields
         }, 'user.photo' => function($q) {
             $q->select('id', 'file_url'); // select only needed photo fields
-        }]);
-        
+        }]);        
         
         $get_all_receipts = $query->orderBy('date', 'desc')->get();
 
