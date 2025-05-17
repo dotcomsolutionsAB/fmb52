@@ -253,114 +253,133 @@ $hub_done = $hubAmountCount + $thaliJointCount;
 
     
     
-    public function mohalla_wise(Request $request)
-    {
-        // Get authenticated user's jamiat_id
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
+  public function mohalla_wise(Request $request)
+{
+    // Get authenticated user
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized.'], 403);
+    }
 
-        $jamiatId = $user->jamiat_id;
+    $jamiatId = $user->jamiat_id;
 
-        // Get the current year from `t_year` where `is_current = 1` for the user's jamiat
-        $currentYear = YearModel::where('jamiat_id', $jamiatId)->where('is_current', "1")->value('year');
+    // Get current year from t_year table where is_current=1 for this jamiat
+    $currentYear = YearModel::where('jamiat_id', $jamiatId)
+        ->where('is_current', '1')
+        ->value('year');
 
-        if (!$currentYear) {
-            return response()->json([
-                'code' => 404,
-                'status' => false,
-                'message' => 'Current year not found for the user',
-                'data' => [],
-            ]);
-        }
-
-        // Validate sector and sub-sector input
-        $request->validate([
-            'sector' => 'required|array',
-            'sector.*' => ['required', function ($attribute, $value, $fail) {
-                if ($value !== 'all' && !is_numeric($value)) {
-                    $fail("The $attribute field must be an integer or 'all'.");
-                }
-            }],
-            'sub_sector' => 'required|array',
-            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
-                if ($value !== 'all' && !is_numeric($value)) {
-                    $fail("The $attribute field must be an integer or 'all'.");
-                }
-            }],
+    if (!$currentYear) {
+        return response()->json([
+            'code' => 404,
+            'status' => false,
+            'message' => 'Current year not found for the user',
+            'data' => [],
         ]);
+    }
 
-        // Handle "all" for sector and sub-sector
-        $requestedSectors = $request->input('sector', []);
-        if (in_array('all', $requestedSectors)) {
-            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
-            $requestedSectors[] = null; // Include NULL values for sector_id
-        }
+    // Validate sector and sub-sector input
+    $request->validate([
+        'sector' => 'required|array',
+        'sector.*' => ['required', function ($attribute, $value, $fail) {
+            if ($value !== 'all' && !is_numeric($value)) {
+                $fail("The $attribute field must be an integer or 'all'.");
+            }
+        }],
+        'sub_sector' => 'required|array',
+        'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+            if ($value !== 'all' && !is_numeric($value)) {
+                $fail("The $attribute field must be an integer or 'all'.");
+            }
+        }],
+    ]);
 
-        $requestedSubSectors = $request->input('sub_sector', []);
-        if (in_array('all', $requestedSubSectors)) {
-            $requestedSubSectors = DB::table('t_sub_sector')
-                ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
-                ->pluck('id')
-                ->toArray();
-            $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
-        }
+    // Handle "all" sectors
+    $requestedSectors = $request->input('sector', []);
+    if (in_array('all', $requestedSectors)) {
+        $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
+    }
 
-        // Fetch mohalla-wise data
-       
+    // Handle "all" sub-sectors
+    $requestedSubSectors = $request->input('sub_sector', []);
+    if (in_array('all', $requestedSubSectors)) {
+        $requestedSubSectors = DB::table('t_sub_sector')
+            ->whereIn('sector_id', $requestedSectors)
+            ->pluck('id')
+            ->toArray();
+    }
 
+    // Filter only active sectors
+    $activeSectors = SectorModel::whereIn('id', $requestedSectors)
+        ->where('status', 'active')
+        ->pluck('id')
+        ->toArray();
 
-$activeSectors = SectorModel::whereIn('id', $requestedSectors)
-    ->where('status', 'active')
-    ->pluck('id')
-    ->toArray();
-
-if (empty($activeSectors)) {
-    return response()->json([], 200);  // Or some message: no active sectors found
-}
-
-// Step 2: Query users but only for active sectors
-$users = User::select('sector_id', 'family_id', 'status')
-    ->with(['hubs' => function ($query) use ($currentYear) {
-        $query->where('year', $currentYear);
-    }])
-    ->where('jamiat_id', $jamiatId)
-    ->whereIn('sector_id', $activeSectors)   // Use filtered active sectors only
-    ->whereIn('sub_sector_id', $requestedSubSectors)
-    ->get();
-
-$groupedBySector = $users->groupBy('sector_id');
-
-$responseData = $groupedBySector->map(function ($usersInSector, $sectorId) {
-    $activeFamilies = $usersInSector->where('status', 'active')->unique('family_id');
-    $allHubs = $usersInSector->unique('family_id')->pluck('hubs')->flatten();
-
-    $total_hof = $activeFamilies->count();
-    $done = $allHubs->where('hub_amount', '<=', 0)->unique('family_id')->count();
-    $amount = $allHubs->where('hub_amount', '>', 0)->unique('family_id')->sum('hub_amount');
-
-    $sectorName = SectorModel::where('id', $sectorId)->value('name') ?? 'Unknown';
-
-    return [
-        'sector_id' => $sectorId,
-        'sector' => $sectorName,
-        'total_hof' => (string) $total_hof,
-        'done' => (string) $done,
-        'pending' => (string) ($total_hof - $done),
-        'amount' => (string) $amount,
-    ];
-})
-->sortBy('sector')
-->values();
-
+    if (empty($activeSectors)) {
         return response()->json([
             'code' => 200,
             'status' => true,
-            'message' => 'Details fetched successfully',
-            'data' => $responseData,
+            'message' => 'No active sectors found for the selected filters.',
+            'data' => [],
         ]);
     }
+
+    // Fetch users with hubs for the current year, grouped by sector
+    $users = User::with(['hubs' => function ($query) use ($currentYear) {
+            $query->where('year', $currentYear);
+        }])
+        ->where('jamiat_id', $jamiatId)
+        ->whereIn('sector_id', $activeSectors)
+        ->whereIn('sub_sector_id', $requestedSubSectors)
+        ->get();
+
+    $groupedBySector = $users->groupBy('sector_id');
+
+    $responseData = $groupedBySector->map(function ($usersInSector, $sectorId) use ($currentYear) {
+        $activeFamilies = $usersInSector->where('status', 'active')->unique('family_id');
+
+        // Flatten hubs collection for all users in sector for the current year
+        $allHubs = $usersInSector->flatMap(function ($user) use ($currentYear) {
+            return $user->hubs->where('year', $currentYear);
+        })->unique('family_id');
+
+        // Count of families where hub_amount is zero or less (pending)
+        $done = $allHubs->where('hub_amount', '>', 0)->unique('family_id')->count();
+
+        // Count families with thali_status 'joint' or 'other_centre' and user status active
+        $thaliJointCount = $usersInSector
+            ->whereIn('thali_status', ['joint', 'other_centre'])
+            ->where('status', 'active')
+            ->unique('family_id')
+            ->count();
+
+        // Total hub amount sum for families with hub_amount > 0
+        $amount = $allHubs->where('hub_amount', '>', 0)->sum('hub_amount');
+
+        // Total HoF count of active users
+        $total_hof = $activeFamilies->count();
+
+        // Calculate pending
+        $pending = $total_hof - ($done + $thaliJointCount);
+
+        $sectorName = SectorModel::where('id', $sectorId)->value('name') ?? 'Unknown';
+
+        return [
+            'sector_id' => $sectorId,
+            'sector' => $sectorName,
+            'total_hof' => (string) $total_hof,
+            'done' => (string) ($done + $thaliJointCount),
+            'pending' => (string) max(0, $pending),
+            'amount' => (string) $amount,
+        ];
+    })->sortBy('sector')->values();
+
+    return response()->json([
+        'code' => 200,
+        'status' => true,
+        'message' => 'Mohalla-wise details fetched successfully',
+        'data' => $responseData,
+    ]);
+}
 
     public function usersByNiyazSlab(Request $request)
     {
