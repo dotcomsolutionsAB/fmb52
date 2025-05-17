@@ -815,7 +815,6 @@ class AccountsController extends Controller
         $dateTo = $request->input('date_to');
 
         $query = ReceiptsModel::with([
-            'user:id,username,name,photo_id',   // eager load user (select only these columns)
             'sector:id,name',                   // eager load sector (id, name only)
             'subSector:id,name'                 // eager load sub-sector (id, name only)
         ]);
