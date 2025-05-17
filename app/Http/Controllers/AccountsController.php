@@ -792,8 +792,8 @@ class AccountsController extends Controller
                     'family_id' => $validatedData['family_id'],
                     'name' => $get_hof_member->name,
                     'amount' => $remainingAmount,
-                    'sector' => $hof_details->sector,
-                    'sub_sector' => $hof_details->sub_sector,
+                    'sector' => $hof_details->sector_id,
+                    'sub_sector' => $hof_details->sub_sector_id,
                 ];
     
                 $newRequestAdvanceReceipt = new Request($dataForAdvanceReceipt);
