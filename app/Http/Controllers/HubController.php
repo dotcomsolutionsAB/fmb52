@@ -347,7 +347,7 @@ $hub_done = $hubAmountCount + $thaliJointCount;
 
         // Count families with thali_status 'joint' or 'other_centre' and user status active
         $thaliJointCount = $usersInSector
-            ->whereIn('thali_status', ['joint', 'other_centre'])
+            ->whereIn('thali_status', ['joint', 'other_centre','not_taking'])
             ->where('status', 'active')
             ->unique('family_id')
             ->count();
