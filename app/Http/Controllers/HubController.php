@@ -115,7 +115,7 @@ $thaliJointCount = User::where('jamiat_id', $jamiatId)
     ->count();
 
 // Sum both counts
-$hub_done = $hubAmountCount + $thaliJointCount;
+$hub_done = $hubAmountCount ;
 
     // Calculate pending hubs
     $hub_pending = $total_hof - $hub_done;
@@ -129,6 +129,7 @@ $hub_done = $hubAmountCount + $thaliJointCount;
             'total_hof' => $total_hof,
             'hub_done' => $hub_done,
             'hub_pending' => $hub_pending,
+            'thali_join' => $thaliJointCount,
         ]
     ]);
 }
