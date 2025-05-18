@@ -17,6 +17,7 @@ use App\Models\YearModel;
 use App\Models\MenuModel;
 use App\Models\FcmModel;
 use App\Models\HubModel;
+use App\Models\ThaaliStatus;
 use App\Models\ZabihatModel;
 use App\Http\Controllers\UploadController;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -1750,4 +1751,24 @@ public function update_user_details(Request $request, $id)
         ]
     ], 200);
 }
+public function thaali(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $jamiatId = $user->jamiat_id;
+
+        $thaaliStatuses = ThaaliStatus::where('jamiat_id', $jamiatId)
+            ->select('id', 'name', 'slug')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'message' => 'Thaali statuses fetched successfully',
+            'data' => $thaaliStatuses,
+        ]);
+    }
 }
