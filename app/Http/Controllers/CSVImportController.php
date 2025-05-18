@@ -112,6 +112,7 @@ if (in_array($record['year'], $paidYears)) {
 
             // Prepare receipt data
             $batchData[] = [
+                'id'=>$record['id'],
                 'jamiat_id' => 1,
                 'hashed_id' =>$uniqueKey,
                 'family_id' => $record['family_id'],
@@ -171,6 +172,7 @@ if (in_array($record['year'], $paidYears)) {
         $pstatus = $pstatus ==1 ?'approved':'pending';
         // Prepare payment data WITHOUT bank_name, cheque_no, etc.
         $batchData[] = [
+            'id'=>$record['id'],
             'jamiat_id' => 1,
             'family_id' => $record['family_id'],
             'name' => $record['name'],
