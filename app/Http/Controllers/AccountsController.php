@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
+use App\Http\Controllers\HubController;
 
 use App\Models\UploadModel;
 use Illuminate\Support\Facades\Storage;
@@ -744,6 +745,10 @@ class AccountsController extends Controller
                     break;
                 }
             }
+
+            $hubController = new HubController();
+            $hubresponse = $hubController->updateFamilyHub($receipts->family_id);
+
     
             // Increment counter value after successful receipt creation
             DB::table('t_counter')
@@ -780,6 +785,7 @@ class AccountsController extends Controller
             return response()->json([
                 'message' => 'Receipt created successfully!',
                 'receipts' => $receipts,
+                'hub _ update'=>$hubresponse,
             ], 201);
         } catch (\Exception $e) {
             // Rollback all database changes if something goes wrong
