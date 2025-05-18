@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessItsImport;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 
 class CSVImportController extends Controller
@@ -81,11 +82,24 @@ class CSVImportController extends Controller
             $paymentStatus = (int) $record['payment_status']; // 0 = pending, 1 = paid
 
             // Merge status and payment_status into the new enum status
-            if ($statusFlag === 1) {
-                $status = 'cancelled'; // If status is 1, set to 'cancelled'
-            } else {
-                $status = $paymentStatus === 1 ? 'paid' : 'pending'; // Otherwise, use payment_status
-            }
+          $paidYears = ['1439-1440', '1440-1441', '1441-1442', '1442-1443', '1443-1444'];
+
+if (in_array($record['year'], $paidYears)) {
+    $status = 'paid';
+} else {
+    if ($statusFlag === 1) {
+        $status = 'cancelled'; // If status is 1, set to 'cancelled'
+    } else {
+        $status = $paymentStatus == 1 ? 'paid' : 'pending'; // Otherwise, use payment_status
+    }
+}
+ do {
+            // Generate a random 16-character string
+            $uniqueKey = Str::random(16);  // Generates a 16-character random string
+
+            // Check if the unique key already exists in the database
+        } while (ReceiptsModel::where('hashed_id', $uniqueKey)->exists());
+
 
             // Convert type to mode in lowercase
             $mode = strtolower($record['type']);
@@ -99,6 +113,7 @@ class CSVImportController extends Controller
             // Prepare receipt data
             $batchData[] = [
                 'jamiat_id' => 1,
+                'hashed_id' =>$uniqueKey,
                 'family_id' => $record['family_id'],
                 'receipt_no' => $record['rno'],
                 'date' => $this->validateAndFormatDate($record['date']),
@@ -128,73 +143,92 @@ class CSVImportController extends Controller
         }
     }
 
-    private function processPaymentCSV($url, $sectorMapping, $subSectorMapping)
-    {
-        // Clear existing data in the payment table
-        //PaymentsModel::truncate();
+   private function processPaymentCSV($url, $sectorMapping, $subSectorMapping)
+{
+    $csvContent = file_get_contents($url);
+    if ($csvContent === false) {
+        throw new \Exception("Failed to fetch CSV content: $url");
+    }
 
-        // Fetch the CSV content from the URL
-        $csvContent = file_get_contents($url);
-        if ($csvContent === false) {
-            throw new \Exception("Failed to fetch the CSV content from the URL: $url");
-        }
+    $csv = Reader::createFromString($csvContent);
+    $csv->setHeaderOffset(0);
 
-        // Read and parse the CSV
-        $csv = Reader::createFromString($csvContent);
-        $csv->setHeaderOffset(0);
-        $counter = 0;
+    $paymentRecords = $csv->getRecords();
+    $batchSize = 100;
+    $batchData = [];
+    $paymentsToUpdateReceipts = []; // Track payment_no => data for receipt update
+    $counter = 0;
 
-        // Get records and initialize batch variables
-        $paymentRecords = $csv->getRecords();
-        $batchSize = 100;
-        $batchData = [];
+    foreach ($paymentRecords as $record) {
+        $sectorId = $sectorMapping[$record['sector']] ?? null;
+        $subSectorId = $subSectorMapping["{$sectorId}:{$record['sub_sector']}"] ?? null;
 
-        foreach ($paymentRecords as $record) {
-            // Map sector and sub-sector IDs
-            $sectorId = $sectorMapping[$record['sector']] ?? null;
-            $subSectorId = $subSectorMapping["{$sectorId}:{$record['sub_sector']}"] ?? null;
+        $formattedDate = $this->validateAndFormatDate($record['date']);
+        $paymentNo = "P_{$counter}_{$formattedDate}";
+        $counter++;
+        $pstatus = $record['status'];
+        $pstatus = $pstatus ==1 ?'approved':'pending';
+        // Prepare payment data WITHOUT bank_name, cheque_no, etc.
+        $batchData[] = [
+            'jamiat_id' => 1,
+            'family_id' => $record['family_id'],
+            'name' => $record['name'],
+            'its' => $record['its'],
+            'sector_id' => $sectorId,
+            'sub_sector_id' => $subSectorId,
+            'year' => $record['year'],
+            'mode' => strtolower($record['mode']),
+            'date' => $formattedDate,
+            'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
+            'comments' => $record['comments'] ?? null,
+            'status' => $pstatus,
+            'cancellation_reason' => null,
+            'log_user' => $record['log_user'],
+            'attachment' => null,
+            'payment_no' => $paymentNo,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
 
+        // Store data for receipt update: against_rno and bank/cheque info
+        $paymentsToUpdateReceipts[$paymentNo] = [
+            'against_rno' => $record['against_rno'] ?? null,
+            'bank_name' => $record['bank_name'] ?? null,
+            'cheque_no' => $record['cheque_num'] ?? null,
+            'cheque_date' => null,
+           
+        ];
 
-            // Format payment_no as "P_counter_(date)"
-            $formattedDate = $this->validateAndFormatDate($record['date']);
-            $paymentNo = "P_{$counter}_{$formattedDate}";
-            $counter++;
-
-            // Prepare payment data
-            $batchData[] = [
-                'jamiat_id' => 1,
-                'family_id' => $record['family_id'],
-                'folio_no' => $record['folio'],
-                'name' => $record['name'],
-                'its' => $record['its'],
-                'sector_id' => $sectorId, // Mapped sector ID
-                'sub_sector_id' => $subSectorId, // Mapped sub-sector ID
-                'year' => $record['year'],
-                'mode' => strtolower($record['mode']),
-                'date' => $formattedDate,
-                'bank_name' => $record['bank_name'] ?? null,
-                'cheque_no' => $record['cheque_num'] ?? null,
-                'cheque_date' => null,
-                'ifsc_code' => $record['ifsc'] ?? null,
-                'amount' => preg_replace('/[^\d.]/', '', $record['amount']),
-                'comments' => $record['comments'] ?? null,
-                'status' => 'pending',
-                'cancellation_reason' => null,
-                'log_user' => $record['log_user'],
-                'attachment' => null,
-                'payment_no' => $paymentNo,
-            ];
-
-            if (count($batchData) >= $batchSize) {
-                $this->insertBatch(PaymentsModel::class, $batchData);
-                $batchData = [];
-            }
-        }
-
-        if (count($batchData) > 0) {
+        if (count($batchData) >= $batchSize) {
             $this->insertBatch(PaymentsModel::class, $batchData);
+            $batchData = [];
         }
     }
+
+    if (count($batchData) > 0) {
+        $this->insertBatch(PaymentsModel::class, $batchData);
+    }
+
+    // Update receipts with payment_id and payment details from payments CSV
+    foreach ($paymentsToUpdateReceipts as $paymentNo => $data) {
+        if (empty($data['against_rno'])) continue;
+
+        $paymentRecord = PaymentsModel::where('payment_no', $paymentNo)->first();
+
+        if (!$paymentRecord) continue;
+
+        $receiptNumbers = array_map('trim', explode(',', $data['against_rno']));
+
+        DB::table('t_receipts')
+            ->whereIn('receipt_no', $receiptNumbers)
+            ->update([
+                'payment_id' => $paymentRecord->id,
+                'bank_name' => $data['bank_name'],
+                'cheque_no' => $data['cheque_no'],
+                'cheque_date' => $data['cheque_date']
+            ]);
+    }
+}
 
     private function insertBatch($model, $data)
     {
@@ -223,9 +257,6 @@ class CSVImportController extends Controller
             return '2021-12-12'; // Default valid date if parsing fails
         }
     }
-
-   
-
     
     public function uploadExcel(Request $request)
     {

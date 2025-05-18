@@ -15,7 +15,7 @@ class ReceiptsModel extends Model
     protected $table = 't_receipts';  // Replace with your actual table name
 
     protected $fillable = [
-        'jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+        'hashed_id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
         'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date', 
         'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status',
         'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id',
