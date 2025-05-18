@@ -747,7 +747,7 @@ class AccountsController extends Controller
             }
 
             $hubController = new HubController();
-            $hubresponse = $hubController->updateFamilyHub($receipts->family_id);
+            $hubresponse = $hubController->updateFamilyHub($receipts['family_id']);
 
     
             // Increment counter value after successful receipt creation
