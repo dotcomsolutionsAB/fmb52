@@ -331,6 +331,8 @@ class MumeneenController extends Controller
                     $fail("The $attribute field must be an integer or the string 'all'.");
                 }
             }],
+            'thali_status'=>'sometimes|required|in:taking,not_taking,once_a_week,joint,other_centre',
+            'hub_status'=>'sometimes|reqiured|in: 0,1,2'
         ]);
 
         // Handle "all" for sector and sub-sector
@@ -373,6 +375,7 @@ class MumeneenController extends Controller
         ->where('jamiat_id', $jamiat_id)
         ->where('status', 'active')
         ->where('role', 'mumeneen')
+        ->where('thali_status',$request->input('thali_status'))
         ->where(function ($query) use ($requestedSectors) {
             $query->whereIn('sector_id', $requestedSectors)
                 ->orWhereNull('sector_id'); // Include NULL sector_id
@@ -404,30 +407,48 @@ class MumeneenController extends Controller
                 ->keyBy('family_id');
 
             // Map hub data and overdue amounts to users
-            $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
-                $hub_record = $hub_data->get($user->family_id);
+          $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
+    $hub_record = $hub_data->get($user->family_id);
 
-                if ($user->mumeneen_type === 'FM') {
-                    // Set hub amounts to 0 for FM users
-                    $user->hub_amount = 0;
-                    $user->paid_amount = 0;
-                    $user->due_amount = 0;
-                } else {
-                    $user->hub_amount = $hub_record->hub_amount ?? 'NA';
-                    $user->paid_amount = $hub_record->paid_amount ?? 'NA';
-                    $user->due_amount = $hub_record->due_amount ?? 'NA';
-                }
+    if ($user->mumeneen_type === 'FM') {
+        // Set hub amounts to 0 for FM users
+        $user->hub_amount = 0;
+        $user->paid_amount = 0;
+        $user->due_amount = 0;
+    } else {
+        $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+        $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+        $user->due_amount = $hub_record->due_amount ?? 'NA';
+    }
 
-                //$user->thali_status = $hub_record->thali_status ?? 'NA'; // Assign thali_status
+    $overdue_record = $overdue_data->get($user->family_id);
+    $user->overdue = $overdue_record->overdue ?? 0;
 
-                $overdue_record = $overdue_data->get($user->family_id);
-                $user->overdue = $overdue_record->overdue ?? 0;
+    return $user;
+});
 
-                return $user;
-            });
+// Apply filtering based on input hub_status
+if ($request->has('hub_status')) {
+    $hubStatus = $request->input('hub_status');
 
-            return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
+    $users_with_hub_data = $users_with_hub_data->filter(function ($user) use ($hubStatus) {
+        switch ($hubStatus) {
+            case 0:
+                // hub_amount == 0 (handle 'NA' too)
+                return $user->hub_amount === 0 || $user->hub_amount === '0' || $user->hub_amount === 'NA';
+            case 1:
+                // due_amount > 0 (skip 'NA' or non-numeric)
+                return is_numeric($user->due_amount) && $user->due_amount > 0;
+            case 2:
+                // overdue > 0 (skip non-numeric)
+                return is_numeric($user->overdue) && $user->overdue > 0;
+            default:
+                return true; // no filtering for other values
         }
+    })->values(); // reset keys after filter
+}
+
+return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
 
         return response()->json(['message' => 'Sorry, failed  fetch records!'], 404);
     }
