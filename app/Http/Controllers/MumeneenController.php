@@ -449,6 +449,7 @@ if ($request->has('hub_status')) {
 }
 
 return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
+}
 
         return response()->json(['message' => 'Sorry, failed  fetch records!'], 404);
     }
