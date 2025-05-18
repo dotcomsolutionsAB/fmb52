@@ -331,8 +331,8 @@ class MumeneenController extends Controller
             $fail("The $attribute field must be an integer or the string 'all'.");
         }
     }],
-    'thali_status' => 'sometimes|required|in:taking,not_taking,once_a_week,joint,other_centre',
-    'hub_status' => 'sometimes|required|in:0,1,2',
+    'thali_status' => 'nullable|in:taking,not_taking,once_a_week,joint,other_centre',
+    'hub_status' => 'nullable|in:0,1,2',
 ]);
         // Handle "all" for sector and sub-sector
         $requestedSectors = $request->input('sector', []);
@@ -409,16 +409,11 @@ class MumeneenController extends Controller
           $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
     $hub_record = $hub_data->get($user->family_id);
 
-    if ($user->mumeneen_type === 'FM') {
-        // Set hub amounts to 0 for FM users
-        $user->hub_amount = 0;
-        $user->paid_amount = 0;
-        $user->due_amount = 0;
-    } else {
+     
         $user->hub_amount = $hub_record->hub_amount ?? 'NA';
         $user->paid_amount = $hub_record->paid_amount ?? 'NA';
         $user->due_amount = $hub_record->due_amount ?? 'NA';
-    }
+    
 
     $overdue_record = $overdue_data->get($user->family_id);
     $user->overdue = $overdue_record->overdue ?? 0;
