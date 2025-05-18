@@ -688,8 +688,7 @@ class AccountsController extends Controller
                 ]);
     
                 $receipts[] = $register_receipt;
-                die(json_encode($receipts));
-    
+                
                 // If the mode is cheque, neft, or upi, create a payment entry
                 if (in_array($register_receipt->mode, ['cheque', 'neft'])) {
                     $receiptIds = $request->input('receipt_ids') ?: [$register_receipt->id]; // For cheque, neft, upi
@@ -748,7 +747,7 @@ class AccountsController extends Controller
             }
 
             $hubController = new HubController();
-            $hubresponse = $hubController->updateFamilyHub($receipts['family_id']);
+            $hubresponse = $hubController->updateFamilyHub($register_receipt->family_id);
 
     
             // Increment counter value after successful receipt creation
