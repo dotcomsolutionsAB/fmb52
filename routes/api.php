@@ -141,7 +141,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/update/{id}', [MumeneenController::class, 'update_hub'])->middleware('check-api-permission:hub.edit');
         Route::get('/recalculate/{id}', [MumeneenController::class, 'updateFamilyHub']);
         
-        Route::delete('/{id}', [MumeneenController::class, 'delete_hub'])->middleware('check-api-permission:hub.delete');
+        Route::delete('/{id}', [HubController::class, 'delete_hub'])->middleware('check-api-permission:hub.delete');
     });
 
     // Receipts Routes
