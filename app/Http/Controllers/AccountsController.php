@@ -688,6 +688,7 @@ class AccountsController extends Controller
                 ]);
     
                 $receipts[] = $register_receipt;
+                die($receipts);
     
                 // If the mode is cheque, neft, or upi, create a payment entry
                 if (in_array($register_receipt->mode, ['cheque', 'neft'])) {

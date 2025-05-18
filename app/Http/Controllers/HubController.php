@@ -631,7 +631,7 @@ $hub_done = $hubAmountCount + $thaliJointCount;
         // Return the extracted name or 'N/A' if not found
         return $matches[1] ?? 'N/A';
     }
-   public function updateFamilyHub(Request $request, $familyId)
+   public function updateFamilyHub( $familyId)
 {
     $currentYear = '1446-1447';  // You can make this dynamic if needed
 
