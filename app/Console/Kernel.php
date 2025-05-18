@@ -22,7 +22,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('hub:update')->everyFiveMinutes();
         // $schedule->command('whatsapp:process-queue')->everyTwoMinutes();
         $schedule->command('whatsapp:process-queue')
-         ->everyTwoMinutes()
+         ->everyMinute()
          ->appendOutputTo(storage_path('logs/whatsapp_queue.log'));
 
     }
