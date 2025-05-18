@@ -163,7 +163,8 @@ if (in_array($record['year'], $paidYears)) {
         $sectorId = $sectorMapping[$record['sector']] ?? null;
         $subSectorId = $subSectorMapping["{$sectorId}:{$record['sub_sector']}"] ?? null;
 
-        $formattedDate = $this->validateAndFormatDate($record['date']);
+        $formattedDate = $this->validateAndFormatDate($record['log_date']);
+        $formattedCDate = $this->validateAndFormatDate($record['date']);
         $paymentNo = "P_{$counter}_{$formattedDate}";
         $counter++;
         $pstatus = $record['status'];
@@ -195,7 +196,7 @@ if (in_array($record['year'], $paidYears)) {
             'against_rno' => $record['against_rno'] ?? null,
             'bank_name' => $record['bank_name'] ?? null,
             'cheque_no' => $record['cheque_num'] ?? null,
-            'cheque_date' => null,
+            'cheque_date' => $formattedCDate??null,
            
         ];
 
