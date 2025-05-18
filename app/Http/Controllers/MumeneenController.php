@@ -318,23 +318,22 @@ class MumeneenController extends Controller
         }
 
         // Validation
-        $request->validate([
-            'sector' => 'required|array',
-            'sector.*' => ['required', function ($attribute, $value, $fail) {
-                if ($value !== 'all' && !is_numeric($value)) {
-                    $fail("The $attribute field must be an integer or the string 'all'.");
-                }
-            }],
-            'sub_sector' => 'required|array',
-            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
-                if ($value !== 'all' && !is_numeric($value)) {
-                    $fail("The $attribute field must be an integer or the string 'all'.");
-                }
-            }],
-            'thali_status'=>'sometimes|required|in:taking,not_taking,once_a_week,joint,other_centre',
-            'hub_status'=>'sometimes|reqiured|in: 0,1,2'
-        ]);
-
+      $request->validate([
+    'sector' => 'required|array',
+    'sector.*' => ['required', function ($attribute, $value, $fail) {
+        if ($value !== 'all' && !is_numeric($value)) {
+            $fail("The $attribute field must be an integer or the string 'all'.");
+        }
+    }],
+    'sub_sector' => 'required|array',
+    'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+        if ($value !== 'all' && !is_numeric($value)) {
+            $fail("The $attribute field must be an integer or the string 'all'.");
+        }
+    }],
+    'thali_status' => 'sometimes|required|in:taking,not_taking,once_a_week,joint,other_centre',
+    'hub_status' => 'sometimes|required|in:0,1,2',
+]);
         // Handle "all" for sector and sub-sector
         $requestedSectors = $request->input('sector', []);
         if (in_array('all', $requestedSectors)) {
