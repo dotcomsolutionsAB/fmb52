@@ -19,8 +19,12 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Schedule the command to run daily at midnight
-        $schedule->command('hub:update')->everyFiveMinutes();
-        $schedule->command('whatsapp:process-queue')->everyFiveMinutes();
+        // $schedule->command('hub:update')->everyFiveMinutes();
+        // $schedule->command('whatsapp:process-queue')->everyTwoMinutes();
+        $schedule->command('whatsapp:process-queue')
+         ->everyTwoMinutes()
+         ->appendOutputTo(storage_path('logs/whatsapp_queue.log'));
+
     }
 
     // Register the Closure-based commands for the application
