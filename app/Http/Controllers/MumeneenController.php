@@ -361,33 +361,35 @@ class MumeneenController extends Controller
             ->keyBy('family_id');
 
         // Get all users with permitted sub-sectors and filter out those without hub data
-        $get_all_users = User::select(
-            'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
-            'its_family_id', 'folio_no', 'label', 'mumeneen_type', 'title', 'gender', 'age',
-            'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id','thali_status'
-        )
-        ->with([
-            'photo:id,file_url', // Existing relationship
-            'sector:id,name',     // Eager load sector name
-            'subSector:id,name'   // Eager load sub-sector name
-        ])
-        ->where('jamiat_id', $jamiat_id)
-        ->where('status', 'active')
-        ->where('role', 'mumeneen')
-        ->where('thali_status',$request->input('thali_status'))
-        ->where(function ($query) use ($requestedSectors) {
-            $query->whereIn('sector_id', $requestedSectors)
-                ->orWhereNull('sector_id'); // Include NULL sector_id
-        })
-        ->where(function ($query) use ($finalSubSectors) {
-            $query->whereIn('sub_sector_id', $finalSubSectors)
-                ->orWhereNull('sub_sector_id'); // Include NULL sub_sector_id
-        })
-        ->whereIn('family_id', $hub_data->keys()->toArray()) // Filter users with hub records
-        ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''") 
-        ->orderBy('sub_sector_id') 
-        ->orderBy('folio_no') 
-        ->get();
+       $get_all_users = User::select(
+        'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
+        'its_family_id', 'folio_no', 'label', 'mumeneen_type', 'title', 'gender', 'age',
+        'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id','thali_status'
+    )
+    ->with([
+        'photo:id,file_url',
+        'sector:id,name',
+        'subSector:id,name'
+    ])
+    ->where('jamiat_id', $jamiat_id)
+    ->where('status', 'active')
+    ->where('role', 'mumeneen')
+    ->when($request->filled('thali_status'), function ($query) use ($request) {
+        $query->where('thali_status', $request->input('thali_status'));
+    })
+    ->where(function ($query) use ($requestedSectors) {
+        $query->whereIn('sector_id', $requestedSectors)
+            ->orWhereNull('sector_id');
+    })
+    ->where(function ($query) use ($finalSubSectors) {
+        $query->whereIn('sub_sector_id', $finalSubSectors)
+            ->orWhereNull('sub_sector_id');
+    })
+    ->whereIn('family_id', $hub_data->keys()->toArray())
+    ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''")
+    ->orderBy('sub_sector_id')
+    ->orderBy('folio_no')
+    ->get();
 
         if ($get_all_users->isNotEmpty()) {
             $family_ids = $get_all_users->pluck('family_id')->toArray();
@@ -425,21 +427,22 @@ class MumeneenController extends Controller
 if ($request->has('hub_status')) {
     $hubStatus = $request->input('hub_status');
 
-    $users_with_hub_data = $users_with_hub_data->filter(function ($user) use ($hubStatus) {
-        switch ($hubStatus) {
-            case 0:
-                // hub_amount == 0 (handle 'NA' too)
-                return $user->hub_amount === 0 || $user->hub_amount === '0' || $user->hub_amount === 'NA';
-            case 1:
-                // due_amount > 0 (skip 'NA' or non-numeric)
-                return is_numeric($user->due_amount) && $user->due_amount > 0;
-            case 2:
-                // overdue > 0 (skip non-numeric)
-                return is_numeric($user->overdue) && $user->overdue > 0;
-            default:
-                return true; // no filtering for other values
-        }
-    })->values(); // reset keys after filter
+   $users_with_hub_data = $users_with_hub_data->filter(function ($user) use ($hubStatus) {
+    switch ($hubStatus) {
+        case 0:
+            // hub_amount == 0 (handle 'NA' too)
+            return ($user->hub_amount == 0 || trim((string)$user->hub_amount) === 'NA');
+        case 1:
+            // due_amount > 0 (skip 'NA' or non-numeric)
+            return is_numeric($user->due_amount) && $user->due_amount > 0;
+        case 2:
+            // overdue > 0 (skip non-numeric)
+            return is_numeric($user->overdue) && $user->overdue > 0;
+        default:
+            return true; // no filtering for other values
+    }
+})->values();
+    
 }
 
 return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
