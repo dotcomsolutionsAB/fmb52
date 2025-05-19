@@ -1851,7 +1851,7 @@ public function thaali(Request $request)
         } else {
             // No due, mark users inactive
             User::where('family_id', $familyId)
-                ->update(['status' => 'inactive']);
+                ->update(['status' => 'in_active']);
 
             return response()->json([
                 'message' => 'Users marked inactive successfully as there is no due amount.',
