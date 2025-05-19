@@ -24,6 +24,7 @@ use App\Http\Controllers\WhatsAppQueueController;
 use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\FeedbacksController;
 
 Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
 Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
@@ -294,8 +295,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('view/{id}', [FeedbacksController::class, 'view']); // View a specific feedback
     Route::get('view-all', [FeedbacksController::class, 'viewAll']); // View all feedbacks
      Route::get('report', [FeedbacksController::class, 'dailyMenuReport']); // View all feedbacks
+      Route::post('menu_wise', [FeedbacksController::class, 'getMenuFeedback']);
+     
     
-    }
+    });
 
     //Niyaz
     Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);

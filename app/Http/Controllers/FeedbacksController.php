@@ -194,4 +194,32 @@ class FeedbacksController extends Controller
         'data' => $report,
     ]);
 }
+// Get all feedback entries for a specific menu
+public function getMenuFeedback(Request $request)
+{
+    // Validate menu_id input
+    $validated = $request->validate([
+        'menu_id' => 'required|integer|exists:t_menu,id',
+    ]);
+
+    // Fetch all feedbacks for the given menu_id
+    $feedbacks = Feedback::where('menu_id', $validated['menu_id'])
+        ->orderBy('date', 'desc')
+        ->get();
+
+    if ($feedbacks->isEmpty()) {
+        return response()->json([
+            'code' => 404,
+            'status' => false,
+            'message' => 'No feedbacks found for the selected menu.',
+        ]);
+    }
+
+    return response()->json([
+        'code' => 200,
+        'status' => true,
+        'message' => 'Feedbacks for the selected menu fetched successfully.',
+        'data' => $feedbacks,
+    ]);
+}
 }
