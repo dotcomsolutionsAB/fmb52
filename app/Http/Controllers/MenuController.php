@@ -21,7 +21,7 @@ class MenuController extends Controller
             'menu' => 'required|string|max:255',
             'addons' => 'nullable|string|max:255',
             'niaz_by' => 'nullable|string|max:255',
-            'year' => 'required|string|max:10',
+            'year' => 'nullable|string|max:10',
             'slip_names' => 'nullable|string|max:255',
             'category' => 'nullable|in:chicken,mutton,veg,dal,zabihat',
             'status' => 'required|in 0,1',
@@ -67,20 +67,20 @@ class MenuController extends Controller
         }
 
         $request->validate([
-            'jamiat_id' => 'required|integer',
+            'jamiat_id' => 'nullable|integer',
             'family_id' => 'nullable|integer',
             'date' => 'required|date',
             'menu' => 'required|string|max:255',
-            'addons' => 'required|string|max:255',
-            'niaz_by' => 'required|string|max:255',
-            'year' => 'required|string|max:10',
-            'slip_names' => 'required|string|max:255',
-            'category' => 'required|in:chicken,mutton,veg,dal,zabihat',
-            'status' => 'required|string|max:255',
+            'addons' => 'nullable|string|max:255',
+            'niaz_by' => 'nullable|string|max:255',
+            'year' => 'nullable|string|max:10',
+            'slip_names' => 'nullable|string|max:255',
+            'category' => 'nullable|in:chicken,mutton,veg,dal,zabihat',
+            'status' => 'nullable|string|max:255',
         ]);
 
         $update_menu_record = $get_menu->update([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => Auth()->user()->name,
             'family_id' => $request->input('family_id'),
             'date' => $request->input('date'),
             'menu' => $request->input('menu'),
