@@ -745,27 +745,27 @@ class AccountsController extends Controller
                 $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
     
                 // Call the receipt_print API to generate the PDF
-               $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
-$responseBody = $pdfResponse->body();
- $pdfPath="null";
+               $pdfResponse = Http::get("https://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
+                $responseBody = $pdfResponse->body();
+                $pdfPath="null";
 
-if ($pdfResponse->successful() && !empty($responseBody) && strlen($responseBody) > 100) {
-    $directory = public_path("storage/{$jamiat_id}/receipts");
+        if ($pdfResponse->successful() && !empty($responseBody) && strlen($responseBody) > 100) {
+                  $directory = public_path("storage/{$jamiat_id}/receipts");
 
-    if (!file_exists($directory)) {
-        mkdir($directory, 0755, true);
-    }
+              if (!file_exists($directory)) {
+                     mkdir($directory, 0755, true);
+                 }   
 
-    $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
+                $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
 
-    file_put_contents($pdfPath, $pdfResponse->body());
+                 file_put_contents($pdfPath, $pdfResponse->body());
 
-    // Insert success log into mylog table
-    DB::table('mylogs')->insert([
-        'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
+                  // Insert success log into mylog table
+                 DB::table('mylogs')->insert([
+                 'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
+                 'created_at' => now(),
+                  'updated_at' => now(),
+                 ]);
 } else {
     // Insert failure log into mylog table
     DB::table('mylogs')->insert([
