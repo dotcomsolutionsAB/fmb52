@@ -44,7 +44,7 @@ class PDFController extends Controller
     public function printReceipt($id)
     {
         // Fetch the receipt data by ID
-        $receipt = ReceiptsModel::findOrFail($id);
+       $receipt = ReceiptsModel::where('hashed_id', $id)->firstOrFail();
 
         // Convert the amount to words
         $amountInWords = $this->convertNumberToWords($receipt->amount);

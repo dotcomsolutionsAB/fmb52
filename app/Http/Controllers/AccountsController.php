@@ -354,6 +354,8 @@ class AccountsController extends Controller
             'remarks' => 'nullable|string|max:255', // For remarks on cash payments
         ]);
         $jamiat_id = Auth()->user()->jamiat_id;
+
+        
         
         DB::beginTransaction();
         try {
@@ -612,7 +614,14 @@ class AccountsController extends Controller
             if (!$counter) {
                 return response()->json(['message' => 'Counter not found for receipts!'], 400);
             }
-    
+            
+             do {
+            // Generate a random 16-character string
+            $uniqueKey = Str::random(16);  // Generates a 16-character random string
+
+            // Check if the unique key already exists in the database
+        } while (ReceiptsModel::where('hashed_id', $uniqueKey)->exists());
+
             // Generate receipt number using prefix, value, and postfix
             $receipt_no = $counter->prefix . $counter->value . $counter->postfix;
             $formatted_receipt_no = str_replace('/', '_', $receipt_no);
@@ -660,6 +669,7 @@ class AccountsController extends Controller
                 // Register receipt for each family member
                 $register_receipt = ReceiptsModel::create([
                     'jamiat_id' => $jamiat_id,
+                    'hashed_id'=>$uniqueKey,
                     'family_id' => $validatedData['family_id'],
                     'receipt_no' => $receipt_no,
                     'date' => now()->timezone('Asia/Kolkata')->toDateString(),

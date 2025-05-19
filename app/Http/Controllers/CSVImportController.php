@@ -93,7 +93,7 @@ if (in_array($record['year'], $paidYears)) {
         $status = $paymentStatus == 1 ? 'paid' : 'pending'; // Otherwise, use payment_status
     }
 }
- do {
+        do {
             // Generate a random 16-character string
             $uniqueKey = Str::random(16);  // Generates a 16-character random string
 

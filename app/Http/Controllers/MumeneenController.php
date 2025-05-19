@@ -503,13 +503,13 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
         return response()->json(['code'=>404,
                 'status'=>false,'message' => 'Sorry failed to fetch records!'], 404);
     }
-}
+    }
 
 /**
  * Extract incharge details from the provided string.
  * Assumes format: "Incharge: Name, Folio: X, Mobile: XXXXXXXXXX, Email: X"
  */
-private function extractInchargeDetails($building)
+    private function extractInchargeDetails($building)
 {
     // Check if 'Incharge' is present in the string
     if (strpos($building, 'Incharge:') !== false) {
@@ -524,9 +524,9 @@ private function extractInchargeDetails($building)
     }
 
     return [];
-}
+    }
 
-public function update_user_details(Request $request, $id)
+    public function update_user_details(Request $request, $id)
 {
     // Fetch the record by ID
     $get_user = User::find($id);
@@ -573,7 +573,7 @@ public function update_user_details(Request $request, $id)
             'message' => 'No changes detected',
             'data' => null
         ], 304);
-}
+    }
     // update
     public function update_record(Request $request, $id)
     {
@@ -1390,7 +1390,7 @@ public function update_user_details(Request $request, $id)
     }
 
     // update
-   public function update_hub(Request $request, $family_id)
+    public function update_hub(Request $request, $family_id)
 {
     // Validate the incoming request
     $request->validate([
@@ -1448,7 +1448,7 @@ public function update_user_details(Request $request, $id)
             'hub_amount' => $request->input('hub_amount'),
         ],
     ], 200);
-}
+    }
 
     private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
     {
@@ -1769,8 +1769,8 @@ public function update_user_details(Request $request, $id)
             'name' => $user->name  // Only returning the user's name
         ]
     ], 200);
-}
-public function thaali(Request $request)
+    }
+    public function thaali(Request $request)
     {
         $user = $request->user();
 
@@ -1859,5 +1859,5 @@ public function thaali(Request $request)
             ]);
         }
     }
-}
+    }
 }
