@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Auth;
 use App\Models\ReceiptsModel;
+use App\Models\ExpenseModel;
 
 
 class ExportController extends Controller
@@ -360,5 +361,87 @@ public function exportReceipts(Request $request)
     ]);
 
    
+}
+
+
+public function exportExpenses()
+{
+    $get_all_expenses = DB::table('t_expense')
+        ->leftJoin('t_uploads', 't_uploads.id', '=', 't_expense.attachment')
+        ->select(
+            't_expense.id',
+            't_expense.jamiat_id',
+            't_expense.voucher_no',
+            't_expense.year',
+            't_expense.name',
+            't_expense.date',
+            't_expense.amount',
+            't_expense.cheque_no',
+            't_expense.description',
+            't_expense.log_user',
+            't_uploads.file_url as attachment_url'
+        )
+        ->get();
+
+    if ($get_all_expenses->isEmpty()) {
+        return response()->json(['message' => 'No expenses found!'], 404);
+    }
+
+    // Prepare export data
+    $exportData = $get_all_expenses->map(function ($expense) {
+        return [
+            'ID' => $expense->id,
+            'Jamiat ID' => $expense->jamiat_id,
+            'Voucher No' => $expense->voucher_no,
+            'Year' => $expense->year,
+            'Name' => $expense->name,
+            'Date' => $expense->date,
+            'Amount' => $expense->amount,
+            'Cheque No' => $expense->cheque_no,
+            'Description' => $expense->description,
+            'Log User' => $expense->log_user,
+            'Attachment URL' => $expense->attachment_url,
+        ];
+    });
+
+    // Define Export class inline
+    $export = new class($exportData) implements FromCollection, WithHeadings {
+        protected $data;
+
+        public function __construct($data)
+        {
+            $this->data = $data;
+        }
+
+        public function collection()
+        {
+            return new Collection($this->data);
+        }
+
+        public function headings(): array
+        {
+            return [
+                'ID', 'Jamiat ID', 'Voucher No', 'Year', 'Name', 'Date', 'Amount', 'Cheque No', 'Description', 'Log User', 'Attachment URL',
+            ];
+        }
+    };
+
+    $fileName = 'expenses_export_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+ $filePath = 'exports/' . $fileName;  // Path inside storage/app/public
+
+    // Save the file to storage/app/public/exports directory
+    Excel::store($export, $filePath, 'public');
+
+    // Generate URL for the saved file (adjust this URL according to your setup)
+    $fileUrl = asset('storage/' . $filePath);
+
+    // Return JSON response with URL
+    return response()->json([
+        'code' => 200,
+        'success' => true,
+        'message' => 'Expense  data exported successfully!',
+        'file_url' => $fileUrl,
+    ]);
+
 }
 }
