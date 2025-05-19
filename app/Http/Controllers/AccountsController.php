@@ -747,6 +747,7 @@ class AccountsController extends Controller
                 // Call the receipt_print API to generate the PDF
                $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
 $responseBody = $pdfResponse->body();
+ $pdfPath="null";
 
 if ($pdfResponse->successful() && !empty($responseBody) && strlen($responseBody) > 100) {
     $directory = public_path("storage/{$jamiat_id}/receipts");
