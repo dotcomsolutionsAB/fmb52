@@ -747,13 +747,31 @@ class AccountsController extends Controller
                 // Call the receipt_print API to generate the PDF
                 $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
     
-                if ($pdfResponse->successful()) {
-                    // Save the PDF in the public directory
-                    $pdfPath = "storage/{$jamiat_id}/receipts/{$formatted_receipt_no}.pdf";
-                    $publicPath = public_path($pdfPath);
-                    file_put_contents($publicPath, $pdfResponse->body());
-                }
-    
+             if ($pdfResponse->successful() && !empty($pdfResponse->body())) {
+    $directory = public_path("storage/{$jamiat_id}/receipts");
+
+    if (!file_exists($directory)) {
+        mkdir($directory, 0755, true);
+    }
+
+    $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
+
+    file_put_contents($pdfPath, $pdfResponse->body());
+
+    // Insert success log into mylog table
+    DB::table('mylog')->insert([
+        'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+} else {
+    // Insert failure log into mylog table
+    DB::table('mylog')->insert([
+        'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}",
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
                 $remainingAmount -= $amountForMember;
     
                 if ($remainingAmount <= 0) {
