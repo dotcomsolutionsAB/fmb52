@@ -132,6 +132,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/name/{its}', [MumeneenController::class, 'getUserNameByIts']);
         Route::post('/update_details/{id}', [MumeneenController::class, 'update_user_details']);
         Route::post('/thaali_statuses', [MumeneenController::class, 'thaali']);
+        Route::post('/transfer_out', [MumeneenController::class, 'transferOut']);
 
         Route::post('/family_members', [MumeneenController::class, 'usersByFamily'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
         Route::get('/hub_details/{family_id}', [MumeneenController::class, 'familyHubDetails'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
