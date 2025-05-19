@@ -759,14 +759,14 @@ class AccountsController extends Controller
     file_put_contents($pdfPath, $pdfResponse->body());
 
     // Insert success log into mylog table
-    DB::table('mylog')->insert([
+    DB::table('mylogs')->insert([
         'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
         'created_at' => now(),
         'updated_at' => now(),
     ]);
 } else {
     // Insert failure log into mylog table
-    DB::table('mylog')->insert([
+    DB::table('mylogs')->insert([
         'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}",
         'created_at' => now(),
         'updated_at' => now(),
