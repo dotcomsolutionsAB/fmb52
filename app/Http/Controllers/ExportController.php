@@ -55,6 +55,7 @@ public function exportUsersWithHubData(Request $request, $year = 0)
         }],
         'thali_status' => 'nullable|in:taking,not_taking,once_a_week,joint,other_centre',
         'hub_status' => 'nullable|in:0,1,2',
+        'mumeneen_type'=>'nullable|in:HOF,FM'
     ]);
 
     // Handle "all" sectors and sub-sectors
@@ -95,6 +96,9 @@ public function exportUsersWithHubData(Request $request, $year = 0)
     ->when($request->filled('thali_status'), function ($query) use ($request) {
         $query->where('thali_status', $request->input('thali_status'));
     })
+     ->when($request->filled('mumeneen_type'), function ($query) use ($request) {
+        $query->where('mumeneen_type', $request->input('mumeneen_type'));
+    })
     ->where(function ($query) use ($requestedSectors) {
         $query->whereIn('sector_id', $requestedSectors)->orWhereNull('sector_id');
     })
@@ -129,9 +133,9 @@ public function exportUsersWithHubData(Request $request, $year = 0)
     $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
         $hub_record = $hub_data->get($user->family_id);
 
-        $user->hub_amount = $hub_record->hub_amount ?? 'NA';
-        $user->paid_amount = $hub_record->paid_amount ?? 'NA';
-        $user->due_amount = $hub_record->due_amount ?? 'NA';
+        $user->hub_amount = $hub_record->hub_amount ?? 0;
+        $user->paid_amount = $hub_record->paid_amount ?? 0;
+        $user->due_amount = $hub_record->due_amount ?? 0;
 
         $overdue_record = $overdue_data->get($user->family_id);
         $user->overdue = $overdue_record->overdue ?? 0;
