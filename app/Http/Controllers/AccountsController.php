@@ -745,7 +745,8 @@ class AccountsController extends Controller
                 $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
     
                 // Call the receipt_print API to generate the PDF
-               $pdfResponse = Http::get("https://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
+               $pdfResponse = Http::withToken($token)
+    ->get("https://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
                 $responseBody = $pdfResponse->body();
                 $pdfPath="null";
 
