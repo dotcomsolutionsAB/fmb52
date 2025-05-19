@@ -288,14 +288,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Feedback
-    
-   Route::prefix('feedbacks')->group(function () {
+    Route::prefix('feedbacks')->group(function () {
     Route::post('add', [FeedbacksController::class, 'add']); // Add feedback
     Route::put('edit/{id}', [FeedbacksController::class, 'edit']); // Edit feedback
     Route::get('view/{id}', [FeedbacksController::class, 'view']); // View a specific feedback
     Route::get('view-all', [FeedbacksController::class, 'viewAll']); // View all feedbacks
      Route::get('report', [FeedbacksController::class, 'dailyMenuReport']); // View all feedbacks
     
+    }
 
     //Niyaz
     Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
