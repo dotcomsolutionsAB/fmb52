@@ -408,17 +408,26 @@ class MumeneenController extends Controller
                 ->keyBy('family_id');
 
             // Map hub data and overdue amounts to users
-          $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data) {
+         $itsValues = $get_all_users->pluck('its')->filter()->unique()->toArray();
+
+// Step 2: Query t_its_data for matching ITS values
+$itsDataRecords = DB::table('t_its_data')
+    ->whereIn('its', $itsValues)
+    ->pluck('mumeneen_type', 'its');  // key = its, value = mumeneen_type
+
+// Step 3: Map hub data, overdue amounts, and add its_data field to users
+$users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data, $itsDataRecords) {
     $hub_record = $hub_data->get($user->family_id);
 
-     
-        $user->hub_amount = $hub_record->hub_amount ?? 'NA';
-        $user->paid_amount = $hub_record->paid_amount ?? 'NA';
-        $user->due_amount = $hub_record->due_amount ?? 'NA';
-    
+    $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+    $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+    $user->due_amount = $hub_record->due_amount ?? 'NA';
 
     $overdue_record = $overdue_data->get($user->family_id);
     $user->overdue = $overdue_record->overdue ?? 0;
+
+    // Add its_data field
+    $user->its_data = $itsDataRecords[$user->its] ?? 'missing from its';
 
     return $user;
 });
