@@ -288,16 +288,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Feedback
-    Route::prefix('feedback')->group(function () {
-        Route::get('/', [FeedbackController::class, 'view_feedbacks'])
-            ->middleware(['check-api-permission:feedback.view,feedback.view_global,feedback.export,feedback.print']);
-        Route::post('/', [FeedbackController::class, 'register_feedback'])
-            ->middleware(['check-api-permission:feedback.create']);
-        Route::post('/update/{id}', [FeedbackController::class, 'update_feedback'])
-            ->middleware(['check-api-permission:feedback.edit']);
-        Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])
-            ->middleware(['check-api-permission:feedback.delete']);
-    });
+    
+   Route::prefix('feedbacks')->group(function () {
+    Route::post('add', [FeedbacksController::class, 'add']); // Add feedback
+    Route::put('edit/{id}', [FeedbacksController::class, 'edit']); // Edit feedback
+    Route::get('view/{id}', [FeedbacksController::class, 'view']); // View a specific feedback
+    Route::get('view-all', [FeedbacksController::class, 'viewAll']); // View all feedbacks
+     Route::get('report', [FeedbacksController::class, 'dailyMenuReport']); // View all feedbacks
+    
 
     //Niyaz
     Route::get('/hub-slabs', [NiyazController::class, 'getHubSlabs']);
