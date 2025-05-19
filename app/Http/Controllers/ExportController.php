@@ -54,7 +54,7 @@ public function exportUsersWithHubData(Request $request, $year = 0)
             }
         }],
         'thali_status' => 'nullable|in:taking,not_taking,once_a_week,joint,other_centre',
-        'hub_status' => 'nullable|in:0,1,2',
+        'hub_status' => 'nullable|in:0,1,2,3',
         'mumeneen_type'=>'nullable|in:HOF,FM'
     ]);
 
