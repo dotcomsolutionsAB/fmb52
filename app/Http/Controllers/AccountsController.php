@@ -768,7 +768,7 @@ if ($pdfResponse->successful() && !empty($responseBody) && strlen($responseBody)
 } else {
     // Insert failure log into mylog table
     DB::table('mylogs')->insert([
-        'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}  http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}",
+        'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}  http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}   {$pdfPath}",
         'created_at' => now(),
         'updated_at' => now(),
     ]);
