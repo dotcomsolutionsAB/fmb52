@@ -801,6 +801,7 @@ class AccountsController extends Controller
                 'message' => 'Receipt created successfully!',
                 'receipts' => $receipts,
                 'hub _ update'=>$hubresponse,
+                'pdf_response'=>$pdfResponse,
             ], 201);
         } catch (\Exception $e) {
             // Rollback all database changes if something goes wrong
