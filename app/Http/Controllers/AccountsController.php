@@ -745,7 +745,7 @@ class AccountsController extends Controller
                 $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
     
                 // Call the receipt_print API to generate the PDF
-                $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->id}");
+                $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
     
                 if ($pdfResponse->successful()) {
                     // Save the PDF in the public directory
@@ -1033,6 +1033,21 @@ class AccountsController extends Controller
             'callback_data' => 'receipt_' . $receipt->receipt_no,
             'recipient_type' => 'individual',
             'to' => '917439515253', // Use the mobile number of the recipient
+            'template_name' => 'fmb_receipt_created',
+            'content' => json_encode($templateContent), // Encode the content as JSON
+            'file_url' => $fullPdfUrl, // Attach the full PDF URL
+            'status' => 0, // Pending
+            'log_user' => $jamiatName, // Log the name fetched from t_jamiat
+            'created_at' => now(), // Current timestamp for creation
+            'updated_at' => now(), // Current timestamp for updates
+        ]);
+
+          WhatsappQueueModel::create([
+            'jamiat_id' => $user->jamiat_id,
+            'group_id' => 'receipt_' . uniqid(),
+            'callback_data' => 'receipt_' . $receipt->receipt_no,
+            'recipient_type' => 'individual',
+            'to' => '918961043773', // Use the mobile number of the recipient
             'template_name' => 'fmb_receipt_created',
             'content' => json_encode($templateContent), // Encode the content as JSON
             'file_url' => $fullPdfUrl, // Attach the full PDF URL
