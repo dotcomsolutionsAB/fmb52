@@ -8,6 +8,7 @@ use App\Models\YearModel;
 use App\Models\User;
 use App\Models\HubModel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Auth;
 
 class ExportController extends Controller
