@@ -1835,7 +1835,7 @@ public function thaali(Request $request)
             ->delete();
 
         User::where('family_id', $familyId)
-            ->update(['status' => 'inactive']);
+            ->update(['status' => 'in_active']);
 
         return response()->json([
             'message' => 'Hub deleted and users marked inactive as hub amount is zero.',
