@@ -644,7 +644,7 @@ class AccountsController extends Controller
             // Initialize the remaining amount for distribution
             $totalAmount = $request->input('amount');
             $mode = $request->input('mode');
-            $maximumReceivable = ($mode === 'cash' && $totalAmount > 10000) ? 1000 : $totalAmount; // Logic for cash > 10K
+            $maximumReceivable = ($mode === 'cash' && $totalAmount > 10000) ? 10000 : $totalAmount; // Logic for cash > 10K
             $remainingAmount = $totalAmount;
             $status='paid';
             if($mode == 'cash')
