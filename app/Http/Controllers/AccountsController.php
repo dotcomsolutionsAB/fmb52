@@ -745,9 +745,10 @@ class AccountsController extends Controller
                 $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
     
                 // Call the receipt_print API to generate the PDF
-                $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
-    
-             if ($pdfResponse->successful() && !empty($pdfResponse->body())) {
+               $pdfResponse = Http::get("http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
+$responseBody = $pdfResponse->body();
+
+if ($pdfResponse->successful() && !empty($responseBody) && strlen($responseBody) > 100) {
     $directory = public_path("storage/{$jamiat_id}/receipts");
 
     if (!file_exists($directory)) {
@@ -767,7 +768,7 @@ class AccountsController extends Controller
 } else {
     // Insert failure log into mylog table
     DB::table('mylogs')->insert([
-        'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}",
+        'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}  http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}",
         'created_at' => now(),
         'updated_at' => now(),
     ]);
