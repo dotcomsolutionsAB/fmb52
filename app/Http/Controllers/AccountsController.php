@@ -985,7 +985,7 @@ class AccountsController extends Controller
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
     {
         // Define the prefix for the full file URL
-        $filePrefix = 'https://api.fmb52.com/';
+        $filePrefix = 'https://api.fmb52.com/1/receipts/';
         
         // Generate the full URL for the PDF
         $fullPdfUrl = $filePrefix . $pdfUrl;
