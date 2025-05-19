@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
 use App\Http\Controllers\HubController;
+use Illuminate\Support\Str;
 
 use App\Models\UploadModel;
 use Illuminate\Support\Facades\Storage;
