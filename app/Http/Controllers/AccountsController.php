@@ -819,6 +819,9 @@ class AccountsController extends Controller
         $year = $request->input('year');
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
+        $status=$request->input('status');
+        $mode=$request->input('mode');
+
 
         $query = ReceiptsModel::select(
                 't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
@@ -846,6 +849,11 @@ class AccountsController extends Controller
         } elseif ($dateTo) {
             $query->where('t_receipts.date', '<=', $dateTo);
         }
+        if($mode)
+        $query->where('mode','like',$mode);
+        
+         if($status)
+        $query->where('status','like',$status);
 
         $get_all_receipts = $query->orderBy('t_receipts.date', 'desc')->get();
 
