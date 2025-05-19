@@ -495,8 +495,14 @@ class AccountsController extends Controller
             )
             ->leftJoin('users', 't_payments.its', '=', 'users.username')
             ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
-            ->whereIn('t_payments.sector_id', $userSectorAccess)
-            ->whereIn('t_payments.sub_sector_id', $userSubSectorAccess);
+            ->where(function ($query) use ($userSectorAccess) {
+    $query->whereIn('t_payments.sector_id', $userSectorAccess)
+          ->orWhereNull('t_payments.sector_id');
+})
+->where(function ($query) use ($userSubSectorAccess) {
+    $query->whereIn('t_payments.sub_sector_id', $userSubSectorAccess)
+          ->orWhereNull('t_payments.sub_sector_id');
+});
 
         // Apply year filter if provided
         if ($year) {
@@ -745,8 +751,8 @@ class AccountsController extends Controller
                 $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
     
                 // Call the receipt_print API to generate the PDF
-               $pdfResponse = Http::withToken($token)
-    ->get("https://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}");
+                $pdfController = new \App\Http\Controllers\PDFController();
+                $pdfResponse = $pdfController->printReceipt($register_receipt->hashed_id);
                 $responseBody = $pdfResponse->body();
                 $pdfPath="null";
 
