@@ -113,8 +113,8 @@ class AccountsController extends Controller
             'family_id' => 'required|string|max:10',
             'name' => 'required|string|max:100',
             'amount' => 'required|numeric',
-            'sector' => 'required|string',
-            'sub_sector' => 'required|string',
+            'sector_id' => 'required|integer',
+            'sub_sector_id' => 'required|integer',
         ]);
 
         $register_advance_receipt = AdvanceReceiptModel::create([
@@ -122,8 +122,8 @@ class AccountsController extends Controller
             'family_id' => $request->input('family_id'),
             'name' => $request->input('name'),
             'amount' => $request->input('amount'),
-            'sector' => $request->input('sector'),
-            'sub_sector' => $request->input('sub_sector'),
+            'sector_id' => $request->input('sector_id'),
+            'sub_sector_id' => $request->input('sub_sector_id'),
         ]);
 
         unset($register_advance_receipt['id'], $register_advance_receipt['created_at'], $register_advance_receipt['updated_at']);
