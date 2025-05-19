@@ -767,7 +767,7 @@ class AccountsController extends Controller
     
             // Handle advance receipt if remaining amount exists
             if ($remainingAmount > 0) {
-                $get_hof_member = User::where('its', 'hof_its')
+                $get_hof_member = User::where('mumeneen_type', 'HOF')
                     ->where('family_id', $request->input('family_id'))
                     ->first();
     
@@ -833,7 +833,7 @@ class AccountsController extends Controller
 
 
         $query = ReceiptsModel::select(
-                't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
+                't_receipts.id','t_receipts.hashed_id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
                 't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
                 't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
                 't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date', 't_receipts.transaction_id', 't_receipts.transaction_date',
