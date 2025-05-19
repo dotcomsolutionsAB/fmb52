@@ -14,6 +14,7 @@ use App\Http\Controllers\SubSectorImportController;
 use App\Http\Controllers\PermissionRoleController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\OrdersController;
@@ -126,6 +127,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Mumeneen Routes
     Route::prefix('mumeneen')->middleware('check-api-permission:mumeneen.view,mumeneen.view_global')->group(function () {
         Route::get('/{year?}', [MumeneenController::class, 'usersWithHubData']);
+        Route::get('/export/{year?}', [ExportController::class, 'exportUsersWithHubData']);
         Route::get('/user/{id}', [MumeneenController::class, 'get_user']);
         Route::get('/name/{its}', [MumeneenController::class, 'getUserNameByIts']);
         Route::post('/update_details/{id}', [MumeneenController::class, 'update_user_details']);
