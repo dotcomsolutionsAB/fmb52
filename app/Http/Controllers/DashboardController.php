@@ -341,7 +341,7 @@ class DashboardController extends Controller
     
         // --- 1. Fetch Receipts ---
         $receipts = ReceiptsModel::select(
-            'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+            'id','hashed_id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
             'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
             'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
         )
@@ -355,7 +355,7 @@ class DashboardController extends Controller
         // --- 2. Fetch Hub Info ---
         $hub = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')
             ->where('family_id', $familyId)
-            ->orderBy('id', 'desc')
+            ->orderBy('year', 'desc')
             ->first();
     
         if ($hub) {
