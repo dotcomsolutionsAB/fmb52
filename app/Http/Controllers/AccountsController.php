@@ -646,7 +646,12 @@ class AccountsController extends Controller
             $mode = $request->input('mode');
             $maximumReceivable = ($mode === 'cash' && $totalAmount > 10000) ? 1000 : $totalAmount; // Logic for cash > 10K
             $remainingAmount = $totalAmount;
-    
+            $status='paid';
+            if($mode == 'cash')
+            {
+                $status= 'pending';
+            }
+            
             $receipts = [];
     
             // Loop through family members and distribute the amount
@@ -688,7 +693,7 @@ class AccountsController extends Controller
                     'transaction_date' => $validatedData['transaction_date'],
                     'year' => '1446-1447',
                     'comments' => $validatedData['comments'],
-                    'status' => 'pending',
+                    'status' => $status,
                     'cancellation_reason' => null,
                     'collected_by' => '',
                     'log_user' => $user->name,
@@ -701,6 +706,7 @@ class AccountsController extends Controller
                 // If the mode is cheque, neft, or upi, create a payment entry
                 if (in_array($register_receipt->mode, ['cheque', 'neft'])) {
                     $receiptIds = $request->input('receipt_ids') ?: [$register_receipt->id]; // For cheque, neft, upi
+                    
     
                     try {
                         // Create payment entry
