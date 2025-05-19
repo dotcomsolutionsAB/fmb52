@@ -63,7 +63,7 @@ class PDFController extends Controller
             ->setPaper('a5', 'portrait');  // change to portrait if needed
 
         // Stream the PDF to browser (opens inline)
-        return $pdf->stream($filename);
+       return $pdf->download($filename);
     }
 
 
