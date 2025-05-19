@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Auth;
 
+
 class ExportController extends Controller
 {
 
@@ -176,7 +177,7 @@ public function exportUsersWithHubData(Request $request, $year = 0)
     });
 
     // Define Export class inline
-    $export = new class($exportData) implements FromCollection, WithHeadings {
+     $export = new class($exportData) implements FromCollection, WithHeadings {
         protected $data;
 
         public function __construct($data)
@@ -199,7 +200,20 @@ public function exportUsersWithHubData(Request $request, $year = 0)
     };
 
     $fileName = 'users_with_hub_data_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+    $filePath = 'exports/' . $fileName;  // Path inside storage/app/public
 
-    return Excel::download($export, $fileName);
+    // Save the file to storage/app/public/exports directory
+    Excel::store($export, $filePath, 'public');
+
+    // Generate URL for the saved file (adjust this URL according to your setup)
+    $fileUrl = asset('storage/' . $filePath);
+
+    // Return JSON response with URL
+    return response()->json([
+        'code' => 200,
+        'success' => true,
+        'message' => 'User data exported successfully!',
+        'file_url' => $fileUrl,
+    ]);
 }
 }
