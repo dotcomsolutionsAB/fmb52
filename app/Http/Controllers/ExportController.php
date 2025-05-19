@@ -220,4 +220,144 @@ public function exportUsersWithHubData(Request $request, $year = 0)
         'file_url' => $fileUrl,
     ]);
 }
+
+public function exportReceipts(Request $request)
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized.'], 403);
+    }
+
+    $userSectorAccess = json_decode($user->sector_access_id, true);
+    $userSubSectorAccess = json_decode($user->sub_sector_access_id, true);
+
+    if (empty($userSectorAccess) || empty($userSubSectorAccess)) {
+        return response()->json(['message' => 'No access to any sectors or sub-sectors.'], 403);
+    }
+
+    // Get filter inputs
+    $year = $request->input('year');
+    $dateFrom = $request->input('date_from');
+    $dateTo = $request->input('date_to');
+    $status = $request->input('status');
+    $mode = $request->input('mode');
+
+    // Build query with same style as all_receipts
+    $query = ReceiptsModel::select(
+        't_receipts.id', 't_receipts.jamiat_id', 't_receipts.family_id', 't_receipts.receipt_no',
+        't_receipts.date', 't_receipts.its', 't_receipts.folio_no', 't_receipts.name',
+        't_receipts.sector_id', 't_receipts.sub_sector_id', 't_receipts.amount', 't_receipts.mode',
+        't_receipts.bank_name', 't_receipts.cheque_no', 't_receipts.cheque_date', 't_receipts.transaction_id', 't_receipts.transaction_date',
+        't_receipts.year', 't_receipts.comments', 't_receipts.status', 't_receipts.cancellation_reason',
+        't_receipts.collected_by', 't_receipts.log_user', 't_receipts.attachment', 't_receipts.payment_id',
+        'users.name as user_name', 'users.photo_id',
+        't_uploads.file_url as photo_url'
+    )
+    ->leftJoin('users', 't_receipts.its', '=', 'users.username')
+    ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
+    ->whereIn('t_receipts.sector_id', $userSectorAccess)
+    ->whereIn('t_receipts.sub_sector_id', $userSubSectorAccess);
+
+    if ($year) {
+        $query->where('t_receipts.year', $year);
+    }
+
+    if ($dateFrom && $dateTo) {
+        $query->whereBetween('t_receipts.date', [$dateFrom, $dateTo]);
+    } elseif ($dateFrom) {
+        $query->where('t_receipts.date', '>=', $dateFrom);
+    } elseif ($dateTo) {
+        $query->where('t_receipts.date', '<=', $dateTo);
+    }
+
+    if ($mode) {
+        $query->where('t_receipts.mode', 'like', $mode);
+    }
+
+    if ($status) {
+        $query->where('t_receipts.status', 'like', $status);
+    }
+
+    $receipts = $query->orderBy('t_receipts.date', 'desc')->get();
+
+    if ($receipts->isEmpty()) {
+        return response()->json(['message' => 'No receipts found!'], 404);
+    }
+
+    // Prepare export data with mapping
+    $exportData = $receipts->map(function ($item) {
+        return [
+            'ID' => $item->id,
+            'Receipt No' => $item->receipt_no,
+            'Date' => $item->date,
+            'Family ID' => $item->family_id,
+            'ITS' => $item->its,
+            'Name' => $item->name,
+            'Sector ID' => $item->sector_id,
+            'Sub Sector ID' => $item->sub_sector_id,
+            'Amount' => $item->amount,
+            'Mode' => $item->mode,
+            'Bank Name' => $item->bank_name,
+            'Cheque No' => $item->cheque_no,
+            'Cheque Date' => $item->cheque_date,
+            'Transaction ID' => $item->transaction_id,
+            'Transaction Date' => $item->transaction_date,
+            'Year' => $item->year,
+            'Comments' => $item->comments,
+            'Status' => $item->status,
+            'Cancellation Reason' => $item->cancellation_reason,
+            'Collected By' => $item->collected_by,
+            'Log User' => $item->log_user,
+            'Attachment' => $item->attachment,
+            'Payment ID' => $item->payment_id,
+            'User Name' => $item->user_name,
+            'Photo URL' => $item->photo_url,
+        ];
+    });
+
+    // Inline Export class
+    $export = new class($exportData) implements FromCollection, WithHeadings {
+        protected $data;
+
+        public function __construct($data)
+        {
+            $this->data = $data;
+        }
+
+        public function collection()
+        {
+            return new Collection($this->data);
+        }
+
+        public function headings(): array
+        {
+            return [
+                'ID', 'Receipt No', 'Date', 'Family ID', 'ITS', 'Name', 'Sector ID', 'Sub Sector ID',
+                'Amount', 'Mode', 'Bank Name', 'Cheque No', 'Cheque Date', 'Transaction ID', 'Transaction Date',
+                'Year', 'Comments', 'Status', 'Cancellation Reason', 'Collected By', 'Log User',
+                'Attachment', 'Payment ID', 'User Name', 'Photo URL',
+            ];
+        }
+    };
+
+    $fileName = 'receipts_export_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+    $filePath = 'exports/' . $fileName;  // Path inside storage/app/public
+
+    // Save the file to storage/app/public/exports directory
+    Excel::store($export, $filePath, 'public');
+
+    // Generate URL for the saved file (adjust this URL according to your setup)
+    $fileUrl = asset('storage/' . $filePath);
+
+    // Return JSON response with URL
+    return response()->json([
+        'code' => 200,
+        'success' => true,
+        'message' => 'Receipt data exported successfully!',
+        'file_url' => $fileUrl,
+    ]);
+
+   
+}
 }

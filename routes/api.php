@@ -152,6 +152,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('receipts')->group(function () {
         Route::middleware('check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print')->group(function () {
             Route::post('/all', [AccountsController::class, 'all_receipts']);
+            Route::post('/export', [ExportController::class, 'all_receipts']);
             Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
         });
         Route::post('/pending', [AccountsController::class, 'getPendingCashReceipts']);

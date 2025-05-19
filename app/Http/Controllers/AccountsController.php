@@ -850,10 +850,10 @@ class AccountsController extends Controller
             $query->where('t_receipts.date', '<=', $dateTo);
         }
         if($mode)
-        $query->where('mode','like',$mode);
+        $query->where('t_receipts.mode','like',$mode);
         
          if($status)
-        $query->where('status','like',$status);
+        $query->where('t_receipts.status','like',$status);
 
         $get_all_receipts = $query->orderBy('t_receipts.date', 'desc')->get();
 
