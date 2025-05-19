@@ -10,6 +10,7 @@ use App\Models\HubModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Auth;
+use App\Models\ReceiptsModel;
 
 
 class ExportController extends Controller

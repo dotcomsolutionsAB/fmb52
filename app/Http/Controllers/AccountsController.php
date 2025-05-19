@@ -483,10 +483,8 @@ class AccountsController extends Controller
 
         $query = PaymentsModel::select(
                 't_payments.id', 't_payments.payment_no', 't_payments.jamiat_id', 't_payments.family_id',
-                't_payments.folio_no', 't_payments.name', 't_payments.its', 't_payments.sector_id', 't_payments.sub_sector_id',
-                't_payments.year', 't_payments.mode', 't_payments.date', 't_payments.bank_name',
-                't_payments.cheque_no', 't_payments.cheque_date', 't_payments.ifsc_code',
-                't_payments.transaction_id', 't_payments.transaction_date', 't_payments.amount',
+                 't_payments.name', 't_payments.its', 't_payments.sector_id', 't_payments.sub_sector_id',
+                't_payments.year', 't_payments.mode', 't_payments.date',  't_payments.amount',
                 't_payments.comments', 't_payments.status', 't_payments.cancellation_reason',
                 't_payments.log_user', 't_payments.attachment',
                 'users.name as user_name', 'users.photo_id',
