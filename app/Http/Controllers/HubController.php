@@ -660,8 +660,8 @@ $hub_done = $hubAmountCount + $thaliJointCount;
                 ->where('family_id', $receiptSum->family_id)
                 ->where('year', $receiptSum->year)
                 ->update([
-                    'paid_amount' => DB::raw("paid_amount + {$receiptSum->total_paid}"),
-                    'due_amount' => DB::raw("GREATEST(0, hub_amount + IFNULL(overdue, 0) - (paid_amount + {$receiptSum->total_paid}))"),
+                    'paid_amount' => $receiptSum->total_paid,
+                    'due_amount' => DB::raw("GREATEST(0, hub_amount + IFNULL(overdue, 0) - {$receiptSum->total_paid})"),
                     'updated_at' => now(),
                 ]);
         }
