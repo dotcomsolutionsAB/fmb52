@@ -68,39 +68,35 @@ class UpdateHubTable extends Command
                     ->get();
 
                 foreach ($hubRecords as $hub) {
-                    $year = $hub->year;
-                    $hubAmount = $hub->hub_amount;
+    $year = $hub->year;
+    $hubAmount = $hub->hub_amount;
 
-                    // Calculate how much was paid for this specific year
-                    $paidForYear = $familyReceipts->where('year', $year)->sum('total_paid') ?? 0;
+    // Apply payment from the remaining balance
+    $applied = min($paidLeft, $hubAmount);
+    $paidLeft -= $applied;
 
-                    if ($year < $currentYear) {
-                        // Past year: all due considered overdue
-                        $yearOverdue = max(0, $hubAmount - $paidForYear);
-                        $accumulatedOverdue += $yearOverdue;
+    if ($year < $currentYear) {
+        $yearOverdue = max(0, $hubAmount - $applied);
+        $accumulatedOverdue += $yearOverdue;
 
-                        DB::table('t_hub')->where('id', $hub->id)->update([
-                            'paid_amount' => $paidForYear,
-                            'due_amount' => 0,
-                            'overdue' => 0,
-                            'updated_at' => now(),
-                        ]);
-                    } elseif ($year === $currentYear) {
-                        // Current year: use remaining paid to cover hub
-                        $applicablePaid = min($paidLeft, $hubAmount);
-                        $due = max(0, $hubAmount - $applicablePaid);
+        DB::table('t_hub')->where('id', $hub->id)->update([
+            'paid_amount' => $applied,
+            'due_amount' => 0,
+            'overdue' => 0,
+            'updated_at' => now(),
+        ]);
+    } elseif ($year == $currentYear) {
+        $due = max(0, $hubAmount - $applied);
 
-                        DB::table('t_hub')->where('id', $hub->id)->update([
-                            'paid_amount' => $applicablePaid,
-                            'due_amount' => $due,
-                            'overdue' => $accumulatedOverdue,
-                            'updated_at' => now(),
-                        ]);
-
-                        $paidLeft -= $applicablePaid;
-                    }
-                    // Skip future years
-                }
+        DB::table('t_hub')->where('id', $hub->id)->update([
+            'paid_amount' => $applied,
+            'due_amount' => $due,
+            'overdue' => $accumulatedOverdue,
+            'updated_at' => now(),
+        ]);
+    }
+    // skip future years
+}
             }
 
             $this->info('✅ Hub table updated successfully with current logic.');
