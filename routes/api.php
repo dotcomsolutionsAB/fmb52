@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ReceiptsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
@@ -155,24 +156,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Receipts Routes
     Route::prefix('receipts')->group(function () {
         Route::middleware('check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print')->group(function () {
-        Route::post('/all', [AccountsController::class, 'all_receipts']);
+        Route::post('/all', [ReceiptsController::class, 'all_receipts']);
+        Route::get('/{id}',[ReceiptsController::class,'show']);
         Route::post('/export', [ExportController::class, 'exportReceipts']);
-        Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
+        Route::post('/by_family_ids', [ReceiptsController::class, 'getReceiptsByFamilyIds']);
         });
          Route::post('/cancel/{id}', [ReceiptsController::class, 'cancelReceipt']);
-        Route::post('/pending', [AccountsController::class, 'getPendingCashReceipts']);
-        Route::post('/', [AccountsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.create');
-        Route::post('/update/{id}', [AccountsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.edit');
-        Route::delete('/{id}', [AccountsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.delete');
+        Route::post('/pending', [ReceiptsController::class, 'getPendingCashReceipts']);
+        Route::post('/', [ReceiptsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.create');
+        Route::post('/update/{id}', [ReceiptsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.edit');
+        Route::delete('/{id}', [ReceiptsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.delete');
     });
 
     // Expense Routes
-    Route::post('/expense', [AccountsController::class, 'register_expense']);
-    Route::get('/expense', [AccountsController::class, 'all_expense']);
+    Route::post('/expense', [ExpenseController::class, 'register_expense']);
+    Route::get('/expense', [ExpenseController::class, 'all_expense']);
      Route::get('/expense/export', [ExportController::class, 'exportExpenses']);
     
-    Route::post('/expense/update/{id}', [AccountsController::class, 'update_expense']);
-    Route::delete('/expense/{id}', [AccountsController::class, 'delete_expense']);
+    Route::post('/expense/update/{id}', [ExpenseController::class, 'update_expense']);
+    Route::delete('/expense/{id}', [ExpenseController::class, 'delete_expense']);
 
 
     // Payments Routes
