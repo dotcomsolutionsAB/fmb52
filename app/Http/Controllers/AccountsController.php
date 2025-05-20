@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
 use App\Http\Controllers\HubController;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 use App\Models\UploadModel;
 use Illuminate\Support\Facades\Storage;
@@ -752,9 +754,7 @@ class AccountsController extends Controller
     
                 // Call the receipt_print API to generate the PDF
                 $pdfController = new \App\Http\Controllers\PDFController();
-                $pdfResponse = $pdfController->printReceipt($register_receipt->hashed_id);
-                $responseBody = $pdfResponse->body();
-                $pdfPath="null";
+               
 
       $pdfContent = $pdfController->generateReceiptPdfContent($register_receipt->hashed_id);
 
