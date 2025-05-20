@@ -718,7 +718,7 @@ class AccountsController extends Controller
     
                     try {
                         // Create payment entry
-                        $paymentResponse = $this->register_payments( $request);
+                        $paymentResponse = $this->register_payments( $register_receipt);
     
                         // If payment creation is successful, update the payment_id in t_receipts
                         $paymentData = $paymentResponse->getData(true);
