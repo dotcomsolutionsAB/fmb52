@@ -631,120 +631,94 @@ $hub_done = $hubAmountCount + $thaliJointCount;
         // Return the extracted name or 'N/A' if not found
         return $matches[1] ?? 'N/A';
     }
-   public function updateFamilyHub( $familyId)
+   public function updateFamilyHub($familyId)
 {
-    $currentYear = '1446-1447';  // You can make this dynamic if needed
+    $currentYear = '1446-1447';
 
     try {
-        // Step 1: Reset paid_amount and due_amount for this family only
-        DB::table('t_hub')
-            ->where('family_id', $familyId)
-            ->update([
-                'paid_amount' => 0,
-                'due_amount' => DB::raw('hub_amount + IFNULL(overdue, 0)'),
-                'updated_at' => now(),
-            ]);
-
-        // Step 2: Sum paid amounts for this family grouped by year
-        $receiptSums = DB::table('t_receipts')
-            ->select('family_id', 'year', DB::raw('SUM(amount) as total_paid'))
-            ->where('family_id', $familyId)
-            ->whereNotNull('amount')
-            ->where('status', '<>', 'cancelled')
-            ->groupBy('family_id', 'year')
-            ->get();
-
-        // Step 3: Update paid_amount and due_amount for existing hub entries
-        foreach ($receiptSums as $receiptSum) {
-            DB::table('t_hub')
-                ->where('family_id', $receiptSum->family_id)
-                ->where('year', $receiptSum->year)
-                ->update([
-                    'paid_amount' => $receiptSum->total_paid,
-                    'due_amount' => DB::raw("GREATEST(0, hub_amount + IFNULL(overdue, 0) - {$receiptSum->total_paid})"),
-                    'updated_at' => now(),
-                ]);
-        }
-
-        // Step 4: Insert new hub entries if missing for this family and years in receipts
-        $existingRecords = DB::table('t_hub')
-            ->select('family_id', 'year', 'overdue')
-            ->where('family_id', $familyId)
-            ->get()
-            ->keyBy(fn ($r) => $r->family_id . ':' . $r->year);
-
-        $newHubs = [];
-        foreach ($receiptSums as $receiptSum) {
-            $key = $receiptSum->family_id . ':' . $receiptSum->year;
-            if (!isset($existingRecords[$key])) {
-                $overdue = strcmp($receiptSum->year, $currentYear) < 0 ? max(0, 0 - $receiptSum->total_paid) : 0;
-                $newHubs[] = [
-                    'jamiat_id' => 1,
-                    'family_id' => $receiptSum->family_id,
-                    'year' => $receiptSum->year,
-                    'hub_amount' => 0,
-                    'paid_amount' => $receiptSum->total_paid,
-                    'overdue' => $overdue,
-                    'due_amount' => $overdue,
-                    'log_user' => 'system_cron',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-        }
-
-        if (!empty($newHubs)) {
-            DB::table('t_hub')->insert($newHubs);
-        }
-
-        // Step 5: Carry forward overdue into current year if user is active
-        $previousDue = DB::table('t_hub')
-            ->select('family_id', DB::raw('SUM(hub_amount + IFNULL(overdue, 0) - paid_amount) AS total_overdue'))
-            ->where('year', '<', $currentYear)
-            ->where('family_id', $familyId)
-            ->groupBy('family_id')
-            ->having('total_overdue', '>', 0)
-            ->get();
-
-        $existingCurrentYear = DB::table('t_hub')
-            ->where('year', $currentYear)
-            ->where('family_id', $familyId)
-            ->pluck('overdue', 'family_id')
-            ->toArray();
-
-        $isActiveUser = DB::table('users')
+        // Skip if user is not active
+        $isActive = DB::table('users')
             ->where('family_id', $familyId)
             ->where('status', 'active')
             ->exists();
 
-        if ($isActiveUser) {
-            foreach ($previousDue as $entry) {
-                if (isset($existingCurrentYear[$entry->family_id])) {
-                    // Only update due_amount; do NOT update overdue if already set
-                    DB::table('t_hub')
-                        ->where('family_id', $entry->family_id)
-                        ->where('year', $currentYear)
-                        ->whereNotNull('overdue')
-                        ->update([
-                            'due_amount' => DB::raw("hub_amount + overdue - paid_amount"),
-                            'updated_at' => now(),
-                        ]);
-                } else {
-                    // Insert new record with overdue if missing
-                    DB::table('t_hub')->insert([
-                        'jamiat_id' => 1,
-                        'family_id' => $entry->family_id,
-                        'year' => $currentYear,
-                        'hub_amount' => 0,
-                        'paid_amount' => 0,
-                        'overdue' => $entry->total_overdue,
-                        'due_amount' => $entry->total_overdue,
-                        'log_user' => 'system_cron',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
+        if (!$isActive) {
+            return response()->json([
+                'code' => 200,
+                'status' => false,
+                'message' => "No active users for family_id {$familyId}",
+                'family_id' => $familyId,
+            ]);
+        }
+
+        // Step 1: Get all receipts grouped by year
+        $receiptSums = DB::table('t_receipts')
+            ->where('family_id', $familyId)
+            ->where('status', '<>', 'cancelled')
+            ->whereNotNull('amount')
+            ->groupBy('year')
+            ->select('year', DB::raw('SUM(amount) as total_paid'))
+            ->orderBy('year')
+            ->get()
+            ->keyBy('year');
+
+        // Step 2: Fetch all t_hub rows for this family
+        $hubs = DB::table('t_hub')
+            ->where('family_id', $familyId)
+            ->orderBy('year')
+            ->get()
+            ->keyBy('year');
+
+        $overdue = 0;
+        $updates = [];
+
+        foreach ($hubs as $year => $hub) {
+            $paid = $receiptSums[$year]->total_paid ?? 0;
+            $hubAmount = $hub->hub_amount;
+
+            // For years < current year, calculate due only
+            if ($year < $currentYear) {
+                $due = max(0, $hubAmount - $paid);
+                $overdue += $due;
+
+                $updates[] = [
+                    'id' => $hub->id,
+                    'paid_amount' => $paid,
+                    'due_amount' => $due,
+                    'overdue' => 0,
+                ];
             }
+
+            // Save current year row to update later
+            if ($year == $currentYear) {
+                $currentYearPaid = $paid;
+                $currentYearHub = $hub;
+            }
+        }
+
+        // Step 3: Handle current year (apply overdue and current due)
+        if (isset($currentYearHub)) {
+            $currentHubAmt = $currentYearHub->hub_amount;
+            $currentDue = max(0, $currentHubAmt - ($currentYearPaid ?? 0));
+
+            $updates[] = [
+                'id' => $currentYearHub->id,
+                'paid_amount' => $currentYearPaid ?? 0,
+                'due_amount' => $currentDue,
+                'overdue' => $overdue,
+            ];
+        }
+
+        // Step 4: Apply all updates
+        foreach ($updates as $u) {
+            DB::table('t_hub')
+                ->where('id', $u['id'])
+                ->update([
+                    'paid_amount' => $u['paid_amount'],
+                    'due_amount' => $u['due_amount'],
+                    'overdue' => $u['overdue'],
+                    'updated_at' => now(),
+                ]);
         }
 
         return response()->json([
