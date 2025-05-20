@@ -418,8 +418,7 @@ $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $its
     $user->due_amount = $hub_record->due_amount ?? 'NA';
     $user->overdue = $hub_record->overdue ?? 0;
 
-    $overdue_record = $overdue_data->get($user->family_id);
-    $user->overdue = $overdue_record->overdue ?? 0;
+   
 
     // Add its_data field
     $user->its_data = $itsDataRecords[$user->its] ?? 'missing from its';
