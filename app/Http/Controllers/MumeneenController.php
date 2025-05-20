@@ -399,13 +399,7 @@ class MumeneenController extends Controller
                 ->where('year', '<', $year)
                 ->pluck('year');
 
-            $overdue_data = HubModel::select('family_id', DB::raw('SUM(due_amount) as overdue'))
-                ->whereIn('family_id', $family_ids)
-                ->where('jamiat_id', $jamiat_id)
-                ->whereIn('year', $previous_years)
-                ->groupBy('family_id')
-                ->get()
-                ->keyBy('family_id');
+           
 
             // Map hub data and overdue amounts to users
          $itsValues = $get_all_users->pluck('its')->filter()->unique()->toArray();
@@ -416,12 +410,13 @@ $itsDataRecords = DB::table('t_its_data')
     ->pluck('mumeneen_type', 'its');  // key = its, value = mumeneen_type
 
 // Step 3: Map hub data, overdue amounts, and add its_data field to users
-$users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data, $itsDataRecords) {
+$users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $itsDataRecords) {
     $hub_record = $hub_data->get($user->family_id);
 
     $user->hub_amount = $hub_record->hub_amount ?? 'NA';
     $user->paid_amount = $hub_record->paid_amount ?? 'NA';
     $user->due_amount = $hub_record->due_amount ?? 'NA';
+    $user->overdue = $hub_record->overdue ?? 0;
 
     $overdue_record = $overdue_data->get($user->family_id);
     $user->overdue = $overdue_record->overdue ?? 0;
