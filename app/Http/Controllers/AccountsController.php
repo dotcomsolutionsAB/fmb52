@@ -1015,7 +1015,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
         $filePrefix = 'https://api.fmb52.com/storage/1/receipts/';
         
         // Generate the full URL for the PDF
-        $fullPdfUrl = $filePrefix . $pdfUrl.'pdf';
+        $fullPdfUrl = $filePrefix . $pdfUrl.'.pdf';
     
         // Fetch the name from the t_jamiat table based on jamiat_id
         $jamiatName = DB::table('t_jamiat')
