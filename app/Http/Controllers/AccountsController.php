@@ -826,8 +826,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             return response()->json([
                 'message' => 'Receipt created successfully!',
                 'receipts' => $receipts,
-                'hub _ update'=>$hubresponse,
-                'pdf_response'=>$pdfResponse,
+                'hub _ update'=>$hubresponse
             ], 201);
         } catch (\Exception $e) {
             // Rollback all database changes if something goes wrong
