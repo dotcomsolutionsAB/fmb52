@@ -370,11 +370,11 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             'family_id' => 'required|string|max:10',
             'receipt_no' => 'required|string|max:100',
             'date' => 'required|date',
-            'its' => 'required|string|max:8',
+            'its' => 'nullable|string|max:8',
             'folio_no' => 'nullable|string|max:20',
             'name' => 'required|string|max:100',
-            'sector_id' => 'nullable|integer',
-            'sub_sector_id' => 'nullable|integer',
+            'sector_id' => 'reqiured|integer',
+            'sub_sector_id' => 'reqiured|integer',
             'amount' => 'required|numeric',
             'mode' => 'required|in:cheque,cash,neft,upi',
             'bank_name' => 'nullable|string|max:100',
@@ -387,7 +387,6 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             'status' => 'required|in:pending,cancelled,paid',
             'cancellation_reason' => 'nullable|string',
             'collected_by' => 'nullable|string|max:100',
-            'log_user' => 'required|string|max:100',
             'attachment' => 'nullable|integer',
             'payment_id' => 'nullable|integer', // payment_id can be nullable initially
         ]);
@@ -419,11 +418,11 @@ if ($pdfContent && strlen($pdfContent) > 100) {
                 'status' => $validatedData['status'],
                 'cancellation_reason' => $validatedData['cancellation_reason'] ?? null,
                 'collected_by' => $validatedData['collected_by'] ?? null,
-                'log_user' => $validatedData['log_user'],
+                'log_user' => Auth()->user()->name,
             ];
 
             // Instantiate PaymentsController
-            $paymentsController = new \App\Http\Controllers\PaymentsController();
+            $paymentsController = new PaymentsController();
 
             if ($existingReceipt->payment_id) {
                 // Update existing payment
