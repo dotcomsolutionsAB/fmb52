@@ -16,11 +16,13 @@ class UpdateHubTable extends Command
             $currentYear = '1446-1447';
 
             // Step 1: Fetch all active family IDs
-            $activeFamilyIds = DB::table('users')
-                ->where('status', 'active')
-                ->pluck('family_id')
-                ->unique()
-                ->toArray();
+          $activeFamilyIds = DB::table('users')
+    ->where('status', 'active')
+    ->whereNotNull('family_id')
+    ->where('family_id', '!=', '')
+    ->pluck('family_id')
+    ->unique()
+    ->toArray();
 
             if (empty($activeFamilyIds)) {
                 $this->warn('No active families found.');
