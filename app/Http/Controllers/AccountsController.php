@@ -1197,18 +1197,5 @@ if ($pdfContent && strlen($pdfContent) > 100) {
 
         return response()->json(['message' => 'Failed to update payment status.'], 500);
     }
-    public function generateReceiptPdfContent($hashed_id)
-{
-    $receipt = ReceiptsModel::where('hashed_id', $hashed_id)->firstOrFail();
-    $amountInWords = $this->convertNumberToWords($receipt->amount);
-    $data = [
-        'background' => public_path('images/receipt_bg.jpg'),
-        'receipt' => $receipt,
-        'amount_in_words' => $amountInWords,
-    ];
-
-    $pdf = Pdf::loadView('receipt_template', $data)->setPaper('a5', 'portrait');
-
-    return $pdf->output();  // returns raw PDF bytes
-}
+  
 }

@@ -63,7 +63,7 @@ class PDFController extends Controller
             ->setPaper('a5', 'portrait');  // change to portrait if needed
 
         // Stream the PDF to browser (opens inline)
-       return $pdf->output();
+       return $pdf->download($filename);
     }
 
 
@@ -78,4 +78,18 @@ class PDFController extends Controller
         $formatter = new \NumberFormatter("en", \NumberFormatter::SPELLOUT);
         return ucwords($formatter->format($number));
     }
+      public function generateReceiptPdfContent($hashed_id)
+{
+    $receipt = ReceiptsModel::where('hashed_id', $hashed_id)->firstOrFail();
+    $amountInWords = $this->convertNumberToWords($receipt->amount);
+    $data = [
+        'background' => public_path('images/receipt_bg.jpg'),
+        'receipt' => $receipt,
+        'amount_in_words' => $amountInWords,
+    ];
+
+    $pdf = Pdf::loadView('receipt_template', $data)->setPaper('a5', 'portrait');
+
+    return $pdf->output();  // returns raw PDF bytes
+}.
 }
