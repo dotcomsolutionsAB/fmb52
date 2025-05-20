@@ -551,7 +551,6 @@ class AccountsController extends Controller
             'bank_name' => 'nullable|string|max:100',
             'cheque_no' => 'nullable|string|size:6',
             'cheque_date' => 'nullable|date',
-            'ifsc_code' => 'nullable|string|max:11',
             'transaction_id' => 'nullable|string|max:100',
             'transaction_date' => 'nullable|date',
             'amount' => 'required|numeric',
@@ -578,7 +577,8 @@ class AccountsController extends Controller
             'bank_name' => $request->input('bank_name'),
             'cheque_no' => $request->input('cheque_no'),
             'cheque_date' => $request->input('cheque_date'),
-            'ifsc_code' => $request->input('ifsc_code'),
+            
+            
             'transaction_id' => $request->input('transaction_id'),
             'transaction_date' => $request->input('transaction_date'),
             'amount' => $request->input('amount'),
@@ -915,8 +915,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
         // Fetch receipts matching the provided family_id values
         $get_receipts = ReceiptsModel::select(
             'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
-            'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date',
-            'ifsc_code', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
+            'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
             'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
         )
         ->whereIn('family_id', $family_ids)
@@ -951,7 +950,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             'bank_name' => 'nullable|string|max:100',
             'cheque_no' => 'nullable|string|size:6',
             'cheque_date' => 'nullable|date',
-            'ifsc_code' => 'nullable|string|max:11',
+           
             'transaction_id' => 'nullable|string|max:100',
             'transaction_date' => 'nullable|date',
             'year' => 'required|string|max:10',
@@ -980,7 +979,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             'bank_name' => $request->input('bank_name'),
             'cheque_no' => $request->input('cheque_no'),
             'cheque_date' => $request->input('cheque_date'),
-            'ifsc_code' => $request->input('ifsc_code'),
+           
             'transaction_id' => $request->input('transaction_id'),
             'transaction_date' => $request->input('transaction_date'),
             'year' => $request->input('year'),
@@ -1190,7 +1189,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
                 'status' => $validatedData['status'],
                 'updated_at' => now(),  // Update timestamp
             ]);
-            
+
         if($updatedStatus) {
             return response()->json(['message' => 'Payment status updated successfully!'], 200);
         }
