@@ -718,7 +718,9 @@ class AccountsController extends Controller
     
                     try {
                         // Create payment entry
-                        $paymentResponse = $this->register_payments( $register_receipt);
+                        $paymentDataArray = $register_receipt->toArray();
+                        $newRequest = new Request($paymentDataArray);
+                        $paymentResponse = $this->register_payments($newRequest);           
     
                         // If payment creation is successful, update the payment_id in t_receipts
                         $paymentData = $paymentResponse->getData(true);
@@ -1195,5 +1197,54 @@ if ($pdfContent && strlen($pdfContent) > 100) {
 
         return response()->json(['message' => 'Failed to update payment status.'], 500);
     }
+
+    public function allBanks()
+{
+    $banks = [
+        ['name' => 'State Bank of India', 'code' => 'SBI'],
+        ['name' => 'HDFC Bank', 'code' => 'HDFC'],
+        ['name' => 'ICICI Bank', 'code' => 'ICIC'],
+        ['name' => 'Axis Bank', 'code' => 'UTIB'],
+        ['name' => 'Punjab National Bank', 'code' => 'PUNB'],
+        ['name' => 'Bank of Baroda', 'code' => 'BARB'],
+        ['name' => 'Canara Bank', 'code' => 'CNRB'],
+        ['name' => 'Kotak Mahindra Bank', 'code' => 'KKBK'],
+        ['name' => 'IndusInd Bank', 'code' => 'INDB'],
+        ['name' => 'Yes Bank', 'code' => 'YESB'],
+        ['name' => 'Union Bank of India', 'code' => 'UBIN'],
+        ['name' => 'IDBI Bank', 'code' => 'IBKL'],
+        ['name' => 'Bank of India', 'code' => 'BKID'],
+        ['name' => 'Central Bank of India', 'code' => 'CBIN'],
+        ['name' => 'Punjab & Sind Bank', 'code' => 'PSIB'],
+        ['name' => 'UCO Bank', 'code' => 'UCBA'],
+        ['name' => 'Indian Bank', 'code' => 'IDIB'],
+        ['name' => 'South Indian Bank', 'code' => 'SIBL'],
+        ['name' => 'Federal Bank', 'code' => 'FDRL'],
+        ['name' => 'Andhra Bank', 'code' => 'ANDB'],
+        ['name' => 'Bank of Maharashtra', 'code' => 'MAHB'],
+        ['name' => 'Corporation Bank', 'code' => 'CORP'],
+        ['name' => 'Dena Bank', 'code' => 'BKDN'],
+        ['name' => 'IDFC First Bank', 'code' => 'IDFB'],
+        ['name' => 'Jammu & Kashmir Bank', 'code' => 'JAKA'],
+        ['name' => 'Karnataka Bank', 'code' => 'KARB'],
+        ['name' => 'Karur Vysya Bank', 'code' => 'KVBL'],
+        ['name' => 'Lakshmi Vilas Bank', 'code' => 'LAVB'],
+        ['name' => 'Oriental Bank of Commerce', 'code' => 'ORBC'],
+        ['name' => 'Punjab National Bank', 'code' => 'PUNB'],
+        ['name' => 'Syndicate Bank', 'code' => 'SYNB'],
+        ['name' => 'Tamilnad Mercantile Bank', 'code' => 'TMBL'],
+        ['name' => 'Telangana Grameena Bank', 'code' => 'TGBK'],
+        ['name' => 'The Catholic Syrian Bank', 'code' => 'CSBK'],
+        ['name' => 'Yes Bank', 'code' => 'YESB'],
+        // Add any other known banks here...
+    ];
+
+    return response()->json([
+        'code' => 200,
+        'status' => true,
+        'message' => 'List of Indian banks',
+        'data' => $banks,
+    ]);
+}
   
 }

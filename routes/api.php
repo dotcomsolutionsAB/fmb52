@@ -86,6 +86,8 @@ Route::get('/receipt_print/{id}', [PDFController::class, 'printReceipt']);
 Route::post('/whatsapp-queue', [WhatsAppQueueController::class, 'addToQueue']);
 Route::post('/whatsapp-queue/process', [WhatsAppQueueController::class, 'processQueue']);
 
+Route::get('banks',[AccountsController::class,'allBanks']);
+
 // jamiat
 Route::get('/jamiat', [JamiatController::class, 'view_jamiats']);
 Route::post('/update_jamiat/{id}', [JamiatController::class, 'update_jamiat']);
