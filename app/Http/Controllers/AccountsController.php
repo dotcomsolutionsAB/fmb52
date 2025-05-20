@@ -756,27 +756,26 @@ class AccountsController extends Controller
                 $responseBody = $pdfResponse->body();
                 $pdfPath="null";
 
-        if ($pdfResponse->successful() && !empty($responseBody) && strlen($responseBody) > 100) {
-                  $directory = public_path("storage/{$jamiat_id}/receipts");
+      $pdfContent = $pdfController->generateReceiptPdfContent($register_receipt->hashed_id);
 
-              if (!file_exists($directory)) {
-                     mkdir($directory, 0755, true);
-                 }   
+if ($pdfContent && strlen($pdfContent) > 100) {
+    $directory = public_path("storage/{$jamiat_id}/receipts");
+    if (!file_exists($directory)) {
+        mkdir($directory, 0755, true);
+    }
+    $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
+    file_put_contents($pdfPath, $pdfContent);
 
-                $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
-
-                 file_put_contents($pdfPath, $pdfResponse->body());
-
-                  // Insert success log into mylog table
-                 DB::table('mylogs')->insert([
-                 'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
-                 'created_at' => now(),
-                  'updated_at' => now(),
-                 ]);
-} else {
-    // Insert failure log into mylog table
+    // Log success
     DB::table('mylogs')->insert([
-        'message' => "PDF generation failed or returned empty for receipt {$formatted_receipt_no}  http://api.fmb52.com/api/receipt_print/{$register_receipt->hashed_id}   {$pdfPath}",
+        'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+} else {
+    // Log failure
+    DB::table('mylogs')->insert([
+        'message' => "PDF generation failed or empty for receipt {$formatted_receipt_no}",
         'created_at' => now(),
         'updated_at' => now(),
     ]);
@@ -1198,4 +1197,18 @@ class AccountsController extends Controller
 
         return response()->json(['message' => 'Failed to update payment status.'], 500);
     }
+    public function generateReceiptPdfContent($hashed_id)
+{
+    $receipt = ReceiptsModel::where('hashed_id', $hashed_id)->firstOrFail();
+    $amountInWords = $this->convertNumberToWords($receipt->amount);
+    $data = [
+        'background' => public_path('images/receipt_bg.jpg'),
+        'receipt' => $receipt,
+        'amount_in_words' => $amountInWords,
+    ];
+
+    $pdf = Pdf::loadView('receipt_template', $data)->setPaper('a5', 'portrait');
+
+    return $pdf->output();  // returns raw PDF bytes
+}
 }
