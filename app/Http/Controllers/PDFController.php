@@ -91,5 +91,5 @@ class PDFController extends Controller
     $pdf = Pdf::loadView('receipt_template', $data)->setPaper('a5', 'portrait');
 
     return $pdf->output();  // returns raw PDF bytes
-}.
+}
 }
