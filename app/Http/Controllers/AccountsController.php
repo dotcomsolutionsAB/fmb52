@@ -1190,8 +1190,8 @@ if ($pdfContent && strlen($pdfContent) > 100) {
                 'status' => $validatedData['status'],
                 'updated_at' => now(),  // Update timestamp
             ]);
-  
-        if ($updatedStatus) {
+            
+        if($updatedStatus) {
             return response()->json(['message' => 'Payment status updated successfully!'], 200);
         }
 
