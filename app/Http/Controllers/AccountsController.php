@@ -107,7 +107,7 @@ class AccountsController extends Controller
             : response()->json(['message' => 'Counter record not found!'], 404);
     }
 
-   protected function addToWhatsAppQueue($receipt, $pdfUrl)
+   public function addToWhatsAppQueue($receipt, $pdfUrl)
     {
         // Define the prefix for the full file URL
         $filePrefix = 'https://api.fmb52.com/storage/1/receipts/';
