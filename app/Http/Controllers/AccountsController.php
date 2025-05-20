@@ -750,7 +750,7 @@ class AccountsController extends Controller
                 }
     
                 // Add WhatsApp queue entry
-                $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
+              
     
                 // Call the receipt_print API to generate the PDF
                 $pdfController = new \App\Http\Controllers\PDFController();
@@ -765,6 +765,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
     }
     $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
     file_put_contents($pdfPath, $pdfContent);
+      $this->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
 
     // Log success
     DB::table('mylogs')->insert([
@@ -1011,10 +1012,10 @@ if ($pdfContent && strlen($pdfContent) > 100) {
     protected function addToWhatsAppQueue($receipt, $pdfUrl)
     {
         // Define the prefix for the full file URL
-        $filePrefix = 'https://api.fmb52.com/1/receipts/';
+        $filePrefix = 'https://api.fmb52.com/storage/1/receipts/';
         
         // Generate the full URL for the PDF
-        $fullPdfUrl = $filePrefix . $pdfUrl;
+        $fullPdfUrl = $filePrefix . $pdfUrl.'pdf';
     
         // Fetch the name from the t_jamiat table based on jamiat_id
         $jamiatName = DB::table('t_jamiat')
