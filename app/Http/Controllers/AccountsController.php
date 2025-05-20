@@ -351,7 +351,7 @@ class AccountsController extends Controller
     {
         $validatedData = $request->validate([
             'date' => 'nullable|date', // Multiple receipt IDs for cash or single receipt for others
-            'receipt_ids' => 'required|array', // Multiple receipt IDs for cash or single receipt for others
+            'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
             'amount' => 'required|numeric',
             'year' => 'required|string',
             'remarks' => 'nullable|string|max:255', // For remarks on cash payments
