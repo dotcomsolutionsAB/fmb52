@@ -350,7 +350,7 @@ class AccountsController extends Controller
     public function register_payments(Request $request)
     {
         $validatedData = $request->validate([
-            'date' => 'required|date', // Multiple receipt IDs for cash or single receipt for others
+            'date' => 'nullable|date', // Multiple receipt IDs for cash or single receipt for others
             'receipt_ids' => 'required|array', // Multiple receipt IDs for cash or single receipt for others
             'amount' => 'required|numeric',
             'year' => 'required|string',
@@ -400,7 +400,7 @@ class AccountsController extends Controller
                 'sub_sector_id'      => $subSectorId,
                 'year'               => $request->year,
                 'mode'               => $request->mode??"cash",
-                'date'               => $request->date,
+                'date'               => now()->timezone('Asia/Kolkata')->toDateString(),
                 'amount'             => $request->amount,
                 'comments'           => $request->remarks ?? null,
                 'status'             => 'pending',
@@ -950,8 +950,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             'bank_name' => 'nullable|string|max:100',
             'cheque_no' => 'nullable|string|size:6',
             'cheque_date' => 'nullable|date',
-           
-            'transaction_id' => 'nullable|string|max:100',
+           'transaction_id' => 'nullable|string|max:100',
             'transaction_date' => 'nullable|date',
             'year' => 'required|string|max:10',
             'comments' => 'nullable|string',
