@@ -368,13 +368,10 @@ if ($pdfContent && strlen($pdfContent) > 100) {
         $validatedData = $request->validate([
             'jamiat_id' => 'nullable|integer',
             'family_id' => 'required|string|max:10',
-            'receipt_no' => 'required|string|max:100',
-            'date' => 'required|date',
             'its' => 'nullable|string|max:8',
             'folio_no' => 'nullable|string|max:20',
             'name' => 'required|string|max:100',
-            'sector_id' => 'reqiured|integer',
-            'sub_sector_id' => 'reqiured|integer',
+           
             'amount' => 'required|numeric',
             'mode' => 'required|in:cheque,cash,neft,upi',
             'bank_name' => 'nullable|string|max:100',
@@ -398,13 +395,12 @@ if ($pdfContent && strlen($pdfContent) > 100) {
         if (in_array($validatedData['mode'], ['cheque', 'neft', 'upi'])) {
             // Prepare payment data array from validated data (map what is required)
             $paymentDataArray = [
-                'jamiat_id' => $validatedData['jamiat_id'],
+                
                 'family_id' => $validatedData['family_id'],
-                'folio_no' => $validatedData['folio_no'] ?? null,
+               
                 'name' => $validatedData['name'],
                 'its' => $validatedData['its'],
-                'sector_id' => $validatedData['sector_id'] ?? null,
-                'sub_sector_id' => $validatedData['sub_sector_id'] ?? null,
+                
                 'year' => $validatedData['year'],
                 'mode' => $validatedData['mode'],
                 'date' => $validatedData['date'],
