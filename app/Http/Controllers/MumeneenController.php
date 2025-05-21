@@ -318,270 +318,272 @@ class MumeneenController extends Controller
         }
 
         // Validation
-      $request->validate([
-    'sector' => 'required|array',
-    'sector.*' => ['required', function ($attribute, $value, $fail) {
-        if ($value !== 'all' && !is_numeric($value)) {
-            $fail("The $attribute field must be an integer or the string 'all'.");
-        }
-    }],
-    'sub_sector' => 'required|array',
-    'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
-        if ($value !== 'all' && !is_numeric($value)) {
-            $fail("The $attribute field must be an integer or the string 'all'.");
-        }
-    }],
-    'thali_status' => 'nullable|in:taking,not_taking,once_a_week,joint,other_centre',
-    'hub_status' => 'nullable|in:0,1,2',
-]);
-        // Handle "all" for sector and sub-sector
-        $requestedSectors = $request->input('sector', []);
-        if (in_array('all', $requestedSectors)) {
-            $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
-            $requestedSectors[] = null; // Include NULL values for sector_id
-        }
+        $request->validate([
+            'sector' => 'required|array',
+            'sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or the string 'all'.");
+                }
+            }],
+            'sub_sector' => 'required|array',
+            'sub_sector.*' => ['required', function ($attribute, $value, $fail) {
+                if ($value !== 'all' && !is_numeric($value)) {
+                    $fail("The $attribute field must be an integer or the string 'all'.");
+                }
+            }],
+            'thali_status' => 'nullable|in:taking,not_taking,once_a_week,joint,other_centre',
+            'hub_status' => 'nullable|in:0,1,2',
+        ]);
+            // Handle "all" for sector and sub-sector
+            $requestedSectors = $request->input('sector', []);
+            if (in_array('all', $requestedSectors)) {
+                $requestedSectors = DB::table('t_sector')->pluck('id')->toArray();
+                $requestedSectors[] = null; // Include NULL values for sector_id
+            }
 
-        $requestedSubSectors = $request->input('sub_sector', []);
-        if (in_array('all', $requestedSubSectors)) {
-            $requestedSubSectors = DB::table('t_sub_sector')
-                ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
-                ->pluck('id')
-                ->toArray();
-            $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
-        }
+            $requestedSubSectors = $request->input('sub_sector', []);
+            if (in_array('all', $requestedSubSectors)) {
+                $requestedSubSectors = DB::table('t_sub_sector')
+                    ->whereIn('sector_id', array_filter($requestedSectors)) // Fetch sub-sectors for the specified sectors
+                    ->pluck('id')
+                    ->toArray();
+                $requestedSubSectors[] = null; // Include NULL values for sub_sector_id
+            }
 
-        // Ensure the requested sub-sectors match the user's permissions
-        $finalSubSectors = array_merge(array_intersect($requestedSubSectors, $permittedSubSectorIds), [null]);
+            // Ensure the requested sub-sectors match the user's permissions
+            $finalSubSectors = array_merge(array_intersect($requestedSubSectors, $permittedSubSectorIds), [null]);
 
-        // Fetch hub data for the specified year including thali_status
-        $hub_data = HubModel::select('family_id', 'hub_amount', 'paid_amount', 'due_amount', 'thali_status', 'year')
+            // Fetch hub data for the specified year including thali_status
+            $hub_data = HubModel::select('family_id', 'hub_amount', 'paid_amount', 'due_amount', 'thali_status', 'year')
+                ->where('jamiat_id', $jamiat_id)
+                ->where('year', $year)
+                ->get()
+                ->keyBy('family_id');
+
+            // Get all users with permitted sub-sectors and filter out those without hub data
+        
+            $get_all_users = User::select(
+                'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
+                'its_family_id', 'folio_no', 'label', 'mumeneen_type', 'title', 'gender', 'age',
+                'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id','thali_status'
+            )
+            ->with([
+                'photo:id,file_url',
+                'sector:id,name',
+                'subSector:id,name'
+            ])
             ->where('jamiat_id', $jamiat_id)
-            ->where('year', $year)
+            ->where('status', 'active')
+            ->where('role', 'mumeneen')
+            ->when($request->filled('thali_status'), function ($query) use ($request) {
+                $query->where('thali_status', $request->input('thali_status'));
+            })
+            ->where(function ($query) use ($requestedSectors) {
+                $query->whereIn('sector_id', $requestedSectors)
+                    ->orWhereNull('sector_id');
+            })
+            ->where(function ($query) use ($finalSubSectors) {
+                $query->whereIn('sub_sector_id', $finalSubSectors)
+                    ->orWhereNull('sub_sector_id');
+            })
+            ->whereIn('family_id', $hub_data->keys()->toArray())
+            ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''")
+            ->orderBy('sub_sector_id')
+            ->orderBy('folio_no')
+            ->get();
+
+                if ($get_all_users->isNotEmpty()) {
+                    $family_ids = $get_all_users->pluck('family_id')->toArray();
+
+                    // Calculate overdue amounts
+                    $previous_years = YearModel::where('jamiat_id', $jamiat_id)
+                        ->where('year', '<', $year)
+                        ->pluck('year');
+
+                    $overdue_data = HubModel::select('family_id', 'overdue')
+            ->where('jamiat_id', $jamiat_id)
+            ->where('year', $year) // <-- fetch only current year overdue
+            ->whereIn('family_id', $family_ids)
             ->get()
             ->keyBy('family_id');
 
-        // Get all users with permitted sub-sectors and filter out those without hub data
-       $get_all_users = User::select(
-        'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its',
-        'its_family_id', 'folio_no', 'label', 'mumeneen_type', 'title', 'gender', 'age',
-        'building', 'sector_id', 'sub_sector_id', 'status', 'role', 'username', 'photo_id','thali_status'
-    )
-    ->with([
-        'photo:id,file_url',
-        'sector:id,name',
-        'subSector:id,name'
-    ])
-    ->where('jamiat_id', $jamiat_id)
-    ->where('status', 'active')
-    ->where('role', 'mumeneen')
-    ->when($request->filled('thali_status'), function ($query) use ($request) {
-        $query->where('thali_status', $request->input('thali_status'));
-    })
-    ->where(function ($query) use ($requestedSectors) {
-        $query->whereIn('sector_id', $requestedSectors)
-            ->orWhereNull('sector_id');
-    })
-    ->where(function ($query) use ($finalSubSectors) {
-        $query->whereIn('sub_sector_id', $finalSubSectors)
-            ->orWhereNull('sub_sector_id');
-    })
-    ->whereIn('family_id', $hub_data->keys()->toArray())
-    ->orderByRaw("sub_sector_id IS NULL OR sub_sector_id = ''")
-    ->orderBy('sub_sector_id')
-    ->orderBy('folio_no')
-    ->get();
+                // Map hub data and overdue amounts to users
+            $itsValues = $get_all_users->pluck('its')->filter()->unique()->toArray();
 
-        if ($get_all_users->isNotEmpty()) {
-            $family_ids = $get_all_users->pluck('family_id')->toArray();
+        // Step 2: Query t_its_data for matching ITS values
+        $itsDataRecords = DB::table('t_its_data')
+            ->whereIn('its', $itsValues)
+            ->pluck('mumeneen_type', 'its');  // key = its, value = mumeneen_type
 
-            // Calculate overdue amounts
-            $previous_years = YearModel::where('jamiat_id', $jamiat_id)
-                ->where('year', '<', $year)
-                ->pluck('year');
+        // Step 3: Map hub data, overdue amounts, and add its_data field to users
+        $users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data, $itsDataRecords) {
+            $hub_record = $hub_data->get($user->family_id);
 
-            $overdue_data = HubModel::select('family_id', 'overdue')
-    ->where('jamiat_id', $jamiat_id)
-    ->where('year', $year) // <-- fetch only current year overdue
-    ->whereIn('family_id', $family_ids)
-    ->get()
-    ->keyBy('family_id');
+            $user->hub_amount = $hub_record->hub_amount ?? 'NA';
+            $user->paid_amount = $hub_record->paid_amount ?? 'NA';
+            $user->due_amount = $hub_record->due_amount ?? 'NA';
 
-            // Map hub data and overdue amounts to users
-         $itsValues = $get_all_users->pluck('its')->filter()->unique()->toArray();
+            $overdue_record = $overdue_data->get($user->family_id);
+            $user->overdue = $overdue_record->overdue ?? 0;
 
-// Step 2: Query t_its_data for matching ITS values
-$itsDataRecords = DB::table('t_its_data')
-    ->whereIn('its', $itsValues)
-    ->pluck('mumeneen_type', 'its');  // key = its, value = mumeneen_type
+            // Add its_data field
+            $user->its_data = $itsDataRecords[$user->its] ?? 'missing from its';
 
-// Step 3: Map hub data, overdue amounts, and add its_data field to users
-$users_with_hub_data = $get_all_users->map(function ($user) use ($hub_data, $overdue_data, $itsDataRecords) {
-    $hub_record = $hub_data->get($user->family_id);
+            return $user;
+        });
 
-    $user->hub_amount = $hub_record->hub_amount ?? 'NA';
-    $user->paid_amount = $hub_record->paid_amount ?? 'NA';
-    $user->due_amount = $hub_record->due_amount ?? 'NA';
+        // Apply filtering based on input hub_status
+        if ($request->has('hub_status')) {
+            $hubStatus = $request->input('hub_status');
 
-    $overdue_record = $overdue_data->get($user->family_id);
-    $user->overdue = $overdue_record->overdue ?? 0;
+        $users_with_hub_data = $users_with_hub_data->filter(function ($user) use ($hubStatus) {
+            switch ($hubStatus) {
+                case 0:
+                    // hub_amount == 0 (handle 'NA' too)
+                    return ($user->hub_amount == 0 || trim((string)$user->hub_amount) === 'NA');
+                case 1:
+                    // due_amount > 0 (skip 'NA' or non-numeric)
+                    return is_numeric($user->due_amount) && $user->due_amount > 0;
+                case 2:
+                    // overdue > 0 (skip non-numeric)
+                    return is_numeric($user->overdue) && $user->overdue > 0;
+                default:
+                    return true; // no filtering for other values
+            }
+        })->values();
+        
+        }
 
-    // Add its_data field
-    $user->its_data = $itsDataRecords[$user->its] ?? 'missing from its';
-
-    return $user;
-});
-
-// Apply filtering based on input hub_status
-if ($request->has('hub_status')) {
-    $hubStatus = $request->input('hub_status');
-
-   $users_with_hub_data = $users_with_hub_data->filter(function ($user) use ($hubStatus) {
-    switch ($hubStatus) {
-        case 0:
-            // hub_amount == 0 (handle 'NA' too)
-            return ($user->hub_amount == 0 || trim((string)$user->hub_amount) === 'NA');
-        case 1:
-            // due_amount > 0 (skip 'NA' or non-numeric)
-            return is_numeric($user->due_amount) && $user->due_amount > 0;
-        case 2:
-            // overdue > 0 (skip non-numeric)
-            return is_numeric($user->overdue) && $user->overdue > 0;
-        default:
-            return true; // no filtering for other values
-    }
-})->values();
-    
-}
-
-return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
-}
+        return response()->json(['message' => 'User Fetched Successfully!', 'data' => $users_with_hub_data], 200);
+        }
 
         return response()->json(['message' => 'Sorry, failed  fetch records!'], 404);
     }
 
 
     // dashboard
-   public function get_user($id)
-{
-    // Fetch the user records where mumeneen_type is HOF and family_id matches
-    $get_user_records = User::select(
-        'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
-        'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
-        'role', 'username', 'photo_id'
-    )
-    ->where('family_id', $id)
-    ->where('mumeneen_type', "HOF")
-    ->with(['photo:id,file_url'])
-    ->first(); // Assuming you're getting a single record based on family_id
+    public function get_user($id)
+    {
+        // Fetch the user records where mumeneen_type is HOF and family_id matches
+        $get_user_records = User::select(
+            'id', 'name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+            'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
+            'role', 'username', 'photo_id'
+        )
+        ->where('family_id', $id)
+        ->where('mumeneen_type', "HOF")
+        ->with(['photo:id,file_url'])
+        ->first(); // Assuming you're getting a single record based on family_id
 
-    // Check if the user exists
-    if ($get_user_records) {
-        // Get sector and sub-sector names
-        $sector = DB::table('t_sector')
-                    ->where('id', $get_user_records->sector_id)
-                    ->value('name');
+        // Check if the user exists
+        if ($get_user_records) {
+            // Get sector and sub-sector names
+            $sector = DB::table('t_sector')
+                        ->where('id', $get_user_records->sector_id)
+                        ->value('name');
 
-       $sub_sector = DB::table('t_sub_sector')
-    ->where('id', $get_user_records->sub_sector_id)
-    ->first(['name', 'notes']);  // Retrieve the full record (name and notes)
+        $sub_sector = DB::table('t_sub_sector')
+        ->where('id', $get_user_records->sub_sector_id)
+        ->first(['name', 'notes']);  // Retrieve the full record (name and notes)
 
-                       
+                        
 
-        // Extract in-charge details from the string
-        $inchargeDetails = $this->extractInchargeDetails($sub_sector->notes);
+            // Extract in-charge details from the string
+            $inchargeDetails = $this->extractInchargeDetails($sub_sector->notes);
 
-        // Add sector, sub-sector names, and in-charge details to the user data
-        $get_user_records->sector_name = $sector;
-        $get_user_records->sub_sector_name = $sub_sector->name;
-        $get_user_records->incharge_name = $inchargeDetails['name'] ?? null;
-        $get_user_records->incharge_mobile = $inchargeDetails['mobile'] ?? null;
+            // Add sector, sub-sector names, and in-charge details to the user data
+            $get_user_records->sector_name = $sector;
+            $get_user_records->sub_sector_name = $sub_sector->name;
+            $get_user_records->incharge_name = $inchargeDetails['name'] ?? null;
+            $get_user_records->incharge_mobile = $inchargeDetails['mobile'] ?? null;
 
-        // Return the user data with sector and sub-sector names, and in-charge info
-        return response()->json(
-            [
-                'code'=>200,
-                'status'=>true,
-                'message' => 'User Record Fetched Successfully!', 
-                'data' => $get_user_records],
-            200,
-            [],
-            JSON_UNESCAPED_SLASHES
-        );
-    } else {
-        return response()->json(['code'=>404,
-                'status'=>false,'message' => 'Sorry failed to fetch records!'], 404);
+            // Return the user data with sector and sub-sector names, and in-charge info
+            return response()->json(
+                [
+                    'code'=>200,
+                    'status'=>true,
+                    'message' => 'User Record Fetched Successfully!', 
+                    'data' => $get_user_records],
+                200,
+                [],
+                JSON_UNESCAPED_SLASHES
+            );
+        } else {
+            return response()->json(['code'=>404,
+                    'status'=>false,'message' => 'Sorry failed to fetch records!'], 404);
+        }
     }
-    }
 
-/**
- * Extract incharge details from the provided string.
- * Assumes format: "Incharge: Name, Folio: X, Mobile: XXXXXXXXXX, Email: X"
- */
+    /**
+     * Extract incharge details from the provided string.
+     * Assumes format: "Incharge: Name, Folio: X, Mobile: XXXXXXXXXX, Email: X"
+     */
     private function extractInchargeDetails($building)
-{
-    // Check if 'Incharge' is present in the string
-    if (strpos($building, 'Incharge:') !== false) {
-        // Use regex to capture the incharge name and mobile number
-        preg_match('/Incharge: (.*?), Folio:/', $building, $nameMatch);
-        preg_match('/Mobile: (\d{10})/', $building, $mobileMatch);
+    {
+        // Check if 'Incharge' is present in the string
+        if (strpos($building, 'Incharge:') !== false) {
+            // Use regex to capture the incharge name and mobile number
+            preg_match('/Incharge: (.*?), Folio:/', $building, $nameMatch);
+            preg_match('/Mobile: (\d{10})/', $building, $mobileMatch);
 
-        return [
-            'name' => $nameMatch[1] ?? null,  // Incharge name
-            'mobile' => $mobileMatch[1] ?? null // Incharge mobile number
-        ];
-    }
+            return [
+                'name' => $nameMatch[1] ?? null,  // Incharge name
+                'mobile' => $mobileMatch[1] ?? null // Incharge mobile number
+            ];
+        }
 
-    return [];
+        return [];
     }
 
     public function update_user_details(Request $request, $id)
-{
-    // Fetch the record by ID
-    $get_user = User::find($id);
+    {
+        // Fetch the record by ID
+        $get_user = User::find($id);
 
-    // Check if the record exists
-    if (!$get_user) {
-        return response()->json([
-            'code' => 404,
-            'status' => 'error',
-            'message' => 'Record not found!',
-            'data' => null
-        ], 404);
+        // Check if the record exists
+        if (!$get_user) {
+            return response()->json([
+                'code' => 404,
+                'status' => 'error',
+                'message' => 'Record not found!',
+                'data' => null
+            ], 404);
+        }
+
+        // Define validation rules - only for hof_its, mobile, and email
+        $rules = [
+            'name' => 'sometimes|string',  // If you want to update the name as well
+            'email' => 'sometimes|email|unique:users,email,' . $id,
+            'mobile' => ['sometimes', 'string', 'min:12', 'max:20'],  // Mobile validation
+        ];
+
+        // Validate only the fields present in the request
+        $validatedData = $request->validate($rules);
+
+        // Update only the fields provided in the request
+        if (isset($validatedData['password'])) {
+            $validatedData['password'] = bcrypt($validatedData['password']);
+        }
+
+        // Update the specific fields (name, mobile, and email) if provided in the request
+        $updated = $get_user->update($validatedData);
+
+        // Return appropriate response
+        return $updated
+            ? response()->json([
+                'code' => 200,
+                'status' => 'success',
+                'message' => 'Record updated successfully!',
+                'data' => $get_user
+            ], 200)
+            : response()->json([
+                'code' => 304,
+                'status' => 'info',
+                'message' => 'No changes detected',
+                'data' => null
+            ], 304);
     }
 
-    // Define validation rules - only for hof_its, mobile, and email
-    $rules = [
-        'name' => 'sometimes|string',  // If you want to update the name as well
-        'email' => 'sometimes|email|unique:users,email,' . $id,
-        'mobile' => ['sometimes', 'string', 'min:12', 'max:20'],  // Mobile validation
-    ];
-
-    // Validate only the fields present in the request
-    $validatedData = $request->validate($rules);
-
-    // Update only the fields provided in the request
-    if (isset($validatedData['password'])) {
-        $validatedData['password'] = bcrypt($validatedData['password']);
-    }
-
-    // Update the specific fields (name, mobile, and email) if provided in the request
-    $updated = $get_user->update($validatedData);
-
-    // Return appropriate response
-    return $updated
-        ? response()->json([
-            'code' => 200,
-            'status' => 'success',
-            'message' => 'Record updated successfully!',
-            'data' => $get_user
-        ], 200)
-        : response()->json([
-            'code' => 304,
-            'status' => 'info',
-            'message' => 'No changes detected',
-            'data' => null
-        ], 304);
-    }
     // update
     public function update_record(Request $request, $id)
     {
@@ -748,6 +750,67 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
             'head_of_family' => $newHead,
         ], 200);
     }
+
+    //Update Head of the Family
+    public function updateHeadOfFamily(Request $request)
+    {
+        $request->validate([
+            'family_id' => 'required|string|exists:users,family_id',
+            'its' => 'required|string|exists:users,its',
+            'flag' => 'required|in:0,1',
+        ]);
+
+        // Find user by its
+        $user = User::where('its', $request->its)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User with specified ITS not found.'], 404);
+        }
+
+        // Check if user's family_id matches
+        if ($user->family_id !== $request->family_id) {
+            return response()->json(['message' => 'ITS does not belong to the specified family.'], 400);
+        }
+
+        // Validate that this user is currently FM
+        if ($user->mumeneen_type !== 'FM') {
+            return response()->json(['message' => 'User is not currently a Family Member (FM).'], 400);
+        }
+
+        // Get current HOF of this family
+        $currentHOF = User::where('family_id', $request->family_id)
+            ->where('mumeneen_type', 'HOF')
+            ->first();
+
+        if (!$currentHOF) {
+            return response()->json(['message' => 'No current Head of Family found for this family.'], 404);
+        }
+
+        if ($request->flag == 0) {
+            // Change current HOF mumeneen_type to FM
+            $currentHOF->mumeneen_type = 'FM';
+            $currentHOF->save();
+
+            // Change the selected user's mumeneen_type to HOF
+            $user->mumeneen_type = 'HOF';
+            $user->save();
+        } else if ($request->flag == 1) {
+            // Change current HOF status to 'in_active'
+            $currentHOF->status = 'in_active';
+            $currentHOF->save();
+
+            // Change the selected user's mumeneen_type to HOF
+            $user->mumeneen_type = 'HOF';
+            $user->save();
+        }
+
+        return response()->json([
+            'message' => 'Head of Family updated successfully.',
+            'new_head' => $user->only(['id', 'its', 'family_id', 'mumeneen_type', 'status']),
+            'previous_head' => $currentHOF->only(['id', 'its', 'family_id', 'mumeneen_type', 'status']),
+        ], 200);
+    }
+
 
     // delete
     public function delete_user($id)
@@ -1042,6 +1105,7 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
             ], 200)
             : response()->json(['message' => 'No sub-sector records found or you do not have access to any sub-sectors!'], 404);
     }
+
     public function getSubSectorsBySector($sector)
     {
         $user = Auth::user();
@@ -1399,63 +1463,63 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
 
     // update
     public function update_hub(Request $request, $family_id)
-{
-    // Validate the incoming request
-    $request->validate([
-        'year' => 'required|string|max:10', // Ensure the year is provided
-        'hub_amount' => 'required',          // Ensure the hub slab ID exists
-        'thali_status' => 'nullable',        // Thali status can be null
-    ]);
-
-    // Get jamiat_id from authenticated user
-    $jamiat_id = auth()->user()->jamiat_id;
-
-    if (!$jamiat_id) {
-        return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
-    }
-
-    // Find or create the hub record
-    $get_hub = HubModel::firstOrCreate(
-        [
-            'jamiat_id' => $jamiat_id,
-            'family_id' => $family_id,
-            'year' => $request->input('year'),
-        ],
-        [
-            'hub_amount' => $request->input('hub_amount'),
-            'paid_amount' => 0,
-            'due_amount' => 0,
-            'log_user' => auth()->user()->username,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]
-    );
-
-    // If the record already existed, update only the hub_amount and thali_status fields
-    if (!$get_hub->wasRecentlyCreated) {
-        $get_hub->update([
-            'hub_amount' => $request->input('hub_amount'),
-            'thali_status' => $request->input('thali_status'),
+    {
+        // Validate the incoming request
+        $request->validate([
+            'year' => 'required|string|max:10', // Ensure the year is provided
+            'hub_amount' => 'required',          // Ensure the hub slab ID exists
+            'thali_status' => 'nullable',        // Thali status can be null
         ]);
-        // Also update due_amount on update
-        $get_hub->due_amount = $request->input('hub_amount');
-        $get_hub->save();
-    }
 
-    // Update thali_status in users table for the given family_id
-    if ($request->has('thali_status')) {
-        \App\Models\User::where('family_id', $family_id)
-            ->update(['thali_status' => $request->input('thali_status')]);
-    }
+        // Get jamiat_id from authenticated user
+        $jamiat_id = auth()->user()->jamiat_id;
 
-    // Return a success response
-    return response()->json([
-        'message' => 'Hub record updated successfully, and thali status updated for family users!',
-        'data' => [
-            'hub' => $get_hub,
-            'hub_amount' => $request->input('hub_amount'),
-        ],
-    ], 200);
+        if (!$jamiat_id) {
+            return response()->json(['message' => 'Jamiat ID is missing for the authenticated user.'], 400);
+        }
+
+        // Find or create the hub record
+        $get_hub = HubModel::firstOrCreate(
+            [
+                'jamiat_id' => $jamiat_id,
+                'family_id' => $family_id,
+                'year' => $request->input('year'),
+            ],
+            [
+                'hub_amount' => $request->input('hub_amount'),
+                'paid_amount' => 0,
+                'due_amount' => 0,
+                'log_user' => auth()->user()->username,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        // If the record already existed, update only the hub_amount and thali_status fields
+        if (!$get_hub->wasRecentlyCreated) {
+            $get_hub->update([
+                'hub_amount' => $request->input('hub_amount'),
+                'thali_status' => $request->input('thali_status'),
+            ]);
+            // Also update due_amount on update
+            $get_hub->due_amount = $request->input('hub_amount');
+            $get_hub->save();
+        }
+
+        // Update thali_status in users table for the given family_id
+        if ($request->has('thali_status')) {
+            \App\Models\User::where('family_id', $family_id)
+                ->update(['thali_status' => $request->input('thali_status')]);
+        }
+
+        // Return a success response
+        return response()->json([
+            'message' => 'Hub record updated successfully, and thali status updated for family users!',
+            'data' => [
+                'hub' => $get_hub,
+                'hub_amount' => $request->input('hub_amount'),
+            ],
+        ], 200);
     }
 
     private function addNiyazEntries($family_id, $jamiat_id, $hubSlab, $totalHubAmount)
@@ -1672,8 +1736,6 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
         }
     }
 
-
-
     public function getDistinctFamilyCountUnderAge14()
     {
         // Count distinct family IDs where users are under age 14
@@ -1754,30 +1816,31 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
     }
 
     public function getUserNameByIts($its)
-{
-    // Search for the user by ITS (username)
-    $user = User::where('username', $its)->first();  // Searching by the username column which contains ITS
+    {
+        // Search for the user by ITS (username)
+        $user = User::where('username', $its)->first();  // Searching by the username column which contains ITS
 
-    // If the user is not found, return a 404 response
-    if (!$user) {
+        // If the user is not found, return a 404 response
+        if (!$user) {
+            return response()->json([
+                'code' => 404,
+                'status' => 'error',
+                'message' => 'User not found',
+                'data' => null
+            ], 404);
+        }
+
+        // Return the user's name if found
         return response()->json([
-            'code' => 404,
-            'status' => 'error',
-            'message' => 'User not found',
-            'data' => null
-        ], 404);
+            'code' => 200,
+            'status' => 'success',
+            'message' => 'User found',
+            'data' => [
+                'name' => $user->name  // Only returning the user's name
+            ]
+        ], 200);
     }
 
-    // Return the user's name if found
-    return response()->json([
-        'code' => 200,
-        'status' => 'success',
-        'message' => 'User found',
-        'data' => [
-            'name' => $user->name  // Only returning the user's name
-        ]
-    ], 200);
-    }
     public function thaali(Request $request)
     {
         $user = $request->user();
@@ -1800,72 +1863,72 @@ return response()->json(['message' => 'User Fetched Successfully!', 'data' => $u
     }
 
     public function transferOut(Request $request)
-{
-    $request->validate([
-        'family_id' => 'required|integer',
-    ]);
-
-    $user = auth()->user();
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
-    $jamiat_id = $user->jamiat_id;
-    $familyId = $request->input('family_id');
-
-    // Get current year for the jamiat
-    $currentYear = YearModel::where('jamiat_id', $jamiat_id)
-        ->where('is_current', '1')
-        ->value('year');
-
-    if (!$currentYear) {
-        return response()->json([
-            'message' => 'Current year not set',
-        ], 400);
-    }
-
-    // Fetch the hub record for this family and current year
-    $hubRecord = HubModel::where('family_id', $familyId)
-        ->where('jamiat_id', $jamiat_id)
-        ->where('year', $currentYear)
-        ->first();
-
-    if (!$hubRecord) {
-        return response()->json([
-            'message' => 'Hub record not found for this family in the current year.',
-        ], 404);
-    }
-
-    if ($hubRecord->hub_amount == 0) {
-        // If hub amount is 0 => delete hub record and mark users inactive
-        HubModel::where('family_id', $familyId)
-            ->where('year', $currentYear)
-            ->delete();
-
-        User::where('family_id', $familyId)
-            ->update(['status' => 'in_active']);
-
-        return response()->json([
-            'message' => 'Hub deleted and users marked inactive as hub amount is zero.',
-            'code' => 200,
+    {
+        $request->validate([
+            'family_id' => 'required|integer',
         ]);
-    } else {
-        // Hub amount > 0 - check if due amount is zero
-        if ($hubRecord->due_amount > 0) {
+
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $jamiat_id = $user->jamiat_id;
+        $familyId = $request->input('family_id');
+
+        // Get current year for the jamiat
+        $currentYear = YearModel::where('jamiat_id', $jamiat_id)
+            ->where('is_current', '1')
+            ->value('year');
+
+        if (!$currentYear) {
             return response()->json([
-                'message' => 'There is due amount pending against this family, kindly adjust the amount before marking the family as inactive.',
-                'code' => 422,
-            ], 422);
-        } else {
-            // No due, mark users inactive
+                'message' => 'Current year not set',
+            ], 400);
+        }
+
+        // Fetch the hub record for this family and current year
+        $hubRecord = HubModel::where('family_id', $familyId)
+            ->where('jamiat_id', $jamiat_id)
+            ->where('year', $currentYear)
+            ->first();
+
+        if (!$hubRecord) {
+            return response()->json([
+                'message' => 'Hub record not found for this family in the current year.',
+            ], 404);
+        }
+
+        if ($hubRecord->hub_amount == 0) {
+            // If hub amount is 0 => delete hub record and mark users inactive
+            HubModel::where('family_id', $familyId)
+                ->where('year', $currentYear)
+                ->delete();
+
             User::where('family_id', $familyId)
                 ->update(['status' => 'in_active']);
 
             return response()->json([
-                'message' => 'Users marked inactive successfully as there is no due amount.',
+                'message' => 'Hub deleted and users marked inactive as hub amount is zero.',
                 'code' => 200,
             ]);
+        } else {
+            // Hub amount > 0 - check if due amount is zero
+            if ($hubRecord->due_amount > 0) {
+                return response()->json([
+                    'message' => 'There is due amount pending against this family, kindly adjust the amount before marking the family as inactive.',
+                    'code' => 422,
+                ], 422);
+            } else {
+                // No due, mark users inactive
+                User::where('family_id', $familyId)
+                    ->update(['status' => 'in_active']);
+
+                return response()->json([
+                    'message' => 'Users marked inactive successfully as there is no due amount.',
+                    'code' => 200,
+                ]);
+            }
         }
-    }
     }
 }
