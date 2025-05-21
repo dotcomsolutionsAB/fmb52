@@ -340,7 +340,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
 
         // Fetch receipts matching the provided family_id values
         $get_receipts = ReceiptsModel::select(
-            'id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
+            'id','hashed_id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
             'sector_id', 'sub_sector_id', 'amount', 'mode', 'bank_name', 'cheque_no', 'cheque_date', 'transaction_id', 'transaction_date', 'year', 'comments', 'status', 
             'cancellation_reason', 'collected_by', 'log_user', 'attachment', 'payment_id'
         )
