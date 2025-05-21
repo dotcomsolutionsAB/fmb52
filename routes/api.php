@@ -143,7 +143,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/hub_details/{family_id}', [MumeneenController::class, 'familyHubDetails'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
     });
 
-    Route::post('/mumeneen/switch_hof', [MumeneenController::class, 'updateHeadOfFamily']);
+    Route::post('/mumeneen_switch_hof', [MumeneenController::class, 'updateHeadOfFamily']);
 
 
     // Hub Routes
