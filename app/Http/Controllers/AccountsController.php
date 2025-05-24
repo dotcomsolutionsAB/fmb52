@@ -204,67 +204,7 @@ class AccountsController extends Controller
             'data' => $result,
         ], 200);
     }
-    public function getPendingCashReceipts(Request $request)
-{
-    // Validate the incoming request
-    $validatedData = $request->validate([
-        'mode' => 'required|in:cheque,cash,neft,upi', // Ensure mode is present and valid
-        'sector' => 'nullable|integer',  // Sector filter as ID (optional)
-        'sub_sector' => 'nullable|integer',  // Sub-sector filter as ID (optional)
-    ]);
-
-    // Build the base query
-    if ($validatedData['mode'] == 'cash') {
-        $query = DB::table('t_receipts')
-            ->where('mode', 'cash')
-            ->where('status', 'pending');
-    } else {
-        $query = DB::table('t_receipts')
-            ->where('status', 'pending');
-    }
-
-    // Filter by sector if provided and valid
-    if ($request->has('sector') && !empty($request->sector)) {
-        $sectorId = (int) $request->sector;
-        $sectorExists = DB::table('t_sector')->where('id', $sectorId)->exists();
-        if ($sectorExists) {
-            $query->where('sector_id', $sectorId);
-        } else {
-            return response()->json(['message' => 'Invalid sector ID'], 400);
-        }
-    }
-
-    // Filter by sub-sector if provided and valid
-    if ($request->has('sub_sector') && !empty($request->sub_sector)) {
-        $subSectorId = (int) $request->sub_sector;
-        $subSectorExists = DB::table('t_sub_sector')->where('id', $subSectorId)->exists();
-        if ($subSectorExists) {
-            $query->where('sub_sector_id', $subSectorId);
-        } else {
-            return response()->json(['message' => 'Invalid sub-sector ID'], 400);
-        }
-    }
-
-    // Fetch receipts limited to 250 ordered by date descending
-    $cashReceipts = $query->orderBy('date', 'desc')
-        ->limit(250)
-        ->get(['id', 'receipt_no', 'name', 'amount']);
-
-    if ($cashReceipts->isEmpty()) {
-        return response()->json(['message' => 'No pending cash receipts found.'], 404);
-    }
-
-    // Add custom key for each receipt as "receipt_no - name - amount"
-    $cashReceipts->transform(function ($receipt) {
-        $receipt->key = "{$receipt->receipt_no} - {$receipt->name} - {$receipt->amount}";
-        return $receipt;
-    });
-
-    return response()->json([
-        'message' => 'Pending cash receipts fetched successfully!',
-        'data' => $cashReceipts,
-    ], 200);
-    }
+    
 
    public function allBanks()
 {

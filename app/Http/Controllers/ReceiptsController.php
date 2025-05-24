@@ -183,30 +183,30 @@ class ReceiptsController extends Controller
 
                 $pdfContent = $pdfController->generateReceiptPdfContent($register_receipt->hashed_id);
 
-if ($pdfContent && strlen($pdfContent) > 100) {
-    $directory = public_path("storage/{$jamiat_id}/receipts");
-    if (!file_exists($directory)) {
-        mkdir($directory, 0755, true);
-    }
-    $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
-    file_put_contents($pdfPath, $pdfContent);
-    $accountscontroller= new AccountsController();
-      $accountscontroller->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
+                if ($pdfContent && strlen($pdfContent) > 100) {
+                    $directory = public_path("storage/{$jamiat_id}/receipts");
+                    if (!file_exists($directory)) {
+                        mkdir($directory, 0755, true);
+                    }
+                    $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
+                    file_put_contents($pdfPath, $pdfContent);
+                    $accountscontroller= new AccountsController();
+                    $accountscontroller->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
 
-    // Log success
-    DB::table('mylogs')->insert([
-        'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-} else {
-    // Log failure
-    DB::table('mylogs')->insert([
-        'message' => "PDF generation failed or empty for receipt {$formatted_receipt_no}",
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-}
+                    // Log success
+                    DB::table('mylogs')->insert([
+                        'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    // Log failure
+                    DB::table('mylogs')->insert([
+                        'message' => "PDF generation failed or empty for receipt {$formatted_receipt_no}",
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
                 $remainingAmount -= $amountForMember;
     
                 if ($remainingAmount <= 0) {
@@ -267,6 +267,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             ], 500);
         }
     }
+
     // view
     public function all_receipts(Request $request)
     {
@@ -329,6 +330,7 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             ? response()->json(['message' => 'Receipts fetched successfully!', 'data' => $get_all_receipts], 200)
             : response()->json(['message' => 'No receipts found!'], 404);
     }
+
     public function getReceiptsByFamilyIds(Request $request)
     {
         // Validate and retrieve the family_id array from the request
@@ -353,129 +355,130 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             : response()->json(['message' => 'No receipts found for the provided family IDs.'], 404);
     }
     // update
-   public function update_receipts(Request $request, $id)
-{
-    DB::beginTransaction();
+    public function update_receipts(Request $request, $id)
+    {
+        DB::beginTransaction();
 
-    try {
-        // Find existing receipt
-        $existingReceipt = ReceiptsModel::find($id);
-        if (!$existingReceipt) {
-            return response()->json(['message' => 'Receipt not found!'], 404);
-        }
-
-        // Validate incoming request (you can customize validations as needed)
-        $validatedData = $request->validate([
-            'jamiat_id' => 'nullable|integer',
-            'family_id' => 'required|string|max:10',
-            'its' => 'nullable|string|max:8',
-            'folio_no' => 'nullable|string|max:20',
-            'name' => 'required|string|max:100',
-           
-            'amount' => 'required|numeric',
-            'mode' => 'required|in:cheque,cash,neft,upi',
-            'bank_name' => 'nullable|string|max:100',
-            'cheque_no' => 'nullable|string|size:6',
-            'cheque_date' => 'nullable|date',
-            'transaction_id' => 'nullable|string|max:100',
-            'transaction_date' => 'nullable|date',
-            'year' => 'required|string|max:10',
-            'comments' => 'nullable|string',
-            'status' => 'required|in:pending,cancelled,paid',
-            'cancellation_reason' => 'nullable|string',
-            'collected_by' => 'nullable|string|max:100',
-            'attachment' => 'nullable|integer',
-            'payment_id' => 'nullable|integer', // payment_id can be nullable initially
-        ]);
-
-        // Update the receipt record
-        $existingReceipt->update($validatedData);
-
-        // Handle payment entry creation or update if mode is cheque or neft or upi
-        if (in_array($validatedData['mode'], ['cheque', 'neft', 'upi'])) {
-            // Prepare payment data array from validated data (map what is required)
-            $paymentDataArray = [
-                
-                'family_id' => $validatedData['family_id'],
-               
-                'name' => $validatedData['name'],
-                'its' => $validatedData['its'],
-                
-                'year' => $validatedData['year'],
-                'mode' => $validatedData['mode'],
-                'date' => $validatedData['date'],
-                'bank_name' => $validatedData['bank_name'] ?? null,
-                'cheque_no' => $validatedData['cheque_no'] ?? null,
-                'cheque_date' => $validatedData['cheque_date'] ?? null,
-                'transaction_id' => $validatedData['transaction_id'] ?? null,
-                'transaction_date' => $validatedData['transaction_date'] ?? null,
-                'amount' => $validatedData['amount'],
-                'comments' => $validatedData['comments'] ?? null,
-                'status' => $validatedData['status'],
-                'cancellation_reason' => $validatedData['cancellation_reason'] ?? null,
-                'collected_by' => $validatedData['collected_by'] ?? null,
-                'log_user' => Auth()->user()->name,
-            ];
-
-            // Instantiate PaymentsController
-            $paymentsController = new PaymentsController();
-
-            if ($existingReceipt->payment_id) {
-                // Update existing payment
-                $paymentDataArray['id'] = $existingReceipt->payment_id;
-                $paymentRequest = new Request($paymentDataArray);
-                $paymentResponse = $paymentsController->update_payments($paymentRequest, $existingReceipt->payment_id);
-            } else {
-                // Create new payment
-                $paymentRequest = new Request($paymentDataArray);
-                $paymentResponse = $paymentsController->register_payments($paymentRequest);
+        try {
+            // Find existing receipt
+            $existingReceipt = ReceiptsModel::find($id);
+            if (!$existingReceipt) {
+                return response()->json(['message' => 'Receipt not found!'], 404);
             }
 
-            $paymentData = $paymentResponse->getData(true);
+            // Validate incoming request (you can customize validations as needed)
+            $validatedData = $request->validate([
+                'jamiat_id' => 'nullable|integer',
+                'family_id' => 'required|string|max:10',
+                'its' => 'nullable|string|max:8',
+                'folio_no' => 'nullable|string|max:20',
+                'name' => 'required|string|max:100',
+            
+                'amount' => 'required|numeric',
+                'mode' => 'required|in:cheque,cash,neft,upi',
+                'bank_name' => 'nullable|string|max:100',
+                'cheque_no' => 'nullable|string|size:6',
+                'cheque_date' => 'nullable|date',
+                'transaction_id' => 'nullable|string|max:100',
+                'transaction_date' => 'nullable|date',
+                'year' => 'required|string|max:10',
+                'comments' => 'nullable|string',
+                'status' => 'required|in:pending,cancelled,paid',
+                'cancellation_reason' => 'nullable|string',
+                'collected_by' => 'nullable|string|max:100',
+                'attachment' => 'nullable|integer',
+                'payment_id' => 'nullable|integer', // payment_id can be nullable initially
+            ]);
 
-            if (isset($paymentData['data']['id'])) {
-                $paymentId = $paymentData['data']['id'];
+            // Update the receipt record
+            $existingReceipt->update($validatedData);
 
-                // Update payment_id in receipt if not set or changed
-                if ($existingReceipt->payment_id != $paymentId) {
-                    $existingReceipt->payment_id = $paymentId;
-                    $existingReceipt->save();
+            // Handle payment entry creation or update if mode is cheque or neft or upi
+            if (in_array($validatedData['mode'], ['cheque', 'neft', 'upi'])) {
+                // Prepare payment data array from validated data (map what is required)
+                $paymentDataArray = [
+                    
+                    'family_id' => $validatedData['family_id'],
+                
+                    'name' => $validatedData['name'],
+                    'its' => $validatedData['its'],
+                    
+                    'year' => $validatedData['year'],
+                    'mode' => $validatedData['mode'],
+                    'date' => $validatedData['date'],
+                    'bank_name' => $validatedData['bank_name'] ?? null,
+                    'cheque_no' => $validatedData['cheque_no'] ?? null,
+                    'cheque_date' => $validatedData['cheque_date'] ?? null,
+                    'transaction_id' => $validatedData['transaction_id'] ?? null,
+                    'transaction_date' => $validatedData['transaction_date'] ?? null,
+                    'amount' => $validatedData['amount'],
+                    'comments' => $validatedData['comments'] ?? null,
+                    'status' => $validatedData['status'],
+                    'cancellation_reason' => $validatedData['cancellation_reason'] ?? null,
+                    'collected_by' => $validatedData['collected_by'] ?? null,
+                    'log_user' => Auth()->user()->name,
+                ];
+
+                // Instantiate PaymentsController
+                $paymentsController = new PaymentsController();
+
+                if ($existingReceipt->payment_id) {
+                    // Update existing payment
+                    $paymentDataArray['id'] = $existingReceipt->payment_id;
+                    $paymentRequest = new Request($paymentDataArray);
+                    $paymentResponse = $paymentsController->update_payments($paymentRequest, $existingReceipt->payment_id);
+                } else {
+                    // Create new payment
+                    $paymentRequest = new Request($paymentDataArray);
+                    $paymentResponse = $paymentsController->register_payments($paymentRequest);
                 }
-            } else {
-                throw new \Exception('Payment creation or update failed');
+
+                $paymentData = $paymentResponse->getData(true);
+
+                if (isset($paymentData['data']['id'])) {
+                    $paymentId = $paymentData['data']['id'];
+
+                    // Update payment_id in receipt if not set or changed
+                    if ($existingReceipt->payment_id != $paymentId) {
+                        $existingReceipt->payment_id = $paymentId;
+                        $existingReceipt->save();
+                    }
+                } else {
+                    throw new \Exception('Payment creation or update failed');
+                }
             }
+
+            // Add WhatsApp queue entry
+            $accountsController = new AccountsController();
+            $accountsController->addToWhatsAppQueue($existingReceipt, str_replace('/', '_', $existingReceipt->receipt_no));
+
+            // Update hub for this family immediately after receipt update
+            $hubController = new HubController();
+            $hubResponse = $hubController->updateFamilyHub($existingReceipt->family_id);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Receipt updated successfully!',
+                'receipt' => $existingReceipt,
+                'hub_update' => $hubResponse,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Failed to update receipt!',
+                'error' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+            ], 500);
         }
-
-        // Add WhatsApp queue entry
-        $accountsController = new AccountsController();
-        $accountsController->addToWhatsAppQueue($existingReceipt, str_replace('/', '_', $existingReceipt->receipt_no));
-
-        // Update hub for this family immediately after receipt update
-        $hubController = new HubController();
-        $hubResponse = $hubController->updateFamilyHub($existingReceipt->family_id);
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Receipt updated successfully!',
-            'receipt' => $existingReceipt,
-            'hub_update' => $hubResponse,
-        ], 200);
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        return response()->json([
-            'message' => 'Failed to update receipt!',
-            'error' => $e->getMessage(),
-            'stack' => $e->getTraceAsString(),
-        ], 500);
     }
-}
+
     public function show($id) 
     {
-    $receipt = ReceiptsModel::findOrFail($id);
-    return response()->json($receipt);
-}
+        $receipt = ReceiptsModel::findOrFail($id);
+        return response()->json($receipt);
+    }
 
     // delete
     public function delete_receipts($id)
@@ -488,35 +491,35 @@ if ($pdfContent && strlen($pdfContent) > 100) {
     }
 
     public function cancelReceipt(Request $request, $id)
-{
-    $user = auth()->user();
-    if (!$user) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Find the receipt by ID
+        $receipt = ReceiptsModel::find($id);
+        if (!$receipt) {
+            return response()->json(['message' => 'Receipt not found'], 404);
+        }
+
+        // Update status to cancelled
+        $receipt->status = 'cancelled';
+        $receipt->cancellation_reason = $request->input('reason', null); // Optional cancellation reason
+        $receipt->updated_at = now();
+        $receipt->save();
+
+        // Optionally, call update hub for this family to recalculate dues
+        $hubController = new HubController();
+        $hubController->updateFamilyHub($receipt->family_id);
+
+        return response()->json([
+            'message' => 'Receipt cancelled successfully',
+            'receipt' => $receipt
+        ], 200);
     }
 
-    // Find the receipt by ID
-    $receipt = ReceiptsModel::find($id);
-    if (!$receipt) {
-        return response()->json(['message' => 'Receipt not found'], 404);
-    }
-
-    // Update status to cancelled
-    $receipt->status = 'cancelled';
-    $receipt->cancellation_reason = $request->input('reason', null); // Optional cancellation reason
-    $receipt->updated_at = now();
-    $receipt->save();
-
-    // Optionally, call update hub for this family to recalculate dues
-    $hubController = new HubController();
-    $hubController->updateFamilyHub($receipt->family_id);
-
-    return response()->json([
-        'message' => 'Receipt cancelled successfully',
-        'receipt' => $receipt
-    ], 200);
-}
-
- public function register_advance_receipt(Request $request)
+    public function register_advance_receipt(Request $request)
     {
         $request->validate([
             'jamiat_id' => 'required|integer',
@@ -595,5 +598,66 @@ if ($pdfContent && strlen($pdfContent) > 100) {
             : response()->json(['message' => 'Advance Receipt not found!'], 404);
     }
 
+    public function getPendingCashReceipts(Request $request)
+    {
+        // Validate the incoming request
+        $validatedData = $request->validate([
+            'mode' => 'required|in:cheque,cash,neft,upi', // Ensure mode is present and valid
+            'sector' => 'nullable|integer',  // Sector filter as ID (optional)
+            'sub_sector' => 'nullable|integer',  // Sub-sector filter as ID (optional)
+        ]);
+
+        // Build the base query
+        if ($validatedData['mode'] == 'cash') {
+            $query = DB::table('t_receipts')
+                ->where('mode', 'cash')
+                ->where('status', 'pending');
+        } else {
+            $query = DB::table('t_receipts')
+                ->where('status', 'pending');
+        }
+
+        // Filter by sector if provided and valid
+        if ($request->has('sector') && !empty($request->sector)) {
+            $sectorId = (int) $request->sector;
+            $sectorExists = DB::table('t_sector')->where('id', $sectorId)->exists();
+            if ($sectorExists) {
+                $query->where('sector_id', $sectorId);
+            } else {
+                return response()->json(['message' => 'Invalid sector ID'], 400);
+            }
+        }
+
+        // Filter by sub-sector if provided and valid
+        if ($request->has('sub_sector') && !empty($request->sub_sector)) {
+            $subSectorId = (int) $request->sub_sector;
+            $subSectorExists = DB::table('t_sub_sector')->where('id', $subSectorId)->exists();
+            if ($subSectorExists) {
+                $query->where('sub_sector_id', $subSectorId);
+            } else {
+                return response()->json(['message' => 'Invalid sub-sector ID'], 400);
+            }
+        }
+
+        // Fetch receipts limited to 250 ordered by date descending
+        $cashReceipts = $query->orderBy('date', 'desc')
+            ->limit(250)
+            ->get(['id', 'receipt_no', 'name', 'amount']);
+
+        if ($cashReceipts->isEmpty()) {
+            return response()->json(['message' => 'No pending cash receipts found.'], 404);
+        }
+
+        // Add custom key for each receipt as "receipt_no - name - amount"
+        $cashReceipts->transform(function ($receipt) {
+            $receipt->key = "{$receipt->receipt_no} - {$receipt->name} - {$receipt->amount}";
+            return $receipt;
+        });
+
+        return response()->json([
+            'message' => 'Pending cash receipts fetched successfully!',
+            'data' => $cashReceipts,
+        ], 200);
+    }
 
 }
