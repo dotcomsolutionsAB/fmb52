@@ -92,29 +92,29 @@ class DashboardController extends Controller
     
         // Summary Data Query
        $summaryData = DB::table('t_hub')
-    ->leftJoin('users', function ($join) {
-        $join->on('t_hub.family_id', '=', 'users.family_id')
-             ->where('users.status', '=', 'active')
-             ->where('users.mumeneen_type', '=', 'HOF');
-    })
-    ->selectRaw("
-        COUNT(DISTINCT t_hub.family_id) AS total_houses,
-        SUM(CASE WHEN t_hub.hub_amount = 0 AND users.id IS NOT NULL THEN 1 ELSE 0 END) AS hub_not_set,
-        SUM(CASE WHEN t_hub.due_amount > 0 THEN 1 ELSE 0 END) AS hub_due,
-        SUM(t_hub.hub_amount) AS total_hub_amount,
-        SUM(t_hub.paid_amount) AS total_paid_amount,
-        SUM(t_hub.due_amount) AS total_due_amount
-    ")
-    ->where('t_hub.year', $year)
-    ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
-        $query->select(DB::raw(1))
-              ->from('users')
-              ->whereColumn('users.family_id', 't_hub.family_id')
-              ->where('users.jamiat_id', $jamiatId)
-              ->where('users.role', 'mumeneen')
-              ->whereIn('users.sub_sector_id', $subSectorFilter);
-    })
-    ->first();
+        ->leftJoin('users', function ($join) {
+            $join->on('t_hub.family_id', '=', 'users.family_id')
+                ->where('users.status', '=', 'active')
+                ->where('users.mumeneen_type', '=', 'HOF');
+        })
+        ->selectRaw("
+            COUNT(DISTINCT t_hub.family_id) AS total_houses,
+            SUM(CASE WHEN t_hub.hub_amount = 0 AND users.id IS NOT NULL THEN 1 ELSE 0 END) AS hub_not_set,
+            SUM(CASE WHEN t_hub.due_amount > 0 THEN 1 ELSE 0 END) AS hub_due,
+            SUM(t_hub.hub_amount) AS total_hub_amount,
+            SUM(t_hub.paid_amount) AS total_paid_amount,
+            SUM(t_hub.due_amount) AS total_due_amount
+        ")
+        ->where('t_hub.year', $year)
+        ->whereExists(function ($query) use ($jamiatId, $subSectorFilter) {
+            $query->select(DB::raw(1))
+                ->from('users')
+                ->whereColumn('users.family_id', 't_hub.family_id')
+                ->where('users.jamiat_id', $jamiatId)
+                ->where('users.role', 'mumeneen')
+                ->whereIn('users.sub_sector_id', $subSectorFilter);
+        })
+        ->first();
     
         // Payment Modes Query
         $paymentModes = DB::table('t_receipts')
@@ -328,7 +328,7 @@ class DashboardController extends Controller
     {
         $familyId = $request->input('family_id');
         $date = $request->input('date', date('Y-m-d'));
-    
+
         if (!$familyId) {
             return response()->json([
                 'code' => 400,
@@ -336,9 +336,9 @@ class DashboardController extends Controller
                 'message' => 'family_id is required',
             ]);
         }
-    
+
         $data = [];
-    
+
         // --- 1. Fetch Receipts ---
         $receipts = ReceiptsModel::select(
             'id','hashed_id','jamiat_id', 'family_id', 'receipt_no', 'date', 'its', 'folio_no', 'name',
@@ -347,50 +347,70 @@ class DashboardController extends Controller
         )
         ->where('family_id', $familyId)
         ->orderBy('id', 'desc')
-        ->Limit(5)
+        ->limit(5)
         ->get();
-    
+
         $data['receipts'] = $receipts;
-    
+
         // --- 2. Fetch Hub Info ---
         $hub = HubModel::select('jamiat_id', 'family_id', 'year', 'hub_amount', 'paid_amount', 'due_amount', 'log_user')
             ->where('family_id', $familyId)
             ->orderBy('year', 'desc')
             ->first();
-    
+
+        // --- 3. Fetch User (HOF) Info ---
+        $user = User::with(['sector', 'subSector', 'photo'])
+            ->where('family_id', $familyId)
+            ->where('mumeneen_type', 'HOF')
+            ->first();
+
+        if ($hub && $user) {
+            $sectorName = $user->sector ? $user->sector->name : 'N/A';
+            $subSectorName = $user->subSector ? $user->subSector->name : 'N/A';
+            $photoUrl = $user->photo ? url($user->photo->file_path ?? $user->photo->url ?? '') : null; // Adjust field as per UploadModel
+
+            $userDetails = [
+                'name' => $user->name,
+                'its' => $user->its,
+                'Sector' => $sectorName,
+                'sub Sector' => $subSectorName,
+                'mumeneen_type' => $user->mumeneen_type,
+                'photo' => $photoUrl,
+                'hub' => $hub->year,
+                'paid' => $hub->paid_amount,
+                'due' => $hub->due_amount,
+            ];
+        } else {
+            $userDetails = null;
+        }
+
+        $data['user_details'] = $userDetails;
+
+        // --- 4. Existing Hub Data Section (for backward compatibility) ---
         if ($hub) {
-            $user = User::select('sector_id', 'sub_sector_id', 'thali_status')
-                ->where('family_id', $familyId)
-                ->where('mumeneen_type', 'HOF')
-                ->first();
-    
+            $incharge = 'N/A';
             if ($user) {
-                $sector = SectorModel::find($user->sector_id);
-                $subSector = SubSectorModel::find($user->sub_sector_id);
-    
-                $incharge = $subSector ? $this->extractInchargeName($subSector->notes) : 'N/A';
-    
-                $hubData = $hub->toArray();
-                $hubData['masool'] = $incharge;
-                $hubData['sector_name'] = $sector ? $sector->name : 'N/A';
-                $hubData['subsector_name'] = $subSector ? $subSector->name : 'N/A';
-                $hubData['thali_status'] = $user->thali_status ?? 'N/A';
-    
-                $data['hub'] = $hubData;
-            } else {
-                $data['hub'] = ['message' => 'No HOF found for this family'];
+                $incharge = $user->subSector ? $this->extractInchargeName($user->subSector->notes) : 'N/A';
             }
+
+            $hubData = $hub->toArray();
+            $hubData['masool'] = $incharge;
+            $hubData['sector_name'] = $sectorName ?? 'N/A';
+            $hubData['subsector_name'] = $subSectorName ?? 'N/A';
+            $hubData['thali_status'] = $user->thali_status ?? 'N/A';
+
+            $data['hub'] = $hubData;
         } else {
             $data['hub'] = ['message' => 'No hub record found for this family'];
         }
-    
-        // --- 3. Fetch Menu ---
+
+        // --- 5. Fetch Menu ---
         $menu = MenuModel::where('date', $date)->get();
-    
+
         if ($menu->isNotEmpty()) {
             $hijriDate = (new MenuController())->getHijriDate($date);
-            $dayName = Carbon::parse($date)->format('l');
-    
+            $dayName = \Carbon\Carbon::parse($date)->format('l');
+
             $data['menu'] = $menu->map(function ($item) use ($hijriDate, $dayName) {
                 return [
                     'id' => $item->id,
@@ -407,7 +427,7 @@ class DashboardController extends Controller
         } else {
             $data['menu'] = ['message' => 'No menu found for this date'];
         }
-    
+
         // --- Final Response ---
         return response()->json([
             'code' => 200,
@@ -416,6 +436,7 @@ class DashboardController extends Controller
             'data' => $data,
         ]);
     }
+
     public function extractInchargeName($notes)
     {
         // Use regular expression to extract the "Incharge: <Name>" part from the string
