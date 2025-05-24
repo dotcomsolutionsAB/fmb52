@@ -387,7 +387,7 @@ class DashboardController extends Controller
         if ($hub) {
             $incharge = 'Burhanuddin bhai';
             if ($user) {
-                $incharge = $user->subSector ? $this->extractInchargeName($user->subSector->notes) : 'N/A';
+                $incharge = $user->subSector ? $this->extractInchargeName($user->subSector->notes) : 'Burhanuddin bhai';
             }
 
             $hubData = $hub->toArray();
