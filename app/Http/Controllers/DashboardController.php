@@ -367,7 +367,7 @@ class DashboardController extends Controller
         if ($hub && $user) {
             $sectorName = $user->sector ? $user->sector->name : 'N/A';
             $subSectorName = $user->subSector ? $user->subSector->name : 'N/A';
-            $photoUrl = $user->photo ? url($user->photo->file_path ?? $user->photo->url ?? '') : null; // Adjust field as per UploadModel
+            $photoUrl = $user->photo ? $user->photo->file_url : null; // Adjust field as per UploadModel
 
             $userDetails = [
                 'name' => $user->name,
@@ -376,7 +376,7 @@ class DashboardController extends Controller
                 'sub Sector' => $subSectorName,
                 'mumeneen_type' => $user->mumeneen_type,
                 'photo' => $photoUrl,
-                'hub' => $hub->year,
+                'hub' => $hub->hub_amount,
                 'paid' => $hub->paid_amount,
                 'due' => $hub->due_amount,
             ];
