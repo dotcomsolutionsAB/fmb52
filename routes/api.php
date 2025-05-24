@@ -183,11 +183,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Payments Routes
     Route::prefix('payments')->group(function () {
         Route::middleware('check-api-permission:payments.view,payments.view_global,payments.export,payments.print')->group(function () {
-        Route::post('/all', [AccountsController::class, 'all_payments']);
+        Route::post('/all', [PaymentsController::class, 'all_payments']);
         });
-        Route::post('/', [AccountsController::class, 'register_payments'])->middleware('check-api-permission:payments.create');
-        Route::post('/update', [AccountsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.edit');
-        Route::delete('/{id}', [AccountsController::class, 'delete_payments'])->middleware('check-api-permission:payments.delete');
+        Route::post('/', [PaymentsController::class, 'register_payments'])->middleware('check-api-permission:payments.create');
+        Route::post('/update', [PaymentsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.edit');
+        Route::delete('/{id}', [PaymentsController::class, 'delete_payments'])->middleware('check-api-permission:payments.delete');
     });
 
     // Thali Menu Routes

@@ -22,7 +22,7 @@ use App\Models\CurrencyModel;
 
 class PaymentsController extends Controller
 {
-     public function register_payments(Request $request)
+    public function register_payments(Request $request)
     {
         $validatedData = $request->validate([
             'date' => 'nullable|date', // Multiple receipt IDs for cash or single receipt for others
@@ -137,6 +137,7 @@ class PaymentsController extends Controller
             ], 500);
         }
     }
+
     // view
     public function all_payments(Request $request)
     {
@@ -173,13 +174,13 @@ class PaymentsController extends Controller
             ->leftJoin('users', 't_payments.its', '=', 'users.username')
             ->leftJoin('t_uploads', 'users.photo_id', '=', 't_uploads.id')
             ->where(function ($query) use ($userSectorAccess) {
-    $query->whereIn('t_payments.sector_id', $userSectorAccess)
-          ->orWhereNull('t_payments.sector_id');
-})
-->where(function ($query) use ($userSubSectorAccess) {
-    $query->whereIn('t_payments.sub_sector_id', $userSubSectorAccess)
-          ->orWhereNull('t_payments.sub_sector_id');
-});
+            $query->whereIn('t_payments.sector_id', $userSectorAccess)
+                ->orWhereNull('t_payments.sector_id');
+        })
+        ->where(function ($query) use ($userSubSectorAccess) {
+            $query->whereIn('t_payments.sub_sector_id', $userSubSectorAccess)
+                ->orWhereNull('t_payments.sub_sector_id');
+        });
 
         // Apply year filter if provided
         if ($year) {
@@ -278,7 +279,8 @@ class PaymentsController extends Controller
             ? response()->json(['message' => 'Payment deleted successfully!'], 200)
             : response()->json(['message' => 'Payment not found'], 404);
     }
-     public function changePaymentStatus(Request $request)
+
+    public function changePaymentStatus(Request $request)
     {
         // Validate incoming data
         $validatedData = $request->validate([
