@@ -388,7 +388,7 @@ class DashboardController extends Controller
 
         // --- 4. Existing Hub Data Section (for backward compatibility) ---
         if ($hub) {
-            $incharge = 'N/A';
+            $incharge = 'Burhanuddin bhai';
             if ($user) {
                 $incharge = $user->subSector ? $this->extractInchargeName($user->subSector->notes) : 'N/A';
             }
