@@ -376,9 +376,6 @@ class DashboardController extends Controller
                 'sub Sector' => $subSectorName,
                 'mumeneen_type' => $user->mumeneen_type,
                 'photo' => $photoUrl,
-                'hub' => $hub->hub_amount,
-                'paid' => $hub->paid_amount,
-                'due' => $hub->due_amount,
             ];
         } else {
             $userDetails = null;
