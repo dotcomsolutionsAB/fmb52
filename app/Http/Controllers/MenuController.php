@@ -53,8 +53,8 @@ class MenuController extends Controller
         $get_all_menus = MenuModel::select('id','jamiat_id', 'family_id', 'date', 'menu', 'addons', 'niaz_by', 'year', 'slip_names', 'category', 'status')->get();
 
         return $get_all_menus->isNotEmpty()
-            ? response()->json(['message' => 'Menus fetched successfully!', 'data' => $get_all_menus], 200)
-            : response()->json(['message' => 'No menu records found!'], 404);
+            ? response()->json(['code' => 200, 'message' => 'Menus fetched successfully!', 'data' => $get_all_menus], 200)
+            : response()->json(['code' => 404, 'message' => 'No menu records found!'], 404);
     }
 
     // update
@@ -106,6 +106,7 @@ class MenuController extends Controller
             ? response()->json(['message' => 'Menu record deleted successfully!'], 200)
             : response()->json(['message' => 'Menu record not found!'], 404);
     }
+
     public function getMenuByDate(Request $request)
     {
         $request->validate([
@@ -118,7 +119,7 @@ class MenuController extends Controller
         $menu = MenuModel::where('date', $date)->get();
     
         if ($menu->isEmpty()) {
-            return response()->json(['message' => 'No menu found for this date'], 404);
+            return response()->json(['code' => 404, 'message' => 'No menu found for this date'], 404);
         }
     
         // Call the Aladhan API to get Hijri date information for the specified date
@@ -126,6 +127,7 @@ class MenuController extends Controller
         $dayName = \Carbon\Carbon::parse($date)->format('l'); // Get the day name (e.g., "Friday")
     
         return response()->json([
+            'code' => 200, 
             'message' => 'Menu for the specified date fetched successfully!',
             'menu' => $menu->map(function ($item) use ($hijriDate, $dayName) {
                 return [
@@ -160,7 +162,7 @@ class MenuController extends Controller
         $menus = MenuModel::whereBetween('date', [$startOfWeek, $endOfWeek])->get();
     
         if ($menus->isEmpty()) {
-            return response()->json(['message' => 'No menus found for this week'], 404);
+            return response()->json(['code' => 404, 'message' => 'No menus found for this week'], 404);
         }
     
         // Call the Aladhan API to get Hijri date information for each day of the week
@@ -170,6 +172,7 @@ class MenuController extends Controller
         }
     
         return response()->json([
+            'code' => 200, 
             'message' => 'Menus for the week fetched successfully!',
             'menus' => $menus->map(function ($item) use ($hijriDates) {
                 $hijriDate = $hijriDates[$item->date] ?? 'N/A'; // Get Hijri date for the specific day
