@@ -18,6 +18,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReceiptsController;
 use App\Http\Controllers\PDFController;
 use App\Http\Controllers\WhatsAppQueueController;
 use App\Http\Controllers\NiyazController;
@@ -224,15 +225,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Receipts
     Route::prefix('receipts')->group(function () {
-        Route::get('/', [AccountsController::class, 'all_receipts'])
+        Route::get('/', [ReceiptsController::class, 'all_receipts'])
             ->middleware(['check-api-permission:receipts.view,receipts.view_global,receipts.export,receipts.print']);
-        Route::post('/', [AccountsController::class, 'register_receipts'])
+        Route::post('/', [ReceiptsController::class, 'register_receipts'])
             ->middleware(['check-api-permission:receipts.create']);
-        Route::post('/update/{id}', [AccountsController::class, 'update_receipts'])
+        Route::post('/update/{id}', [ReceiptsController::class, 'update_receipts'])
             ->middleware(['check-api-permission:receipts.edit']);
-        Route::post('/by_family_ids', [AccountsController::class, 'getReceiptsByFamilyIds']);
+        Route::post('/by_family_ids', [ReceiptsController::class, 'getReceiptsByFamilyIds']);
        
-        Route::delete('/{id}', [AccountsController::class, 'delete_receipts'])
+        Route::delete('/{id}', [ReceiptsController::class, 'delete_receipts'])
             ->middleware(['check-api-permission:receipts.delete']);
     });
     
