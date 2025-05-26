@@ -517,7 +517,7 @@ class MumeneenController extends Controller
     {
         // Fetch the user records where mumeneen_type is HOF and family_id matches
         $get_user_records = User::select(
-            'id', 'name', 'email', 'jamiat_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+            'id', 'name', 'email', 'jamiat_id','family_id' ,'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
             'mumeneen_type', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
             'role', 'username', 'photo_id'
         )
