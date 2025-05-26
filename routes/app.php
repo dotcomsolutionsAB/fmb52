@@ -177,6 +177,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
     });
 
+
     Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
 
     // Permissions and Roles
@@ -205,6 +206,22 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', [MumeneenController::class, 'delete_sub_sector'])
             ->middleware('check-api-permission:sub_sector.delete');
     });
+
+     Route::prefix('mumeneen')->middleware('check-api-permission:mumeneen.view,mumeneen.view_global')->group(function () {
+        Route::get('/{year?}', [MumeneenController::class, 'usersWithHubData']);
+        Route::post('/export/{year?}', [ExportController::class, 'exportUsersWithHubData']);
+        Route::get('/user/{id}', [MumeneenController::class, 'get_individual_user']);
+        Route::get('/name/{its}', [MumeneenController::class, 'getUserNameByIts']);
+        Route::post('/update_details/{id}', [MumeneenController::class, 'update_user_details']);
+        Route::post('/thaali_statuses', [MumeneenController::class, 'thaali']);
+        Route::post('/transfer_out', [MumeneenController::class, 'transferOut']);
+
+        Route::post('/family_members', [MumeneenController::class, 'usersByFamily'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
+        Route::get('/hub_details/{family_id}', [MumeneenController::class, 'familyHubDetails'])->middleware('check-api-permission:mumeneen.edit,mumeneen.view');
+    });
+
+    Route::post('/mumeneen_switch_hof', [MumeneenController::class, 'updateHeadOfFamily']);
+
 
     // Hubs->middleware(['check-api-permission:mumeneen.edit,mumeneen.view']);
     Route::prefix('hub')->group(function () {

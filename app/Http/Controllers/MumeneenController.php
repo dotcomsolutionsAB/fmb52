@@ -513,6 +513,59 @@ class MumeneenController extends Controller
                     'status'=>false,'message' => 'Sorry failed to fetch records!'], 404);
         }
     }
+     public function get_individual_user($id)
+    {
+        // Fetch the user records where mumeneen_type is HOF and family_id matches
+        $get_user_records = User::select(
+            'id', 'name', 'email', 'jamiat_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
+            'mumeneen_type', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
+            'role', 'username', 'photo_id'
+        )
+        ->where('id', $id)
+        ->with(['photo:id,file_url'])
+        ->first(); // Assuming you're getting a single record based on family_id
+
+        // Check if the user exists
+        if ($get_user_records) {
+            // Get sector and sub-sector names
+            $sector = DB::table('t_sector')
+                        ->where('id', $get_user_records->sector_id)
+                        ->value('name');
+
+        $sub_sector = DB::table('t_sub_sector')
+        ->where('id', $get_user_records->sub_sector_id)
+        ->first(['name', 'notes']);  // Retrieve the full record (name and notes)
+
+                        
+
+            // Extract in-charge details from the string
+             $familyCount = User::where('family_id', $get_user_records->family_id)
+        ->count();
+          
+        $get_user_records->family_members_count=$familyCount;
+
+
+            // Add sector, sub-sector names, and in-charge details to the user data
+            $get_user_records->sector_name = $sector;
+            $get_user_records->sub_sector_name = $sub_sector->name;
+            
+
+            // Return the user data with sector and sub-sector names, and in-charge info
+            return response()->json(
+                [
+                    'code'=>200,
+                    'status'=>true,
+                    'message' => 'User Record Fetched Successfully!', 
+                    'data' => $get_user_records],
+                200,
+                [],
+                JSON_UNESCAPED_SLASHES
+            );
+        } else {
+            return response()->json(['code'=>404,
+                    'status'=>false,'message' => 'Sorry failed to fetch records!'], 404);
+        }
+    }
 
     /**
      * Extract incharge details from the provided string.
@@ -1575,7 +1628,7 @@ class MumeneenController extends Controller
         // Fetch all family members sorted by age descending
         $family_members = User::select(
                 'id','name', 'email', 'jamiat_id', 'family_id', 'mobile', 'its', 'hof_its', 'its_family_id', 'folio_no', 
-                'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
+                'mumeneen_type', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
                 'role', 'username', 'photo_id'
             )
             ->with(['photo:id,file_url'])
