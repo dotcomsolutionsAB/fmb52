@@ -28,23 +28,26 @@ class ExpenseController extends Controller
 {
     public function register_expense(Request $request)
     {
-        $request->validate([
-            'jamiat_id' => 'nullable|integer',
-            'year' => 'required|string|max:10',
-            'name' => 'required|string',
+        $user = auth()->user();
+        $jamiat_id = $user->jamiat_id;
+
+        $validatedData = $request->validate([
+            'paid_to' => 'required|string',
             'date' => 'required|date',
             'amount' => 'required|integer',
             'cheque_no' => 'nullable|string|size:6',
             'description' => 'nullable|string',
         ]);
 
+        $year = '1446-1447';
+
         DB::beginTransaction();
         try {
             // 1. Fetch & increment voucher number from t_counter
             $counter = DB::table('t_counter')
                 ->where('type', 'Expense')
-                ->where('jamiat_id', Auth()->user()->jamiat_id)
-                ->where('year', $request->input('year'))
+                ->where('jamiat_id', $jamiat_id)
+                ->where('year', $year)
                 ->lockForUpdate()
                 ->first();
 
@@ -77,15 +80,15 @@ class ExpenseController extends Controller
 
             // 3. Register expense
             $register_expense = ExpenseModel::create([
-                'jamiat_id' => Auth()->user()->jamiat_id,
+                'jamiat_id' => $jamiat_id,
                 'voucher_no' => $voucherNumber,
-                'year' => $request->input('year'),
-                'name' => $request->input('name'),
-                'date' => $request->input('date'),
-                'amount'=>$request->input('amount'),
-                'cheque_no' => $request->input('cheque_no'),
-                'description' => $request->input('description'),
-                'log_user' => auth()->user()->name,
+                'year' => $year,
+                'name' => $validatedData['paid_to'],
+                'date' => $validatedData['date'],
+                'amount'=>$validatedData['amount'],
+                'cheque_no' => $validatedData['cheque_no'],
+                'description' => $validatedData['description'],
+                'log_user' => $user->name,
                 'attachment' => null,
             ]);
 
