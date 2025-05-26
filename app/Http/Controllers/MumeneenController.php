@@ -608,6 +608,7 @@ class MumeneenController extends Controller
             'name' => 'sometimes|string',  // If you want to update the name as well
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'mobile' => ['sometimes', 'string', 'min:12', 'max:20'],  // Mobile validation
+            'building'=>'sometimes|string'
         ];
 
         // Validate only the fields present in the request
