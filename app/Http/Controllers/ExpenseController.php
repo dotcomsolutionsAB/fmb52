@@ -26,7 +26,7 @@ use App\Models\CurrencyModel;
 
 class ExpenseController extends Controller
 {
-public function register_expense(Request $request)
+    public function register_expense(Request $request)
     {
         $request->validate([
             'jamiat_id' => 'nullable|integer',
@@ -36,7 +36,6 @@ public function register_expense(Request $request)
             'amount' => 'required|integer',
             'cheque_no' => 'nullable|string|size:6',
             'description' => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
         ]);
 
         DB::beginTransaction();
@@ -61,20 +60,20 @@ public function register_expense(Request $request)
 
             // 2. Store attachment
 
-            $file = $request->file('attachment');
-            if($file){
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
+            // $file = $request->file('attachment');
+            // if($file){
+            //     $fileName = time() . '_' . $file->getClientOriginalName();
+            //     $filePath = $file->storeAs('uploads/expenses', $fileName, 'public');
 
-            $upload = UploadModel::create([
-                'jamiat_id'  => Auth()->user()->jamiat_id,
-                'file_name' => $fileName,
-                'file_ext'  => $file->getClientOriginalExtension(),
-                'file_url'  => Storage::url($filePath),
-                'file_size' => $file->getSize(),
-                'type'      => 'feedback', // or 'profile' based on your use case
-            ]);
-        }
+            //     $upload = UploadModel::create([
+            //         'jamiat_id'  => Auth()->user()->jamiat_id,
+            //         'file_name' => $fileName,
+            //         'file_ext'  => $file->getClientOriginalExtension(),
+            //         'file_url'  => Storage::url($filePath),
+            //         'file_size' => $file->getSize(),
+            //         'type'      => 'feedback', // or 'profile' based on your use case
+            //     ]);
+            // }
 
             // 3. Register expense
             $register_expense = ExpenseModel::create([
@@ -87,7 +86,7 @@ public function register_expense(Request $request)
                 'cheque_no' => $request->input('cheque_no'),
                 'description' => $request->input('description'),
                 'log_user' => auth()->user()->name,
-                'attachment' => $upload->id??null,
+                'attachment' => null,
             ]);
 
             DB::commit();

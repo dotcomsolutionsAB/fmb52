@@ -38,7 +38,6 @@ Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
 Route::post('/login/{id?}', [AuthController::class, 'login']);
 
-
 // Register New Jamaat
 Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
 Route::post('/forgot_password', [JamiatController::class, 'forgot_password']);
