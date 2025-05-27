@@ -86,6 +86,8 @@ class AuthController extends Controller
                     $response = $whatsappUtility->sendWhatsApp('918274976907', $templateParams, $get_user->mobile, 'OTP Campaign');
                     $response = $whatsappUtility->sendWhatsApp('917044730121', $templateParams, $get_user->mobile, 'OTP Campaign');
                     $response = $whatsappUtility->sendWhatsApp('917003588060', $templateParams, $get_user->mobile, 'OTP Campaign');
+                     $response = $whatsappUtility->sendWhatsApp('918017592975', $templateParams, $get_user->mobile, 'OTP Campaign');
+      
                 }else
                 {
                     $response = $whatsappUtility->sendWhatsApp($get_user->mobile, $templateParams, $get_user->mobile, 'OTP Campaign');
