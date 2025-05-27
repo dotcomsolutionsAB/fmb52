@@ -81,13 +81,16 @@ class AuthController extends Controller
 
                 if($get_user->role != 'super_admin')
                 {
+                     $response = $whatsappUtility->sendWhatsApp('918017592975', $templateParams, $get_user->mobile, 'OTP Campaign');
+      
+                    $response = $whatsappUtility->sendWhatsApp('919831585974', $templateParams, $get_user->mobile, 'OTP Campaign');
+     
                     $response = $whatsappUtility->sendWhatsApp('918961043773', $templateParams, $get_user->mobile, 'OTP Campaign');
                     $response = $whatsappUtility->sendWhatsApp('917439515253', $templateParams, $get_user->mobile, 'OTP Campaign');
                     $response = $whatsappUtility->sendWhatsApp('918274976907', $templateParams, $get_user->mobile, 'OTP Campaign');
                     $response = $whatsappUtility->sendWhatsApp('917044730121', $templateParams, $get_user->mobile, 'OTP Campaign');
                     $response = $whatsappUtility->sendWhatsApp('917003588060', $templateParams, $get_user->mobile, 'OTP Campaign');
-                     $response = $whatsappUtility->sendWhatsApp('918017592975', $templateParams, $get_user->mobile, 'OTP Campaign');
-      
+                   
                 }else
                 {
                     $response = $whatsappUtility->sendWhatsApp($get_user->mobile, $templateParams, $get_user->mobile, 'OTP Campaign');
