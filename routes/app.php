@@ -26,6 +26,7 @@ use App\Http\Controllers\HubController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\FeedbacksController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\ExportController;
 
 
 // Public Routes
@@ -215,6 +216,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
        
         Route::post('/thaali_statuses', [MumeneenController::class, 'thaali']);
         Route::post('/transfer_out', [MumeneenController::class, 'transferOut']);
+     });
 
        
         
