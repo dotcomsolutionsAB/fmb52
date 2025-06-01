@@ -21,7 +21,7 @@ class MenuController extends Controller
             'niyaz_by' => 'nullable|string|max:255',
             'sf_dish' => 'nullable|string|max:255',
             'sf_details' => 'nullable|string|max:255',
-            'status' => 'required|in 0,1',
+            'status' => 'required|in:0,1',
         ]);
 
         $register_menu = MenuModel::create([
