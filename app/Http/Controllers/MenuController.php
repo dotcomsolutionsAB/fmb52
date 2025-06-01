@@ -15,28 +15,25 @@ class MenuController extends Controller
     public function register_menu(Request $request)
     {
         $request->validate([
-            'jamiat_id' => 'nullable|integer',
             'family_id' => 'nullable|integer',
             'date' => 'required|date',
             'menu' => 'required|string|max:255',
-            'addons' => 'nullable|string|max:255',
-            'niaz_by' => 'nullable|string|max:255',
-            'year' => 'nullable|string|max:10',
-            'slip_names' => 'nullable|string|max:255',
-            'category' => 'nullable|in:chicken,mutton,veg,dal,zabihat',
+            'niyaz_by' => 'nullable|string|max:255',
+            'sf_dish' => 'nullable|string|max:255',
+            'sf_details' => 'nullable|string|max:255',
             'status' => 'required|in 0,1',
         ]);
 
         $register_menu = MenuModel::create([
-            'jamiat_id' => $request->input('jamiat_id')??auth()->$user->name,
+            'jamiat_id' => auth()->$user->jamiat_id,
             'family_id' => $request->input('family_id'),
             'date' => $request->input('date'),
             'menu' => $request->input('menu'),
-            'addons' => $request->input('addons'),
-            'niaz_by' => $request->input('niaz_by'),
-            'year' => $request->input('year'),
-            'slip_names' => $request->input('slip_names'),
-            'category' => $request->input('category'),
+            'addons' => $request->input('sf_dish'),
+            'niaz_by' => $request->input('niyaz_by'),
+            'year' => 8,
+            'slip_names' => $request->input('sf_details'),
+            'category' => null,
             'status' => $request->input('status'),
         ]);
 
