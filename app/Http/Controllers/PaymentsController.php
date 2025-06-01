@@ -213,56 +213,19 @@ class PaymentsController extends Controller
         }
 
         $request->validate([
-            'payment_no' => 'required|string|max:100|unique:t_payments,payment_no,' . $id,
-            'jamiat_id' => 'required|string|max:10',
-            'family_id' => 'required|string|max:10',
-            'folio_no' => 'nullable|string|max:20',
-            'name' => 'required|string|max:100',
-            'its' => 'required|string|max:8',
-            'sector' => 'nullable|string|max:100',
-            'sub_sector' => 'nullable|string|max:100',
-            'year' => 'required|string|max:10',
-            'mode' => 'required|in:cheque,cash,neft,upi',
-            'date' => 'required|date',
-            'bank_name' => 'nullable|string|max:100',
-            'cheque_no' => 'nullable|string|size:6',
-            'cheque_date' => 'nullable|date',
-            'transaction_id' => 'nullable|string|max:100',
-            'transaction_date' => 'nullable|date',
+            'date' => 'nullable|date', // Multiple receipt IDs for cash or single receipt for others
+            'receipt_ids' => 'nullable|array', // Multiple receipt IDs for cash or single receipt for others
             'amount' => 'required|numeric',
-            'comments' => 'nullable|string',
-            'status' => 'required|in:pending,cancelled,approved',
-            'cancellation_reason' => 'nullable|string',
-            'log_user' => 'required|string|max:100',
-            'attachment' => 'nullable|integer',
+            'year' => 'required|string',
+            'remarks' => 'nullable|string|max:255', // For remarks on cash payments
         ]);
 
         // $update_payment = $get_payment->update($request->all());
         $update_payment = $get_payment->update([
-            'payment_no' => $request->input('payment_no'),
-            'jamiat_id' => $request->input('jamiat_id'),
-            'family_id' => $request->input('family_id'),
-            'folio_no' => $request->input('folio_no'),
-            'name' => $request->input('name'),
-            'its' => $request->input('its'),
-            'sector' => $request->input('sector'),
-            'sub_sector' => $request->input('sub_sector'),
             'year' => $request->input('year'),
-            'mode' => $request->input('mode'),
             'date' => $request->input('date'),
-            'bank_name' => $request->input('bank_name'),
-            'cheque_no' => $request->input('cheque_no'),
-            'cheque_date' => $request->input('cheque_date'),
-            
-            
-            'transaction_id' => $request->input('transaction_id'),
-            'transaction_date' => $request->input('transaction_date'),
             'amount' => $request->input('amount'),
-            'comments' => $request->input('comments'),
-            'status' => $request->input('status'),
-            'cancellation_reason' => $request->input('cancellation_reason'),
-            'log_user' => $request->input('log_user'),
-            'attachment' => $request->input('attachment'),
+            'comments' => $request->input('remarks'),
         ]);
 
         return ($update_payment == 1)
