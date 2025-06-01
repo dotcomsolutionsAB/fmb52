@@ -14,6 +14,9 @@ class MenuController extends Controller
     //
     public function register_menu(Request $request)
     {
+        $user = auth()->user();
+        $jamiat_id = $user->jamiat_id;
+
         $request->validate([
             'family_id' => 'nullable|integer',
             'date' => 'required|date',
@@ -25,7 +28,7 @@ class MenuController extends Controller
         ]);
 
         $register_menu = MenuModel::create([
-            'jamiat_id' => auth()->$user->jamiat_id,
+            'jamiat_id' => $jamiat_id,
             'family_id' => $request->input('family_id'),
             'date' => $request->input('date'),
             'menu' => $request->input('menu'),
