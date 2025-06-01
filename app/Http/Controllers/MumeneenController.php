@@ -474,7 +474,6 @@ class MumeneenController extends Controller
             'role', 'username', 'photo_id'
         )
         ->where('its', $id)
-        ->where('mumeneen_type', "HOF")
         ->where('jamiat_id', $jamiat_id)
         ->with(['photo:id,file_url'])
         ->first(); // Assuming you're getting a single record based on family_id
