@@ -67,28 +67,22 @@ class MenuController extends Controller
         }
 
         $request->validate([
-            'jamiat_id' => 'nullable|integer',
             'family_id' => 'nullable|integer',
             'date' => 'required|date',
             'menu' => 'required|string|max:255',
-            'addons' => 'nullable|string|max:255',
-            'niaz_by' => 'nullable|string|max:255',
-            'year' => 'nullable|string|max:10',
-            'slip_names' => 'nullable|string|max:255',
-            'category' => 'nullable|in:chicken,mutton,veg,dal,zabihat',
-            'status' => 'nullable|string|max:255',
+            'sf_dish' => 'nullable|string|max:255',
+            'niyaz_by' => 'nullable|string|max:255',
+            'sf_details' => 'nullable|string|max:255',
+            'status' => 'required|in:0,1',
         ]);
 
         $update_menu_record = $get_menu->update([
-            'jamiat_id' => Auth()->user()->name,
             'family_id' => $request->input('family_id'),
             'date' => $request->input('date'),
             'menu' => $request->input('menu'),
-            'addons' => $request->input('addons'),
-            'niaz_by' => $request->input('niaz_by'),
-            'year' => $request->input('year'),
-            'slip_names' => $request->input('slip_names'),
-            'category' => $request->input('category'),
+            'addons' => $request->input('sf_dish'),
+            'niaz_by' => $request->input('niyaz_by'),
+            'slip_names' => $request->input('sf_details'),
             'status' => $request->input('status'),
         ]);
 
