@@ -198,32 +198,32 @@ class PermissionRoleController extends Controller
      * Get valid permissions for a user
      */
     public function getUserPermissions($userId)
-{
-    $user = User::findOrFail($userId);
+    {
+        $user = User::findOrFail($userId);
 
-    // Fetch permissions with validity conditions
-    $permissions = $user->permissions()
-        ->where(function ($query) {
-            $query->whereNull('valid_from')
-                  ->orWhere('valid_from', '<=', now());
-        })
-        ->where(function ($query) {
-            $query->whereNull('valid_to')
-                  ->orWhere('valid_to', '>=', now());
-        })
-        ->get();
+        // Fetch permissions with validity conditions
+        $permissions = $user->permissions()
+            ->where(function ($query) {
+                $query->whereNull('valid_from')
+                    ->orWhere('valid_from', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('valid_to')
+                    ->orWhere('valid_to', '>=', now());
+            })
+            ->get();
 
-    // Include sector and sub-sector access IDs
-    $sectorAccessIds = json_decode($user->sector_access_id, true) ?? [];
-    $subSectorAccessIds = json_decode($user->sub_sector_access_id, true) ?? [];
+        // Include sector and sub-sector access IDs
+        $sectorAccessIds = json_decode($user->sector_access_id, true) ?? [];
+        $subSectorAccessIds = json_decode($user->sub_sector_access_id, true) ?? [];
 
-    return response()->json([
-        'user' => $user,
-        'permissions' => $permissions,
-        'sector_access_ids' => $sectorAccessIds,
-        'sub_sector_access_ids' => $subSectorAccessIds,
-    ], 200);
-}
+        return response()->json([
+            'user' => $user,
+            'permissions' => $permissions,
+            'sector_access_ids' => $sectorAccessIds,
+            'sub_sector_access_ids' => $subSectorAccessIds,
+        ], 200);
+    }
 
     /**
      * Get valid permissions for a role
@@ -249,168 +249,170 @@ class PermissionRoleController extends Controller
     }
 
     public function removePermissionsFromUser(Request $request)
-{
-    $request->validate([
-        'user_id' => 'required|integer|exists:users,id',
-        'permissions' => 'nullable|array', // Permissions array is optional
-        'permissions.*.name' => 'required|string|exists:permissions,name',
-        'sub_sector_ids' => 'nullable|array', // Sub-sector IDs array is optional
-        'sub_sector_ids.*' => 'required|integer|exists:t_sub_sector,id',
-    ]);
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'permissions' => 'nullable|array', // Permissions array is optional
+            'permissions.*.name' => 'required|string|exists:permissions,name',
+            'sub_sector_ids' => 'nullable|array', // Sub-sector IDs array is optional
+            'sub_sector_ids.*' => 'required|integer|exists:t_sub_sector,id',
+        ]);
 
-    try {
-        $user = User::findOrFail($request->user_id);
+        try {
+            $user = User::findOrFail($request->user_id);
 
-        // Handle permissions removal if provided
-        if (!empty($request->permissions)) {
-            foreach ($request->permissions as $permissionData) {
-                $permission = Permission::where('name', $permissionData['name'])->first();
-                
-                if ($permission) {
-                    // Revoke permission from user
-                    $user->revokePermissionTo($permission);
+            // Handle permissions removal if provided
+            if (!empty($request->permissions)) {
+                foreach ($request->permissions as $permissionData) {
+                    $permission = Permission::where('name', $permissionData['name'])->first();
+                    
+                    if ($permission) {
+                        // Revoke permission from user
+                        $user->revokePermissionTo($permission);
 
-                    // Remove validity details from model_has_permissions
-                    \DB::table('model_has_permissions')->where([
-                        'model_id' => $user->id,
-                        'model_type' => get_class($user),
-                        'permission_id' => $permission->id,
-                    ])->delete();
+                        // Remove validity details from model_has_permissions
+                        \DB::table('model_has_permissions')->where([
+                            'model_id' => $user->id,
+                            'model_type' => get_class($user),
+                            'permission_id' => $permission->id,
+                        ])->delete();
+                    }
                 }
+            }
+
+            // Handle sub-sector access removal if provided
+            if (!empty($request->sub_sector_ids)) {
+                // Decode existing sub-sector and sector access
+                $existingSubSectors = json_decode($user->sub_sector_access_id, true) ?? [];
+                $existingSectors = json_decode($user->sector_access_id, true) ?? [];
+
+                // Filter out the sub-sector IDs to be removed
+                $updatedSubSectors = array_diff($existingSubSectors, $request->sub_sector_ids);
+
+                // Fetch the remaining sector IDs based on updated sub-sectors
+                $updatedSectors = \DB::table('t_sub_sector')
+                    ->whereIn('id', $updatedSubSectors)
+                    ->distinct()
+                    ->pluck('sector_id')
+                    ->toArray();
+
+                // Update the user's sector and sub-sector access
+                $user->update([
+                    'sector_access_id' => json_encode($updatedSectors),
+                    'sub_sector_access_id' => json_encode($updatedSubSectors),
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Permissions and sector/sub-sector access removed successfully.',
+                'user_id' => $user->id,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while removing permissions.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getAllPermissions(Request $request)
+    {
+        // Fetch all permissions, optionally paginate
+        $permissions = Permission::all(); // You can replace `all` with `paginate($perPage)` if needed.
+
+        // Return response
+        return response()->json([
+            'success' => true,
+            'permissions' => $permissions
+        ], 200);
+    }
+    public function getAllRoles(Request $request)
+    {
+        // Fetch all permissions, optionally paginate
+        $roles = Role::all(); // You can replace `all` with `paginate($perPage)` if needed.
+
+        // Return response
+        return response()->json([
+            'success' => true,
+            'roles' => $roles
+        ], 200);
+    }
+    public function createRoleWithPermissions(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|unique:roles,name',
+            'permissions' => 'nullable|array',
+            
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        // Retrieve jamiat_id from the authenticated user
+        $jamiatId = auth()->user()->jamiat_id;
+
+        // Create the role
+        $role = Role::create([
+            'name' => $request->name,
+            'guard_name' => 'sanctum',
+            'jamiat_id' => $jamiatId,
+            'remarks' => $request->remarks,
+        ]);
+
+        // Add permissions if provided
+        if (!empty($request->permissions)) {
+            foreach ($request->permissions as $permissionName) {
+                $permission = Permission::firstOrCreate(['name' => $permissionName]);
+                $role->givePermissionTo($permission);
+
+                // Handle validity if provided
+            
             }
         }
 
-        // Handle sub-sector access removal if provided
-        if (!empty($request->sub_sector_ids)) {
-            // Decode existing sub-sector and sector access
-            $existingSubSectors = json_decode($user->sub_sector_access_id, true) ?? [];
-            $existingSectors = json_decode($user->sector_access_id, true) ?? [];
+        return response()->json([
+            'message' => 'Role created successfully with permissions',
+            'role' => $role,
+        ], 201);
+    }
+    
+    public function getUsersWithPermissions()
+    {
+        die('working');
+        $users = DB::table('users')
+            ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
+            ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+            ->select(
+                'users.id as user_id',
+                'users.name as user_name',
+                'users.email as user_email',
+                'users.role as user_role',
+                'users.jamiat_id',
+                'permissions.name as permission_name',
+                'model_has_permissions.valid_to as validity'
+            )
+            ->orderBy('users.name', 'asc')
+            ->get();
 
-            // Filter out the sub-sector IDs to be removed
-            $updatedSubSectors = array_diff($existingSubSectors, $request->sub_sector_ids);
-
-            // Fetch the remaining sector IDs based on updated sub-sectors
-            $updatedSectors = \DB::table('t_sub_sector')
-                ->whereIn('id', $updatedSubSectors)
-                ->distinct()
-                ->pluck('sector_id')
-                ->toArray();
-
-            // Update the user's sector and sub-sector access
-            $user->update([
-                'sector_access_id' => json_encode($updatedSectors),
-                'sub_sector_access_id' => json_encode($updatedSubSectors),
-            ]);
-        }
+        // Group permissions by user
+        $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
+            $user = $userGroup->first(); // Get user details
+            return [
+                'user_id' => $user->user_id,
+                'user_name' => $user->user_name,
+                'user_email' => $user->user_email,
+                'user_role' => $user->user_role,
+                'jamiat_id' => $user->jamiat_id,
+                'permissions' => $userGroup->map(function ($permission) {
+                    return [
+                        'permission_name' => $permission->permission_name,
+                        'valid_to' => $permission->validity,
+                    ];
+                })->unique('permission_name')->values(),
+            ];
+        })->values();
 
         return response()->json([
-            'message' => 'Permissions and sector/sub-sector access removed successfully.',
-            'user_id' => $user->id,
+            'message' => 'Users with grouped permissions retrieved successfully.',
+            'data' => $groupedUsers,
         ], 200);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'An error occurred while removing permissions.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
-public function getAllPermissions(Request $request)
-{
-    // Fetch all permissions, optionally paginate
-    $permissions = Permission::all(); // You can replace `all` with `paginate($perPage)` if needed.
-
-    // Return response
-    return response()->json([
-        'success' => true,
-        'permissions' => $permissions
-    ], 200);
-}
-public function getAllRoles(Request $request)
-{
-    // Fetch all permissions, optionally paginate
-    $roles = Role::all(); // You can replace `all` with `paginate($perPage)` if needed.
-
-    // Return response
-    return response()->json([
-        'success' => true,
-        'roles' => $roles
-    ], 200);
-}
-public function createRoleWithPermissions(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|unique:roles,name',
-        'permissions' => 'nullable|array',
-        
-        'remarks' => 'nullable|string|max:255',
-    ]);
-
-    // Retrieve jamiat_id from the authenticated user
-    $jamiatId = auth()->user()->jamiat_id;
-
-    // Create the role
-    $role = Role::create([
-        'name' => $request->name,
-        'guard_name' => 'sanctum',
-        'jamiat_id' => $jamiatId,
-        'remarks' => $request->remarks,
-    ]);
-
-    // Add permissions if provided
-    if (!empty($request->permissions)) {
-        foreach ($request->permissions as $permissionName) {
-            $permission = Permission::firstOrCreate(['name' => $permissionName]);
-            $role->givePermissionTo($permission);
-
-            // Handle validity if provided
-           
-        }
-    }
-
-    return response()->json([
-        'message' => 'Role created successfully with permissions',
-        'role' => $role,
-    ], 201);
-}
-public function getUsersWithPermissions()
-{
-    die('working');
-    $users = DB::table('users')
-        ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
-        ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
-        ->select(
-            'users.id as user_id',
-            'users.name as user_name',
-            'users.email as user_email',
-            'users.role as user_role',
-            'users.jamiat_id',
-            'permissions.name as permission_name',
-            'model_has_permissions.valid_to as validity'
-        )
-        ->orderBy('users.name', 'asc')
-        ->get();
-
-    // Group permissions by user
-    $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
-        $user = $userGroup->first(); // Get user details
-        return [
-            'user_id' => $user->user_id,
-            'user_name' => $user->user_name,
-            'user_email' => $user->user_email,
-            'user_role' => $user->user_role,
-            'jamiat_id' => $user->jamiat_id,
-            'permissions' => $userGroup->map(function ($permission) {
-                return [
-                    'permission_name' => $permission->permission_name,
-                    'valid_to' => $permission->validity,
-                ];
-            })->unique('permission_name')->values(),
-        ];
-    })->values();
-
-    return response()->json([
-        'message' => 'Users with grouped permissions retrieved successfully.',
-        'data' => $groupedUsers,
-    ], 200);
-}
 }
