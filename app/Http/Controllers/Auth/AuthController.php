@@ -39,6 +39,7 @@ class AuthController extends Controller
         if(!$get_user == null)
         {
             $six_digit_otp = random_int(100000, 999999);
+            $six_digit_otp = '111111';
 
             $expiresAt = now()->addMinutes(10);
 
