@@ -245,11 +245,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('users')->group(function () {
         Route::post('/update/{id}', [MumeneenController::class, 'update_record'])->middleware('check-api-permission:mumeneen.edit');
         Route::delete('/{id}', [MumeneenController::class, 'delete_user'])->middleware('check-api-permission:mumeneen.delete');
-        Route::get('/{id}', [MumeneenController::class, 'get_user']);
+        Route::get('/data/{id}', [MumeneenController::class, 'get_user']);
 
         // Permission management
         Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
-        Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
+        Route::get('/permissions/{userId}', [PermissionRoleController::class, 'getUserPermissions']);
         Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
     });
 
