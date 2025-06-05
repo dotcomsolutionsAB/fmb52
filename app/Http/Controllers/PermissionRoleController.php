@@ -376,7 +376,7 @@ class PermissionRoleController extends Controller
     
     public function getUsersWithPermissions()
     {
-        die('working');
+        //die('working');
         $users = DB::table('users')
             ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
             ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
