@@ -473,7 +473,7 @@ class MumeneenController extends Controller
             'mumeneen_type', 'title', 'gender', 'age', 'building', 'sector_id', 'sub_sector_id', 'status', 
             'role', 'username', 'photo_id'
         )
-        ->where('its', $id)
+        ->where('family_id', $id)
         ->where('jamiat_id', $jamiat_id)
         ->with(['photo:id,file_url'])
         ->first(); // Assuming you're getting a single record based on family_id
