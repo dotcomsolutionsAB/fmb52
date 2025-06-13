@@ -1160,7 +1160,7 @@ class MumeneenController extends Controller
                 'message' => 'Sub-Sector records fetched successfully!',
                 'data' => $get_all_sub_sector,
             ], 200)
-            : response()->json(['message' => 'No sub-sector records found or you do not have access to any sub-sectors!'], 404);
+            : response()->json(['data'=> $permittedSectorIds,'message' => 'No sub-sector records found or you do not have access to any sub-sectors!'], 404);
     }
 
     public function getSubSectorsBySector($sector)
