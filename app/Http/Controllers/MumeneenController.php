@@ -1152,7 +1152,7 @@ class MumeneenController extends Controller
             't_sector.name as sector_name'
         )
         ->join('t_sector', 't_sector.id', '=', 't_sub_sector.sector_id') // Join with t_sector table
-        ->whereIn('t_sub_sector.sector_id', $permittedSectorIds)
+        ->whereIn('t_sub_sector.id', $permittedSectorIds)
         ->get();
     
         return $get_all_sub_sector->isNotEmpty()
