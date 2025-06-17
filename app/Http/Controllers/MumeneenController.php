@@ -998,14 +998,14 @@ class MumeneenController extends Controller
             
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
-            'log_user' => 'required|string|max:100',
+           
         ]);
 
         $register_sector = SectorModel::create([
             'jamiat_id' => Auth::user()->jamiat_id,
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
-            'log_user' => $request->input('log_user'),
+            'log_user' => Auth::user()->name,
         ]);
 
         unset($register_sector['id'], $register_sector['created_at'], $register_sector['updated_at']);
@@ -1072,17 +1072,17 @@ class MumeneenController extends Controller
         }
 
         $request->validate([
-            'jamiat_id' => 'required|integer',
+           
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
-            'log_user' => 'required|string|max:100',
+           
         ]);
 
         $update_sector_record = $get_sector->update([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => Auth::user()->jamiat_id,
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
-            'log_user' => $request->input('log_user'),
+            'log_user' => Auth::user()->name,
         ]);
 
         return ($update_sector_record == 1)
@@ -1108,7 +1108,7 @@ class MumeneenController extends Controller
             'sector_id' => 'required|integer',
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
-            'log_user' => 'required|string|max:100',
+           
         ]);
 
         $register_sub_sector = SubSectorModel::create([
@@ -1116,7 +1116,7 @@ class MumeneenController extends Controller
             'sector_id' => $request->input('sector_id'),
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
-            'log_user' => $request->input('log_user'),
+            'log_user' => Auth::user()->name,
         ]);
 
         unset($register_sub_sector['id'], $register_sub_sector['created_at'], $register_sub_sector['updated_at']);
@@ -1221,19 +1221,19 @@ class MumeneenController extends Controller
         }
 
         $request->validate([
-            'jamiat_id' => 'required|integer',
+           
             'sector' => 'required|integer',
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
-            'log_user' => 'required|string|max:100',
+           
         ]);
 
         $update_sub_sector_record = $get_sub_sector->update([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => Auth::user()->jamiat_id,
             'sector' => $request->input('sector'),
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
-            'log_user' => $request->input('log_user'),
+            'log_user' => Auth::user()->name,
         ]);
 
         return ($update_sub_sector_record == 1)
@@ -1498,7 +1498,7 @@ class MumeneenController extends Controller
             'hub_amount' => $request->input('hub_amount'),
             'paid_amount' => $request->input('paid_amount')??0,
             'due_amount' => $request->input('due_amount')??0,
-            'log_user' => auth()->user()->name,
+            'log_user' => Auth()->user()->name,
         ]);
 
         unset($register_hub['id'], $register_hub['created_at'], $register_hub['updated_at']);
