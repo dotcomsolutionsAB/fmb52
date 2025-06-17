@@ -1113,7 +1113,7 @@ class MumeneenController extends Controller
 
         $register_sub_sector = SubSectorModel::create([
             'jamiat_id' => Auth::user()->jamiat_id,
-            'sector_id' => $request->input('sector'),
+            'sector_id' => $request->input('sector_id'),
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
             'log_user' => $request->input('log_user'),
