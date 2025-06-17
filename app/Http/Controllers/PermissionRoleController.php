@@ -127,7 +127,8 @@ class PermissionRoleController extends Controller
         'permissions.*.name' => 'required|string|exists:permissions,name',
         'permissions.*.valid_from' => 'nullable|date',
         'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-        'sector_id' => 'required|integer|exists:t_sector,id',
+        'sector_id' => 'required|array|exists:t_sector,id',
+        'sector_id.*' => 'nullable|integer|exists:t_sector,id',
         'sub_sector_ids' => 'nullable|array',
         'sub_sector_ids.*' => 'nullable|integer|exists:t_sub_sector,id',
     ]);
