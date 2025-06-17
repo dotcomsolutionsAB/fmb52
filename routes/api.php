@@ -166,9 +166,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
          Route::post('/cancel/{id}', [ReceiptsController::class, 'cancelReceipt']);
         Route::post('/pending', [ReceiptsController::class, 'getPendingCashReceipts']);
-        Route::post('/', [ReceiptsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.FullAcess');
-        Route::post('/update/{id}', [ReceiptsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.FullAcess');
-        Route::delete('/{id}', [ReceiptsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.FullAcess');
+        Route::post('/', [ReceiptsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.FullAccess');
+        Route::post('/update/{id}', [ReceiptsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.FullAccess');
+        Route::delete('/{id}', [ReceiptsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.FullAccess');
     });
 
     // Expense Routes
@@ -185,9 +185,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::middleware('check-api-permission:payments.ViewOnly')->group(function () {
         Route::post('/all', [PaymentsController::class, 'all_payments']);
         });
-        Route::post('/', [PaymentsController::class, 'register_payments'])->middleware('check-api-permission:payments.FullAcess');
-        Route::post('/update', [PaymentsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.FullAcess');
-        Route::delete('/{id}', [PaymentsController::class, 'delete_payments'])->middleware('check-api-permission:payments.FullAcess');
+        Route::post('/', [PaymentsController::class, 'register_payments'])->middleware('check-api-permission:payments.FullAccess');
+        Route::post('/update', [PaymentsController::class, 'changePaymentStatus'])->middleware('check-api-permission:payments.FullAccess');
+        Route::delete('/{id}', [PaymentsController::class, 'delete_payments'])->middleware('check-api-permission:payments.FullAccess');
     });
 
     // Thali Menu Routes
@@ -198,9 +198,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::middleware('check-api-permission:feedback.ViewOnly')->group(function () {
             Route::get('/', [FeedbackController::class, 'view_feedbacks']);
         });
-        Route::post('/', [FeedbackController::class, 'register_feedback'])->middleware('check-api-permission:feedback.FullAcess');
-        Route::post('/update/{id}', [FeedbackController::class, 'update_feedback'])->middleware('check-api-permission:feedback.FullAcess');
-        Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])->middleware('check-api-permission:feedback.FullAcess');
+        Route::post('/', [FeedbackController::class, 'register_feedback'])->middleware('check-api-permission:feedback.FullAccess');
+        Route::post('/update/{id}', [FeedbackController::class, 'update_feedback'])->middleware('check-api-permission:feedback.FullAccess');
+        Route::delete('/{id}', [FeedbackController::class, 'delete_feedback'])->middleware('check-api-permission:feedback.FullAccess');
     });
 
     // Sector Routes
@@ -217,9 +217,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::middleware('check-api-permission:sub_sector.ViewOnly')->group(function () {
             Route::get('/', [MumeneenController::class, 'all_sub_sector']);
         });
-        Route::post('/', [MumeneenController::class, 'register_sub_sector'])->middleware('check-api-permission:sub_sector.FullAcess');
-        Route::post('/update/{id}', [MumeneenController::class, 'update_sub_sector'])->middleware('check-api-permission:sub_sector.FullAcess');
-        Route::delete('/{id}', [MumeneenController::class, 'delete_sub_sector'])->middleware('check-api-permission:sub_sector.FullAcess');
+        Route::post('/', [MumeneenController::class, 'register_sub_sector'])->middleware('check-api-permission:sub_sector.FullAccess');
+        Route::post('/update/{id}', [MumeneenController::class, 'update_sub_sector'])->middleware('check-api-permission:sub_sector.FullAccess');
+        Route::delete('/{id}', [MumeneenController::class, 'delete_sub_sector'])->middleware('check-api-permission:sub_sector.FullAccess');
     });
 
     // Niyaz Routes
@@ -243,8 +243,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Users Routes
     Route::prefix('users')->group(function () {
-        Route::post('/update/{id}', [MumeneenController::class, 'update_record'])->middleware('check-api-permission:mumeneen.FullAcess');
-        Route::delete('/{id}', [MumeneenController::class, 'delete_user'])->middleware('check-api-permission:mumeneen.FullAcess');
+        Route::post('/update/{id}', [MumeneenController::class, 'update_record'])->middleware('check-api-permission:mumeneen.FullAccess');
+        Route::delete('/{id}', [MumeneenController::class, 'delete_user'])->middleware('check-api-permission:mumeneen.FullAccess');
         Route::get('/{id}', [MumeneenController::class, 'get_user']);
 
         // Permission management
