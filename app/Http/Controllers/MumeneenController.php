@@ -995,14 +995,14 @@ class MumeneenController extends Controller
     public function register_sector(Request $request)
     {
         $request->validate([
-            'jamiat_id' => 'required|integer',
+            
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
             'log_user' => 'required|string|max:100',
         ]);
 
         $register_sector = SectorModel::create([
-            'jamiat_id' => $request->input('jamiat_id'),
+            'jamiat_id' => Auth::user()->jamiat_id,
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
             'log_user' => $request->input('log_user'),
