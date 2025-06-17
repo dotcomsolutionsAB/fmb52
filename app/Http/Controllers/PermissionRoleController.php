@@ -415,4 +415,41 @@ class PermissionRoleController extends Controller
             'data' => $groupedUsers,
         ], 200);
     }
+    public function getPermissionsByRole(Request $request)
+{
+    try {
+        // Validate the role_id
+        $validated = $request->validate([
+            'role_id' => 'required|integer|exists:roles,id',
+        ]);
+
+        // Fetch role with permissions
+        $role = Role::with('permissions:id,name')->findOrFail($validated['role_id']);
+
+        // Format response
+        $permissions = $role->permissions->map(function ($permission) {
+            return [
+                'id' => $permission->id,
+                'name' => $permission->name,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permissions fetched for the role.',
+            'data' => [
+                'role_id' => $role->id,
+                'role_name' => $role->name,
+                'permissions' => $permissions,
+            ],
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch permissions for role.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }

@@ -275,6 +275,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createPermission']);
         Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
         Route::get('/all', [PermissionRoleController::class, 'getAllPermissions']);
+        Route::get('/by_role/{id}', [PermissionRoleController::class, 'getPermissionsByRole']);
+        
         Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
     });
 
