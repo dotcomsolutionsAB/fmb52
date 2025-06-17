@@ -169,11 +169,13 @@ class PermissionRoleController extends Controller
             ], 422);
         }
 
+        if($subSectorIds!=null){
          $sectorIds = \DB::table('t_sub_sector')
                 ->whereIn('id', $subSectorIds)
                 ->distinct()
                 ->pluck('sector_id')
                 ->toArray();
+        }
 
         // ✅ Update user role, sector, and sub-sector access
         $user->update([
