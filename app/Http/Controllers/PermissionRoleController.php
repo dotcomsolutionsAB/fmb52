@@ -118,68 +118,109 @@ class PermissionRoleController extends Controller
     /**
      * Assign permissions to a user (model) with validity
      */
-    public function assignPermissionsToUser(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'permissions' => 'required|array',
-            'permissions.*.name' => 'required|string|exists:permissions,name',
-            'permissions.*.valid_from' => 'nullable|date',
-            'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-            'sub_sector_ids' => 'required|array', // Always required and an array
-            'sub_sector_ids.*' => 'required|integer|exists:t_sub_sector,id', // Validate sub-sector IDs
-        ]);
-    
-        try {
-            $user = User::findOrFail($request->user_id);
-    
-            // Fetch sector_ids based on the provided sub_sector_ids
-            $sectorIds = \DB::table('t_sub_sector')
-                ->whereIn('id', $request->sub_sector_ids)
+   public function assignPermissionsToUser(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|integer|exists:users,id',
+        'role_id' => 'required|integer|in:1,2,3,4', // All accepted roles
+        'permissions' => 'required|array',
+        'permissions.*.name' => 'required|string|exists:permissions,name',
+        'permissions.*.valid_from' => 'nullable|date',
+        'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
+        'sector_id' => 'nullable|integer|exists:t_sector,id',
+        'sub_sector_ids' => 'nullable|array',
+        'sub_sector_ids.*' => 'nullable|integer|exists:t_sub_sector,id',
+    ]);
+
+    try {
+        $user = User::findOrFail($request->user_id);
+        $roleId = $request->role_id;
+        $sectorId = $request->sector_id;
+
+        // Role-specific logic for sub_sector_ids
+        if ($roleId == 1) {
+            // ✅ Sector Admin: fetch all sub-sectors under the selected sector
+            $subSectorIds = \DB::table('t_sub_sector')
+                ->where('sector_id', $sectorId)
+                ->pluck('id')
+                ->toArray();
+        } elseif ($roleId == 2) {
+            // ✅ Masool: max 4 sub-sectors
+            if (count($request->sub_sector_ids) > 4) {
+                return response()->json([
+                    'code'=> 422,
+                    'message' => 'Masool can be assigned a maximum of 4 sub-sectors.'
+                ], 422);
+            }
+            $subSectorIds = $request->sub_sector_ids;
+        } elseif ($roleId == 3) {
+            // ✅ Musaid: exactly 1 sub-sector
+            if (count($request->sub_sector_ids) !== 1) {
+                return response()->json([
+                    'code'=> 422,
+                    'message' => 'Musaid must be assigned exactly 1 sub-sector.'
+                ], 422);
+            }
+            $subSectorIds = $request->sub_sector_ids;
+        } elseif ($roleId == 4) {
+            // ✅ Coordinator: accept sub_sector_ids as-is (no checks)
+            $subSectorIds = $request->sub_sector_ids;
+        } else {
+            return response()->json([
+                'message' => 'Invalid role_id provided.'
+            ], 422);
+        }
+
+         $sectorIds = \DB::table('t_sub_sector')
+                ->whereIn('id', $subSectorIds)
                 ->distinct()
                 ->pluck('sector_id')
                 ->toArray();
-    
-            // Store sector and sub-sector access in the users table
-            $user->update([
-                'sector_access_id' => json_encode($sectorIds),
-                'sub_sector_access_id' => json_encode($request->sub_sector_ids),
-            ]);
-    
-            foreach ($request->permissions as $permissionData) {
-                $permission = Permission::where('name', $permissionData['name'])->first();
-    
-                if ($permission) {
-                    // Assign permission to user
-                    $user->givePermissionTo($permission);
-    
-                    // Update model_has_permissions with validity dates
-                    \DB::table('model_has_permissions')->updateOrInsert(
-                        [
-                            'model_id' => $user->id,
-                            'model_type' => get_class($user),
-                            'permission_id' => $permission->id,
-                        ],
-                        [
-                            'valid_from' => $permissionData['valid_from'] ?? null,
-                            'valid_to' => $permissionData['valid_to'] ?? null,
-                        ]
-                    );
-                }
+
+        // ✅ Update user role, sector, and sub-sector access
+        $user->update([
+            'sector_access_id' => json_encode($sectorIds),
+            'sub_sector_access_id' => json_encode($subSectorIds),
+            'access_role_id' => $roleId,
+        ]);
+
+        // ✅ Assign permissions with validity dates
+        foreach ($request->permissions as $permissionData) {
+            $permission = Permission::where('name', $permissionData['name'])->first();
+
+            if ($permission) {
+                $user->givePermissionTo($permission);
+
+                \DB::table('model_has_permissions')->updateOrInsert(
+                    [
+                        'model_id' => $user->id,
+                        'model_type' => get_class($user),
+                        'permission_id' => $permission->id,
+                    ],
+                    [
+                        'valid_from' => $permissionData['valid_from'] ?? null,
+                        'valid_to' => $permissionData['valid_to'] ?? null,
+                    ]
+                );
             }
-    
-            return response()->json([
-                'message' => 'Permissions and sector/sub-sector access assigned successfully.',
-                'user_id' => $user->id,
-                'permissions' => $request->permissions,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'An error occurred while assigning permissions.',
-                'error' => $e->getMessage(),
-            ], 500);
         }
+
+        return response()->json([
+            'message' => 'Permissions and sector/sub-sector access assigned successfully.',
+            'user_id' => $user->id,
+            'access_role_id' => $roleId,
+            'sector_id' => $sectorId,
+            'sub_sector_ids' => $subSectorIds,
+            'permissions' => $request->permissions,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred while assigning permissions.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
     
     /**
      * Resolve IDs from the table based on the provided array or 'all'.
