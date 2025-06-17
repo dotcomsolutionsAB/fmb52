@@ -1104,8 +1104,8 @@ class MumeneenController extends Controller
     public function register_sub_sector(Request $request)
     {
         $request->validate([
-           
-            'sector' => 'required|integer',
+            
+            'sector_id' => 'required|integer',
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
             'log_user' => 'required|string|max:100',
@@ -1113,7 +1113,7 @@ class MumeneenController extends Controller
 
         $register_sub_sector = SubSectorModel::create([
             'jamiat_id' => Auth::user()->jamiat_id,
-            'sector' => $request->input('sector'),
+            'sector_id' => $request->input('sector'),
             'name' => $request->input('name'),
             'notes' => $request->input('notes'),
             'log_user' => $request->input('log_user'),
