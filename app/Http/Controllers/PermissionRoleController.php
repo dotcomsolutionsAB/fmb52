@@ -142,7 +142,14 @@ class PermissionRoleController extends Controller
         $subSectorIds = null; // default
 
         if ($roleId == 1) {
+             if (count($request->sector_id) > 1) {
+                return response()->json([
+                    'code' => 422,
+                    'message' => 'Sector Admin can be assigned only one Sector'
+                ], 422);
+            }
             // ✅ Sector Admin: only sector access, no sub-sectors
+
             $subSectorIds = null;
         } elseif ($roleId == 2) {
             // ✅ Masool: max 4 sub-sectors
