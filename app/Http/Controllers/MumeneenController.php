@@ -1893,6 +1893,7 @@ class MumeneenController extends Controller
             'status' => 'success',
             'message' => 'User found',
             'data' => [
+                'id'    => $user->id,
                 'name' => $user->name  // Only returning the user's name
             ]
         ], 200);
