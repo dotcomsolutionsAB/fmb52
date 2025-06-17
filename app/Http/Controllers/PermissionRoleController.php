@@ -141,10 +141,7 @@ class PermissionRoleController extends Controller
         // Role-specific logic for sub_sector_ids
         if ($roleId == 1) {
             // ✅ Sector Admin: fetch all sub-sectors under the selected sector
-            $subSectorIds = \DB::table('t_sub_sector')
-                ->where('sector_id', $sectorId)
-                ->pluck('id')
-                ->toArray();
+            $subSectorIds = null;
         } elseif ($roleId == 2) {
             // ✅ Masool: max 4 sub-sectors
             if (count($request->sub_sector_ids) > 4) {
