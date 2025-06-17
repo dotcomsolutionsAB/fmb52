@@ -433,6 +433,7 @@ class PermissionRoleController extends Controller
         });
 
         return response()->json([
+            'code'=>200,
             'success' => true,
             'message' => 'Permissions fetched for the role.',
             'data' => [
@@ -444,6 +445,7 @@ class PermissionRoleController extends Controller
 
     } catch (\Exception $e) {
         return response()->json([
+            'code'=>401,
             'success' => false,
             'message' => 'Failed to fetch permissions for role.',
             'error' => $e->getMessage()
