@@ -245,7 +245,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('users')->group(function () {
         Route::post('/update/{id}', [MumeneenController::class, 'update_record'])->middleware('check-api-permission:mumeneen.FullAccess');
         Route::delete('/{id}', [MumeneenController::class, 'delete_user'])->middleware('check-api-permission:mumeneen.FullAccess');
-        Route::get('/{id}', [MumeneenController::class, 'get_user']);
+        Route::get('/fetch/{id}', [MumeneenController::class, 'get_user']);
 
         // Permission management
         Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
