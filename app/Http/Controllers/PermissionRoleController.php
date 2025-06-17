@@ -415,16 +415,14 @@ class PermissionRoleController extends Controller
             'data' => $groupedUsers,
         ], 200);
     }
-    public function getPermissionsByRole(Request $request)
+    public function getPermissionsByRole($role_id)
 {
     try {
         // Validate the role_id
-        $validated = $request->validate([
-            'role_id' => 'required|integer|exists:roles,id',
-        ]);
+       
 
         // Fetch role with permissions
-        $role = Role::with('permissions:id,name')->findOrFail($validated['role_id']);
+        $role = Role::with('permissions:id,name')->findOrFail($role_id);
 
         // Format response
         $permissions = $role->permissions->map(function ($permission) {
