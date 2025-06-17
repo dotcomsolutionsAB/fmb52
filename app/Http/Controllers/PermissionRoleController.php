@@ -122,13 +122,12 @@ class PermissionRoleController extends Controller
 {
     $request->validate([
         'user_id' => 'required|integer|exists:users,id',
-        'role_id' => 'required|integer|in:1,2,3,4', // All accepted roles
+        'role_id' => 'required|integer|in:1,2,3,4',
         'permissions' => 'required|array',
         'permissions.*.name' => 'required|string|exists:permissions,name',
         'permissions.*.valid_from' => 'nullable|date',
         'permissions.*.valid_to' => 'nullable|date|after_or_equal:permissions.*.valid_from',
-        'sector_id' => 'nullable|array|exists:t_sector,id',
-        'sector_id.*' => 'nullable|integer|exists:t_sector,id',
+        'sector_id' => 'required|integer|exists:t_sector,id',
         'sub_sector_ids' => 'nullable|array',
         'sub_sector_ids.*' => 'nullable|integer|exists:t_sub_sector,id',
     ]);
@@ -138,15 +137,17 @@ class PermissionRoleController extends Controller
         $roleId = $request->role_id;
         $sectorId = $request->sector_id;
 
-        // Role-specific logic for sub_sector_ids
+        $sectorIds = [$sectorId];
+        $subSectorIds = null; // default
+
         if ($roleId == 1) {
-            // ✅ Sector Admin: fetch all sub-sectors under the selected sector
+            // ✅ Sector Admin: only sector access, no sub-sectors
             $subSectorIds = null;
         } elseif ($roleId == 2) {
             // ✅ Masool: max 4 sub-sectors
             if (count($request->sub_sector_ids) > 4) {
                 return response()->json([
-                    'code'=> 422,
+                    'code' => 422,
                     'message' => 'Masool can be assigned a maximum of 4 sub-sectors.'
                 ], 422);
             }
@@ -155,32 +156,29 @@ class PermissionRoleController extends Controller
             // ✅ Musaid: exactly 1 sub-sector
             if (count($request->sub_sector_ids) !== 1) {
                 return response()->json([
-                    'code'=> 422,
+                    'code' => 422,
                     'message' => 'Musaid must be assigned exactly 1 sub-sector.'
                 ], 422);
             }
             $subSectorIds = $request->sub_sector_ids;
         } elseif ($roleId == 4) {
-            // ✅ Coordinator: accept sub_sector_ids as-is (no checks)
+            // ✅ Coordinator: accept as-is
             $subSectorIds = $request->sub_sector_ids;
-        } else {
-            return response()->json([
-                'message' => 'Invalid role_id provided.'
-            ], 422);
         }
 
-        if($subSectorIds!=null){
-         $sectorIds = \DB::table('t_sub_sector')
+        // If sub-sectors are provided, extract sector_ids from them (for roles 2-4)
+        if (!is_null($subSectorIds)) {
+            $sectorIds = \DB::table('t_sub_sector')
                 ->whereIn('id', $subSectorIds)
-                ->distinct()
                 ->pluck('sector_id')
+                ->unique()
                 ->toArray();
         }
 
-        // ✅ Update user role, sector, and sub-sector access
+        // ✅ Save role and access details in user
         $user->update([
             'sector_access_id' => json_encode($sectorIds),
-            'sub_sector_access_id' => json_encode($subSectorIds),
+            'sub_sector_access_id' => is_null($subSectorIds) ? null : json_encode($subSectorIds),
             'access_role_id' => $roleId,
         ]);
 
@@ -206,10 +204,10 @@ class PermissionRoleController extends Controller
         }
 
         return response()->json([
-            'message' => 'Permissions and sector/sub-sector access assigned successfully.',
+            'message' => 'Permissions and access saved successfully.',
             'user_id' => $user->id,
             'access_role_id' => $roleId,
-            'sector_id' => $sectorId,
+            'sector_id' => $sectorIds,
             'sub_sector_ids' => $subSectorIds,
             'permissions' => $request->permissions,
         ], 200);
