@@ -136,9 +136,9 @@ class PermissionRoleController extends Controller
     try {
         $user = User::findOrFail($request->user_id);
         $roleId = $request->role_id;
-        $sectorId = $request->sector_id;
+        $sectorIds = $request->sector_id;
 
-        $sectorIds = [$sectorId];
+        
         $subSectorIds = null; // default
 
         if ($roleId == 1) {
