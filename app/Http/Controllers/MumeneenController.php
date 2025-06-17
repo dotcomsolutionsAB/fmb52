@@ -995,7 +995,6 @@ class MumeneenController extends Controller
     public function register_sector(Request $request)
     {
         $request->validate([
-            
             'name' => 'required|string|max:100',
             'notes' => 'nullable|string',
            

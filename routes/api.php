@@ -249,7 +249,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Permission management
         Route::post('/assign-permissions', [PermissionRoleController::class, 'assignPermissionsToUser']);
-        Route::get('/{userId}/permissions', [PermissionRoleController::class, 'getUserPermissions']);
+        Route::get('/permissions/{user_id}', [PermissionRoleController::class, 'getUserPermissions']);
         Route::get('/with-permissions', [PermissionRoleController::class, 'getUsersWithPermissions']);
     });
 
@@ -284,7 +284,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createRole']);
         Route::post('/add-permissions', [PermissionRoleController::class, 'addPermissionsToRole']);
         Route::get('/all', [PermissionRoleController::class, 'getAllRoles']);
-        Route::get('/{roleName}/permissions', [PermissionRoleController::class, 'getRolePermissions']);
+        Route::get('/permissions/{rolename}', [PermissionRoleController::class, 'getRolePermissions']);
         Route::post('/create-with-permissions', [PermissionRoleController::class, 'createRoleWithPermissions']);
     });
 
