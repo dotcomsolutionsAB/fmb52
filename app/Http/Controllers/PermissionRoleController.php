@@ -429,7 +429,9 @@ class PermissionRoleController extends Controller
             ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
             ->select(
                 'users.id as user_id',
+                'users.its as its',
                 'users.name as user_name',
+                'users.mobile as mobile',
                 'users.email as user_email',
                 'users.role as user_role',
                 'users.jamiat_id',
@@ -444,7 +446,9 @@ class PermissionRoleController extends Controller
             $user = $userGroup->first(); // Get user details
             return [
                 'user_id' => $user->user_id,
+                'its' => $user->its,
                 'user_name' => $user->user_name,
+                'mobile' => $user->mobile,
                 'user_email' => $user->user_email,
                 'user_role' => $user->user_role,
                 'jamiat_id' => $user->jamiat_id,
