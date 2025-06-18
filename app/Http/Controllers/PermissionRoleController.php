@@ -421,10 +421,13 @@ class PermissionRoleController extends Controller
         ], 201);
     }
     
-    public function getUsersWithPermissions()
+    public function getUsersWithPermissions($id)
     {
         //die('working');
-        $users = DB::table('users')
+
+        if($id)
+        {
+            $users = DB::table('users')
             ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
             ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
             ->select(
@@ -438,8 +441,28 @@ class PermissionRoleController extends Controller
                 'permissions.name as permission_name',
                 'model_has_permissions.valid_to as validity'
             )
+            ->where('users.id', '=', $id)
             ->orderBy('users.name', 'asc')
-            ->get();
+            ->get(); 
+        }else {
+            $users = DB::table('users')
+                ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
+                ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+                ->select(
+                    'users.id as user_id',
+                    'users.its as its',
+                    'users.name as user_name',
+                    'users.mobile as mobile',
+                    'users.email as user_email',
+                    'users.role as user_role',
+                    'users.jamiat_id',
+                    'permissions.name as permission_name',
+                    'model_has_permissions.valid_to as validity'
+                )
+                ->where('users.role', '=', 'mumeneen')
+                ->orderBy('users.name', 'asc')
+                ->get();   
+        }                 
 
         // Group permissions by user
         $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
