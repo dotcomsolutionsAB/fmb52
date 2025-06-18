@@ -421,7 +421,7 @@ class PermissionRoleController extends Controller
         ], 201);
     }
     
-    public function getUsersWithPermissions($id)
+    public function getUsersWithPermissions($id = null)
     {
         //die('working');
 
