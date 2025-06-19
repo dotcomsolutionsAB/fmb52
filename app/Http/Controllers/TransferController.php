@@ -137,23 +137,46 @@ class TransferController extends Controller
             return response()->json(['message' => 'Transfer not found'], 404);
         }
 
-        $transfer->hof = User::where('family_id', $transfer->family_id)
-                            ->where('mumeneen_type', 'HOF')
-                            ->first();
+        $hof = User::where('family_id', $transfer->family_id)
+                    ->where('mumeneen_type', 'HOF')
+                    ->first();
 
+        if ($hof) {
+            // Get photo URL from uploads table
+            if ($hof->photo_id) {
+                $upload = DB::table('t_uploads')->where('id', $hof->photo_id)->first();
+                $hof->photo_url = $upload ? $upload->file_url : null;
+            } else {
+                $hof->photo_url = null;
+            }
+        }
+        
+
+        $transfer->hof = $hof;
         $transfer->sector_from_obj = DB::table('t_sector')->where('id', $transfer->sector_from)->first();
         $transfer->sector_to_obj   = DB::table('t_sector')->where('id', $transfer->sector_to)->first();
 
         return response()->json($transfer);
     }
 
-    $transfers = Transfer::all();
+    // Multiple transfers
+   $transfers = Transfer::orderBy('id', 'desc')->get();
 
     foreach ($transfers as $transfer) {
-        $transfer->hof = User::where('family_id', $transfer->family_id)
-                            ->where('mumeneen_type', 'HOF')
-                            ->first();
+        $hof = User::where('family_id', $transfer->family_id)
+                    ->where('mumeneen_type', 'HOF')
+                    ->first();
 
+        if ($hof) {
+            if ($hof->photo_id) {
+                $upload = DB::table('t_uploads')->where('id', $hof->photo_id)->first();
+                $hof->photo_url = $upload ? $upload->file_url : null;
+            } else {
+                $hof->photo_url = null;
+            }
+        }
+
+        $transfer->hof = $hof;
         $transfer->sector_from_obj = DB::table('t_sector')->where('id', $transfer->sector_from)->first();
         $transfer->sector_to_obj   = DB::table('t_sector')->where('id', $transfer->sector_to)->first();
     }
