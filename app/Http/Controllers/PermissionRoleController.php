@@ -421,12 +421,12 @@ class PermissionRoleController extends Controller
         ], 201);
     }
     
-   public function getUsersWithPermissions($id = null)
+  public function getUsersWithPermissions($id = null)
 {
-    // Fetch base user and permissions data
+    // Fetch users who have permissions
     $users = DB::table('users')
-        ->leftJoin('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
-        ->leftJoin('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+        ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
+        ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
         ->leftJoin('roles', 'users.access_role_id', '=', 'roles.id')
         ->select(
             'users.id as user_id',
@@ -447,18 +447,18 @@ class PermissionRoleController extends Controller
         ->orderBy('users.name', 'asc')
         ->get();
 
-    // Group by user_id and map
+    // Group by user and hydrate access data
     $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
         $user = $userGroup->first();
 
-        // Decode JSON strings
+        // Normalize sector & sub-sector access IDs
         $sectorIds = json_decode($user->sector_access_id ?? '[]', true);
         $subSectorIds = json_decode($user->sub_sector_access_id ?? '[]', true);
 
-        // Fetch sectors and sub-sectors
         $sectorIds = is_array($sectorIds) ? $sectorIds : (is_null($sectorIds) ? [] : [$sectorIds]);
         $subSectorIds = is_array($subSectorIds) ? $subSectorIds : (is_null($subSectorIds) ? [] : [$subSectorIds]);
 
+        // Fetch sectors and sub-sectors as objects
         $sectors = DB::table('t_sector')->whereIn('id', $sectorIds)->get(['id', 'name']);
         $subSectors = DB::table('t_sub_sector')->whereIn('id', $subSectorIds)->get(['id', 'name']);
 
