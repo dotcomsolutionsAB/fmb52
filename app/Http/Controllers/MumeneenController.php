@@ -1091,7 +1091,15 @@ class MumeneenController extends Controller
 
     // delete
     public function delete_sector($id)
+    
     {
+          $inUse = DB::table('users')->where('sector_id', $id)->exists();
+
+    if ($inUse) {
+        return response()->json([
+            'message' => 'Cannot delete. This Sector is assigned to one or more users.',
+        ], 409); // 409 Conflict
+    }
         $delete_sector = SectorModel::where('id', $id)->delete();
 
         return $delete_sector
@@ -1266,15 +1274,23 @@ class MumeneenController extends Controller
     }
 
     // delete
-    public function delete_sub_sector($id)
-    {
-        $delete_sub_sector = SubSectorModel::where('id', $id)->delete();
+   public function delete_sub_sector($id)
+{
+    // Check if this sub_sector_id is in use
+    $inUse = DB::table('users')->where('sub_sector_id', $id)->exists();
 
-        return $delete_sub_sector
-            ? response()->json(['message' => 'Sub-Sector record deleted successfully!'], 200)
-            : response()->json(['message' => 'Sub-Sector record not found!'], 404);
+    if ($inUse) {
+        return response()->json([
+            'message' => 'Cannot delete. This Sub-Sector is assigned to one or more users.',
+        ], 409); // 409 Conflict
     }
 
+    $delete_sub_sector = SubSectorModel::where('id', $id)->delete();
+
+    return $delete_sub_sector
+        ? response()->json(['message' => 'Sub-Sector record deleted successfully!'], 200)
+        : response()->json(['message' => 'Sub-Sector record not found!'], 404);
+}
     // create
     public function register_building(Request $request)
     {
