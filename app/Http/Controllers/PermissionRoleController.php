@@ -421,74 +421,69 @@ class PermissionRoleController extends Controller
         ], 201);
     }
     
-    public function getUsersWithPermissions($id = null)
-    {
-        //die('working');
+   public function getUsersWithPermissions($id = null)
+{
+    // Fetch base user and permissions data
+    $users = DB::table('users')
+        ->leftJoin('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
+        ->leftJoin('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
+        ->leftJoin('roles', 'users.access_role_id', '=', 'roles.id')
+        ->select(
+            'users.id as user_id',
+            'users.its as its',
+            'users.name as user_name',
+            'users.mobile as mobile',
+            'users.email as user_email',
+            'users.role as user_role',
+            'users.jamiat_id',
+            'users.sector_access_id',
+            'users.sub_sector_access_id',
+            'roles.name as role_name',
+            'permissions.name as permission_name',
+            'model_has_permissions.valid_to as validity'
+        )
+        ->when($id, fn($q) => $q->where('users.id', $id))
+        ->when(!$id, fn($q) => $q->where('users.role', 'mumeneen'))
+        ->orderBy('users.name', 'asc')
+        ->get();
 
-        if($id)
-        {
-            $users = DB::table('users')
-            ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
-            ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
-            ->select(
-                'users.id as user_id',
-                'users.its as its',
-                'users.name as user_name',
-                'users.mobile as mobile',
-                'users.email as user_email',
-                'users.role as user_role',
-                'users.jamiat_id',
-                'permissions.name as permission_name',
-                'model_has_permissions.valid_to as validity'
-            )
-            ->where('users.id', '=', $id)
-            ->orderBy('users.name', 'asc')
-            ->get(); 
-        }else {
-            $users = DB::table('users')
-                ->join('model_has_permissions', 'users.id', '=', 'model_has_permissions.model_id')
-                ->join('permissions', 'model_has_permissions.permission_id', '=', 'permissions.id')
-                ->select(
-                    'users.id as user_id',
-                    'users.its as its',
-                    'users.name as user_name',
-                    'users.mobile as mobile',
-                    'users.email as user_email',
-                    'users.role as user_role',
-                    'users.jamiat_id',
-                    'permissions.name as permission_name',
-                    'model_has_permissions.valid_to as validity'
-                )
-                ->where('users.role', '=', 'mumeneen')
-                ->orderBy('users.name', 'asc')
-                ->get();   
-        }                 
+    // Group by user_id and map
+    $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
+        $user = $userGroup->first();
 
-        // Group permissions by user
-        $groupedUsers = $users->groupBy('user_id')->map(function ($userGroup) {
-            $user = $userGroup->first(); // Get user details
-            return [
-                'user_id' => $user->user_id,
-                'its' => $user->its,
-                'user_name' => $user->user_name,
-                'mobile' => $user->mobile,
-                'user_email' => $user->user_email,
-                'user_role' => $user->user_role,
-                'jamiat_id' => $user->jamiat_id,
-                'permissions' => $userGroup->map(function ($permission) {
-                    return [
-                        'permission_name' => $permission->permission_name,
-                        'valid_to' => $permission->validity,
-                    ];
-                })->unique('permission_name')->values(),
-            ];
-        })->values();
+        // Decode JSON strings
+        $sectorIds = json_decode($user->sector_access_id ?? '[]', true);
+        $subSectorIds = json_decode($user->sub_sector_access_id ?? '[]', true);
 
-        return response()->json([
-            'message' => 'Users with grouped permissions retrieved successfully.',
-            'data' => $groupedUsers,
-        ], 200);
-    }
+        // Fetch sectors and sub-sectors
+        $sectors = DB::table('t_sector')->whereIn('id', $sectorIds)->get(['id', 'name']);
+        $subSectors = DB::table('t_sub_sector')->whereIn('id', $subSectorIds)->get(['id', 'name']);
+
+        return [
+            'user_id' => $user->user_id,
+            'its' => $user->its,
+            'user_name' => $user->user_name,
+            'mobile' => $user->mobile,
+            'user_email' => $user->user_email,
+            'user_role' => $user->user_role,
+            'jamiat_id' => $user->jamiat_id,
+            'role_name' => $user->role_name,
+            'sector_access' => $sectors,
+            'sub_sector_access' => $subSectors,
+            'permissions' => $userGroup->map(function ($permission) {
+                return [
+                    'permission_name' => $permission->permission_name,
+                    'valid_to' => $permission->validity,
+                ];
+            })->unique('permission_name')->values(),
+        ];
+    })->values();
+
+    return response()->json([
+        'message' => 'Users with grouped permissions retrieved successfully.',
+        'data' => $groupedUsers,
+    ], 200);
+}
     public function getPermissionsByRole($role_id)
 {
     try {
@@ -523,6 +518,43 @@ class PermissionRoleController extends Controller
             'success' => false,
             'message' => 'Failed to fetch permissions for role.',
             'error' => $e->getMessage()
+        ], 500);
+    }
+}
+public function removePermissionsFromUserNew(Request $request)
+{
+    $request->validate([
+        'user_id' => 'required|integer|exists:users,id',
+    ]);
+
+    try {
+        $user = User::findOrFail($request->user_id);
+
+        // Remove all permissions
+        $user->permissions()->detach(); // from spatie's `HasPermissions` trait
+
+        // Clean up model_has_permissions table for any validity meta
+        \DB::table('model_has_permissions')
+            ->where('model_id', $user->id)
+            ->where('model_type', get_class($user))
+            ->delete();
+
+        // Reset access role and access scopes
+        $user->update([
+            'access_role_id' => null,
+            'sector_access_id' => null,
+            'sub_sector_access_id' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'All permissions and access role removed successfully.',
+            'user_id' => $user->id,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'An error occurred while removing permissions.',
+            'error' => $e->getMessage(),
         ], 500);
     }
 }
