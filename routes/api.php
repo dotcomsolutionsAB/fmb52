@@ -28,6 +28,7 @@ use App\Http\Controllers\NiyazController;
 use App\Http\Controllers\HubController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\FeedbacksController;
+use App\Http\Controllers\TransferController;
 
 Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
 Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
@@ -146,8 +147,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::prefix('transfer')->middleware('check-api-permission:mumeneen.ViewOnly,mumeneen.FullAccess')->group(function () {
-        Route::post('/out', [MumeneenController::class, 'transferOut']);
-        
+        Route::post('/out', [TransferController::class, 'transferOut']);
+        Route::post('/', [TransferController::class, 'create']);
+        Route::get('/', [TransferController::class, 'index']);
+        Route::get('/{id}', [TransferController::class, 'index']);
+        Route::put('/{id}', [TransferController::class, 'update']);
+        Route::delete('/{id}', [TransferController::class, 'delete']);
+
     });
     
 

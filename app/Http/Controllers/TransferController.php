@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\ItsModel;
 use App\Models\SectorModel;
@@ -21,6 +20,7 @@ use App\Models\HubModel;
 use App\Models\ThaaliStatus;
 use App\Models\ZabihatModel;
 use Auth;
+use App\Models\Transfer;
 
 class TransferController extends Controller
 {
@@ -93,5 +93,80 @@ class TransferController extends Controller
                 ]);
             }
         }
+    }
+
+     public function create(Request $request)
+    {
+        $request->validate([
+            'jamiat_id' => 'required|integer',
+            'family_id' => 'required|integer',
+            'date' => 'required|date',
+            'sector_from' => 'required|integer',
+            'sector_to' => 'required|integer',
+            'log_user' => 'required|string',
+            'status' => 'required|string',
+        ]);
+
+        $transfer = Transfer::create($request->all());
+
+        return response()->json([
+            'message' => 'Transfer created successfully.',
+            'data' => $transfer
+        ], 201);
+    }
+
+    // Retrieve all or single transfer
+    public function index($id = null)
+    {
+        if ($id) {
+            $transfer = Transfer::find($id);
+            if (!$transfer) {
+                return response()->json(['message' => 'Transfer not found'], 404);
+            }
+            return response()->json($transfer);
+        }
+
+        return response()->json(Transfer::all());
+    }
+
+    // Update a transfer
+    public function update(Request $request, $id)
+    {
+        $transfer = Transfer::find($id);
+        if (!$transfer) {
+            return response()->json(['message' => 'Transfer not found'], 404);
+        }
+
+        $request->validate([
+            'jamiat_id' => 'sometimes|required|integer',
+            'family_id' => 'sometimes|required|integer',
+            'date' => 'sometimes|required|date',
+            'sector_from' => 'sometimes|required|integer',
+            'sector_to' => 'sometimes|required|integer',
+            'log_user' => 'sometimes|required|string',
+            'status' => 'sometimes|required|string',
+        ]);
+
+        $transfer->update($request->all());
+
+        return response()->json([
+            'message' => 'Transfer updated successfully.',
+            'data' => $transfer
+        ]);
+    }
+
+    // Delete a transfer
+    public function delete($id)
+    {
+        $transfer = Transfer::find($id);
+        if (!$transfer) {
+            return response()->json(['message' => 'Transfer not found'], 404);
+        }
+
+        $transfer->delete();
+
+        return response()->json([
+            'message' => 'Transfer deleted successfully.'
+        ]);
     }
 }
