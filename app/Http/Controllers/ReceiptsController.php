@@ -98,9 +98,9 @@ class ReceiptsController extends Controller
                 ->orderBy('mumeneen_type', 'ASC')
                 ->get();
     
-            if ($get_family_member->isEmpty()) {
-                return response()->json(['message' => 'Failed to find family members!'], 400);
-            }
+            // if ($get_family_member->isEmpty()) {
+            //     return response()->json(['message' => 'Failed to find family members!'], 400);
+            // }
 
             $hof_details = User::select('*')
                 ->where('family_id', $request->input('family_id'))
