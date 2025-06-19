@@ -238,6 +238,19 @@ class TransferController extends Controller
         return response()->json(['message' => 'Transfer not found.'], 404);
     }
 
+     $isValidSubSector = DB::table('t_sub_sector')
+        ->where('id', $request->sub_sector_id)
+        ->where('sector_id', $transfer->sector_to)
+        ->exists();
+
+    if (!$isValidSubSector) {
+        return response()->json([
+            'message' => 'Invalid sub-sector: does not belong to the target sector.',
+            'sector_to' => $transfer->sector_to,
+            'sub_sector_id' => $request->sub_sector_id
+        ], 422);
+    }
+
     $familyId = $transfer->family_id;
 
     // Update all users of that family
