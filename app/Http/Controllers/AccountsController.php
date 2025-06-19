@@ -117,7 +117,7 @@ class AccountsController extends Controller
     
         // Fetch the name from the t_jamiat table based on jamiat_id
         $jamiatName = DB::table('t_jamiat')
-            ->where('id', Auth::user()->jamiat_id)
+            ->where('id', $receipt->jamiat_id)
             ->value('name'); // Fetch only the name
     
         // Prepare WhatsApp template content
