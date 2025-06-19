@@ -149,11 +149,12 @@ class AccountsController extends Controller
         ];
     
         // Get the authenticated user
-        $user = Auth::user();
+        
     
+        
         // Insert into WhatsApp queue table
         WhatsappQueueModel::create([
-            'jamiat_id' => $user->jamiat_id,
+            'jamiat_id' => $receipt->jamiat_id,
             'group_id' => 'receipt_' . uniqid(),
             'callback_data' => 'receipt_' . $receipt->receipt_no,
             'recipient_type' => 'individual',
@@ -168,7 +169,7 @@ class AccountsController extends Controller
         ]);
 
           WhatsappQueueModel::create([
-            'jamiat_id' => $user->jamiat_id,
+            'jamiat_id' => $receipt->jamiat_id,
             'group_id' => 'receipt_' . uniqid(),
             'callback_data' => 'receipt_' . $receipt->receipt_no,
             'recipient_type' => 'individual',
