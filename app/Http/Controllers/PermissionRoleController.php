@@ -456,6 +456,9 @@ class PermissionRoleController extends Controller
         $subSectorIds = json_decode($user->sub_sector_access_id ?? '[]', true);
 
         // Fetch sectors and sub-sectors
+        $sectorIds = is_array($sectorIds) ? $sectorIds : (is_null($sectorIds) ? [] : [$sectorIds]);
+        $subSectorIds = is_array($subSectorIds) ? $subSectorIds : (is_null($subSectorIds) ? [] : [$subSectorIds]);
+
         $sectors = DB::table('t_sector')->whereIn('id', $sectorIds)->get(['id', 'name']);
         $subSectors = DB::table('t_sub_sector')->whereIn('id', $subSectorIds)->get(['id', 'name']);
 
