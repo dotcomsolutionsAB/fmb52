@@ -69,7 +69,7 @@ class ReceiptsController extends Controller
             $validatedData = $request->validate([
                 'family_id' => 'required|string|max:10',
                 'name' => 'required|string|max:100',
-                'amount' => 'required|numeric',
+                'amount' => 'required|numeric|min:1',
                 'mode' => 'required|in:cheque,cash,neft',
                 'bank_name' => 'nullable|string|max:100',
                 'cheque_no' => 'nullable|string|size:6',
