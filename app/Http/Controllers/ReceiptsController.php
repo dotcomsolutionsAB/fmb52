@@ -36,10 +36,12 @@ class ReceiptsController extends Controller
             // Fetch jamiat_id from the logged-in user
             if($request->input('jamiat_id')){
                 $jamiat_id=$request->input('jamiat_id');
+                 $loguser= 'System Cron';
             }
             else{
             $user = auth()->user();
             $jamiat_id = $user->jamiat_id;
+            $loguser=$user->name;
             }
     
             // Fetch the counter for receipt generation
@@ -132,7 +134,7 @@ class ReceiptsController extends Controller
                     'status' => $status,
                     'cancellation_reason' => null,
                     'collected_by' => '',
-                    'log_user' => $user->name,
+                    'log_user' => $loguser,
                     'attachment' => null,
                     'payment_id' => null,
                 ]);
