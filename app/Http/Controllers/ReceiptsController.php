@@ -24,6 +24,7 @@ use App\Models\WhatsappQueueModel;
 use Auth;
 use App\Models\CurrencyModel;
 
+use function PHPUnit\Framework\throwException;
 
 class ReceiptsController extends Controller
 {
@@ -33,8 +34,13 @@ class ReceiptsController extends Controller
     
         try {
             // Fetch jamiat_id from the logged-in user
+            if($request->input('jamiat_id')){
+                $jamiat_id=$request->input('jamiat_id');
+            }
+            else{
             $user = auth()->user();
             $jamiat_id = $user->jamiat_id;
+            }
     
             // Fetch the counter for receipt generation
             $counter = DB::table('t_counter')
@@ -677,6 +683,7 @@ class ReceiptsController extends Controller
         foreach ($advanceReceipts as $advance) {
             // Build request data for register_receipts
             $receiptRequestData = [
+                'jamiat_id'=>$advance->jamiat_id,
                 'family_id' => $advance->family_id,
                 'name' => $advance->name,
                 'amount' => $advance->amount,
@@ -700,10 +707,11 @@ class ReceiptsController extends Controller
             } else {
                 // Log failure (optional)
                 DB::table('mylogs')->insert([
-                    'message' => "Failed to convert Advance Receipt ID {$advance->id}",
+                    'message' => "Failed to convert Advance Receipt ID {$advance->id}". $response,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                throw new \Exception("Failed to register receipt for Advance Receipt ID {$response}");
             }
         }
 
