@@ -659,5 +659,69 @@ class ReceiptsController extends Controller
             'data' => $cashReceipts,
         ], 200);
     }
+    
+    public function process_advance_receipts()
+{
+    DB::beginTransaction();
 
+    try {
+        // Fetch all advance receipts
+        $advanceReceipts = AdvanceReceiptModel::all();
+
+        if ($advanceReceipts->isEmpty()) {
+            return response()->json(['message' => 'No advance receipts to process.'], 200);
+        }
+
+        $processedReceipts = [];
+
+        foreach ($advanceReceipts as $advance) {
+            // Build request data for register_receipts
+            $receiptRequestData = [
+                'family_id' => $advance->family_id,
+                'name' => $advance->name,
+                'amount' => $advance->amount,
+                'mode' => 'cash', // Always cash
+                'bank_name' => null,
+                'cheque_no' => null,
+                'cheque_date' => null,
+                'transaction_id' => null,
+                'transaction_date' => null,
+                'comments' => 'Created from Advance Receipt #' . $advance->id,
+            ];
+
+            // Create a fake Request object and call register_receipts
+            $request = new Request($receiptRequestData);
+            $response = $this->register_receipts($request);
+
+            if ($response->getStatusCode() === 201) {
+                // On success, delete advance receipt entry
+                $advance->delete();
+                $processedReceipts[] = $advance->id;
+            } else {
+                // Log failure (optional)
+                DB::table('mylogs')->insert([
+                    'message' => "Failed to convert Advance Receipt ID {$advance->id}",
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Advance receipts processed successfully!',
+            'processed_ids' => $processedReceipts,
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'message' => 'Error processing advance receipts!',
+            'error' => $e->getMessage(),
+            'stack' => $e->getTraceAsString(),
+        ], 500);
+    }
+}
 }

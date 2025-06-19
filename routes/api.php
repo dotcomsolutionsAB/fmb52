@@ -166,6 +166,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
          Route::post('/cancel/{id}', [ReceiptsController::class, 'cancelReceipt']);
         Route::post('/pending', [ReceiptsController::class, 'getPendingCashReceipts']);
+        Route::get('/advance',[ReceiptsController::class,'process_advance_receipts']);
         Route::post('/', [ReceiptsController::class, 'register_receipts'])->middleware('check-api-permission:receipts.FullAccess');
         Route::post('/update/{id}', [ReceiptsController::class, 'update_receipts'])->middleware('check-api-permission:receipts.FullAccess');
         Route::delete('/{id}', [ReceiptsController::class, 'delete_receipts'])->middleware('check-api-permission:receipts.FullAccess');
