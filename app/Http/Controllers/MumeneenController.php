@@ -1175,53 +1175,65 @@ class MumeneenController extends Controller
         : response()->json(['message' => 'No sub-sector records found or access denied.'], 404);
 }
 
-    public function getSubSectorsBySector($sector)
-    {
-        $user = Auth::user();
-    
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
-    
-        // Get accessible sector IDs from the user's sector_access_id field
-        $permittedSectorIds = json_decode($user->sub_sector_access_id, true);
-    
-        if (empty($permittedSectorIds)) {
-            return response()->json(['message' => 'No access to any sectors.'], 403);
-        }
-    
-        // Check if the requested sector is within the user's permitted sectors
-        if (!in_array($sector, $permittedSectorIds)) {
+   public function getSubSectorsBySector($sector)
+{
+    $user = Auth::user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized.'], 403);
+    }
+
+    $query = SubSectorModel::select(
+        't_sub_sector.id',
+        't_sub_sector.jamiat_id',
+        't_sub_sector.name as sub_sector_name',
+        't_sub_sector.notes',
+        't_sub_sector.log_user',
+        't_sector.name as sector_name'
+    )
+    ->join('t_sector', 't_sector.id', '=', 't_sub_sector.sector_id')
+    ->where('t_sub_sector.sector_id', $sector)
+    ->where('t_sector.status', 'active');
+
+    if ($user->role_access_id == 0) {
+        // Super Admin: no restrictions
+        $subSectors = $query->get();
+    } elseif ($user->role_access_id == 1) {
+        // Sector Admin: check if sector is allowed
+        $sectorAccessIds = json_decode($user->sector_access_id, true);
+
+        if (empty($sectorAccessIds) || !in_array($sector, $sectorAccessIds)) {
             return response()->json([
                 'message' => 'Access denied for the requested sector!',
                 'sector' => $sector
             ], 403);
         }
-    
-        // Fetch sub-sectors within the permitted sector
-        $subSectors = SubSectorModel::select(
-            't_sub_sector.id', 
-            't_sub_sector.jamiat_id', 
-            't_sub_sector.name as sub_sector_name', 
-            't_sub_sector.notes', 
-            't_sub_sector.log_user', 
-            't_sector.name as sector_name'
-        )
-        ->join('t_sector', 't_sector.id', '=', 't_sub_sector.sector_id') // Join with t_sector table
-        ->where('t_sub_sector.sector_id', $sector)
-         ->where('t_sector.status', 'active') 
-        ->get();
-    
-        return $subSectors->isNotEmpty()
-            ? response()->json([
-                'message' => 'Sub-Sectors for the given sector fetched successfully!',
-                'data' => $subSectors
-            ], 200)
-            : response()->json([
-                'message' => 'No sub-sectors found for the given sector!',
+
+        $subSectors = $query->get();
+    } else {
+        // Other roles: check sub-sector level access
+        $subSectorAccessIds = json_decode($user->sub_sector_access_id, true);
+
+        if (empty($subSectorAccessIds)) {
+            return response()->json([
+                'message' => 'Access denied. No sub-sector permissions found.',
                 'sector' => $sector
-            ], 404);
+            ], 403);
+        }
+
+        $subSectors = $query->whereIn('t_sub_sector.id', $subSectorAccessIds)->get();
     }
+
+    return $subSectors->isNotEmpty()
+        ? response()->json([
+            'message' => 'Sub-Sectors for the given sector fetched successfully!',
+            'data' => $subSectors
+        ], 200)
+        : response()->json([
+            'message' => 'No sub-sectors found for the given sector!',
+            'sector' => $sector
+        ], 404);
+}
 
     // update
     public function update_sub_sector(Request $request, $id)

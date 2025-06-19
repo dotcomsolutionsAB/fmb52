@@ -22,6 +22,7 @@ use App\Models\ZabihatModel;
 use Auth;
 use App\Models\Transfer;
 
+
 class TransferController extends Controller
 {
     //
@@ -95,40 +96,70 @@ class TransferController extends Controller
         }
     }
 
-     public function create(Request $request)
-    {
-        $request->validate([
-            'jamiat_id' => 'required|integer',
-            'family_id' => 'required|integer',
-            'date' => 'required|date',
-            'sector_from' => 'required|integer',
-            'sector_to' => 'required|integer',
-            'log_user' => 'required|string',
-            'status' => 'required|string',
-        ]);
+   public function create(Request $request)
+{
+    $request->validate([
+        'family_id' => 'required|integer',
+        'sector_to' => 'required|integer',
+    ]);
 
-        $transfer = Transfer::create($request->all());
+    $hof = User::where('family_id', $request->family_id)
+                ->where('mumeneen_type', 'HOF')
+                ->first();
 
-        return response()->json([
-            'message' => 'Transfer created successfully.',
-            'data' => $transfer
-        ], 201);
+    if (!$hof) {
+        return response()->json(['message' => 'HOF not found for given family_id'], 404);
     }
+
+    $transfer = Transfer::create([
+        'jamiat_id'   => $hof->jamiat_id,
+        'family_id'   => $hof->family_id,
+        'date'        => now()->toDateString(),
+        'sector_from' => $hof->sector_id,
+        'sector_to'   => $request->sector_to,
+        'log_user'    => Auth()->User()->name ?? 'system',
+        'status'      => 0,
+    ]);
+
+    return response()->json([
+        'message' => 'Transfer created successfully.',
+        'data' => $transfer
+    ], 201);
+}
 
     // Retrieve all or single transfer
-    public function index($id = null)
-    {
-        if ($id) {
-            $transfer = Transfer::find($id);
-            if (!$transfer) {
-                return response()->json(['message' => 'Transfer not found'], 404);
-            }
-            return response()->json($transfer);
+   public function index($id = null)
+{
+    if ($id) {
+        $transfer = Transfer::find($id);
+
+        if (!$transfer) {
+            return response()->json(['message' => 'Transfer not found'], 404);
         }
 
-        return response()->json(Transfer::all());
+        $transfer->hof = User::where('family_id', $transfer->family_id)
+                            ->where('mumeneen_type', 'HOF')
+                            ->first();
+
+        $transfer->sector_from_obj = DB::table('t_sector')->where('id', $transfer->sector_from)->first();
+        $transfer->sector_to_obj   = DB::table('t_sector')->where('id', $transfer->sector_to)->first();
+
+        return response()->json($transfer);
     }
 
+    $transfers = Transfer::all();
+
+    foreach ($transfers as $transfer) {
+        $transfer->hof = User::where('family_id', $transfer->family_id)
+                            ->where('mumeneen_type', 'HOF')
+                            ->first();
+
+        $transfer->sector_from_obj = DB::table('t_sector')->where('id', $transfer->sector_from)->first();
+        $transfer->sector_to_obj   = DB::table('t_sector')->where('id', $transfer->sector_to)->first();
+    }
+
+    return response()->json($transfers);
+}
     // Update a transfer
     public function update(Request $request, $id)
     {
@@ -169,4 +200,42 @@ class TransferController extends Controller
             'message' => 'Transfer deleted successfully.'
         ]);
     }
+
+    public function acceptTransfer(Request $request)
+{
+    $request->validate([
+        'transfer_id'   =>'required|integer',
+        'sub_sector_id' => 'required|integer',
+        'folio_no'      => 'required|string|max:50',
+    ]);
+
+    $transfer = Transfer::find($request->transfer_id);
+
+    if (!$transfer) {
+        return response()->json(['message' => 'Transfer not found.'], 404);
+    }
+
+    $familyId = $transfer->family_id;
+
+    // Update all users of that family
+    $updated = User::where('family_id', $familyId)->update([
+        'sector_id'     => $transfer->sector_to,
+        'sub_sector_id' => $request->sub_sector_id,
+        'folio_no'      => $request->folio_no,
+    ]);
+
+    if ($updated) {
+        $transfer->status = 1;
+        $transfer->save();
+
+        return response()->json([
+            'message' => 'Transfer accepted and user data updated successfully.',
+            'transfer' => $transfer
+        ], 200);
+    } else {
+        return response()->json([
+            'message' => 'User update failed. No records updated.'
+        ], 422);
+    }
+}
 }

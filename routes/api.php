@@ -151,8 +151,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', [TransferController::class, 'create']);
         Route::get('/', [TransferController::class, 'index']);
         Route::get('/{id}', [TransferController::class, 'index']);
-        Route::put('/{id}', [TransferController::class, 'update']);
+        //Route::post('/{id}', [TransferController::class, 'update']);
         Route::delete('/{id}', [TransferController::class, 'delete']);
+        Route::post('/accept/{id}', [TransferController::class, 'acceptTransfer']);
 
     });
     
