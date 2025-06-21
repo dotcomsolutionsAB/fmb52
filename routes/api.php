@@ -43,6 +43,7 @@ Route::post('/login/{id?}', [AuthController::class, 'login']);
 Route::post('/register-jamaat', [JamiatController::class, 'register_jamaat']);
 Route::post('/forgot_password', [JamiatController::class, 'forgot_password']);
 Route::post('/verify_email', [JamiatController::class, 'verify_email']);
+Route::get('process-whatsapp',[WhatsAppQueueController::class,'processQueue']);
 
 // Sync Routes - Manage Family Members & HOF Integrity
 Route::prefix('sync')->group(function () {
