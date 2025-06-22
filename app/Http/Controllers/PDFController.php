@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\ReceiptsModel;
+use Illuminate\Support\Facades\Storage;
 
 class PDFController extends Controller
 {
@@ -78,18 +79,47 @@ class PDFController extends Controller
         $formatter = new \NumberFormatter("en", \NumberFormatter::SPELLOUT);
         return ucwords($formatter->format($number));
     }
-      public function generateReceiptPdfContent($hashed_id)
+
+public function generateReceiptPdfContent($hashed_ids)
 {
-    $receipt = ReceiptsModel::where('hashed_id', $hashed_id)->firstOrFail();
-    $amountInWords = $this->convertNumberToWords($receipt->amount);
-    $data = [
-        'background' => public_path('images/receipt_bg.jpg'),
-        'receipt' => $receipt,
-        'amount_in_words' => $amountInWords,
-    ];
+    $hashedIdArray = explode(',', $hashed_ids);
+    $pdf = new \Barryvdh\DomPDF\PDF;
 
-    $pdf = Pdf::loadView('receipt_template', $data)->setPaper('a5', 'portrait');
+    $pdfContents = '';
 
-    return $pdf->output();  // returns raw PDF bytes
+    foreach ($hashedIdArray as $hashed_id) {
+        $receipt = ReceiptsModel::where('hashed_id', trim($hashed_id))->first();
+
+        if ($receipt) {
+            $amountInWords = $this->convertNumberToWords($receipt->amount);
+
+            $data = [
+                'background' => public_path('images/receipt_bg.jpg'),
+                'receipt' => $receipt,
+                'amount_in_words' => $amountInWords,
+            ];
+
+            $pdfContents .= view('receipt_template', $data)->render();
+        }
+    }
+
+    if (!$pdfContents) {
+        return response()->json(['message' => 'No valid receipts found.'], 404);
+    }
+
+    // Create combined PDF
+    $pdf = Pdf::loadHTML($pdfContents)->setPaper('a5', 'portrait');
+
+    $filename = 'merged_receipt_' . time() . '.pdf';
+    $path = 'receipts/' . $filename;
+
+    Storage::disk('public')->put($path, $pdf->output());
+
+    $downloadUrl = asset('storage/' . $path);
+
+    return response()->json([
+        'message' => 'Merged PDF generated successfully.',
+        'url' => $downloadUrl
+    ], 200);
 }
 }

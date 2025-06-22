@@ -59,7 +59,10 @@ class ReceiptsController extends Controller
             $uniqueKey = Str::random(16);  // Generates a 16-character random string
 
             // Check if the unique key already exists in the database
-        } while (ReceiptsModel::where('hashed_id', $uniqueKey)->exists());
+        }
+        $receiptHashedIds = [];
+        $whatsappSent = false;
+         while (ReceiptsModel::where('hashed_id', $uniqueKey)->exists());
 
             // Generate receipt number using prefix, value, and postfix
             $receipt_no = $counter->prefix . $counter->value . $counter->postfix;
@@ -140,6 +143,7 @@ class ReceiptsController extends Controller
                 ]);
     
                 $receipts[] = $register_receipt;
+                $receiptHashedIds[] = $register_receipt->hashed_id;
                 
                 // If the mode is cheque, neft, or upi, create a payment entry
                 if (in_array($register_receipt->mode, ['cheque', 'neft'])) {
@@ -186,41 +190,58 @@ class ReceiptsController extends Controller
               
     
                 // Call the receipt_print API to generate the PDF
-                $pdfController = new PDFController();
-               
-
-                $pdfContent = $pdfController->generateReceiptPdfContent($register_receipt->hashed_id);
-
-                if ($pdfContent && strlen($pdfContent) > 100) {
-                    $directory = public_path("storage/{$jamiat_id}/receipts");
-                    if (!file_exists($directory)) {
-                        mkdir($directory, 0755, true);
-                    }
-                    $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
-                    file_put_contents($pdfPath, $pdfContent);
-                    $accountscontroller= new AccountsController();
-                    $accountscontroller->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
-
-                    // Log success
-                    DB::table('mylogs')->insert([
-                        'message' => "PDF generated and saved successfully for receipt {$formatted_receipt_no} at {$pdfPath}",
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                } else {
-                    // Log failure
-                    DB::table('mylogs')->insert([
-                        'message' => "PDF generation failed or empty for receipt {$formatted_receipt_no}",
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
+                
                 $remainingAmount -= $amountForMember;
     
                 if ($remainingAmount <= 0) {
                     break;
                 }
             }
+            if (!$whatsappSent && !empty($receiptHashedIds)) {
+    $pdfController = new PDFController();
+    $commaSeparatedHashedIds = implode(',', $receiptHashedIds);
+
+    $pdfContent = $pdfController->generateReceiptPdfContent($commaSeparatedHashedIds); // now supports multiple
+
+   $data = $pdfContent->getData(true);
+
+    if (!empty($data['url'])) {
+    $pdfUrl = $data['url'];
+
+    // Now call WhatsApp queue with this PDF URL
+    $accountscontroller = new AccountsController();
+    $accountscontroller->addToWhatsAppQueue($register_receipt, $formatted_receipt_no, $pdfUrl);
+
+    // Log success
+    DB::table('mylogs')->insert([
+        'message' => "Merged PDF URL sent to WhatsApp queue for receipt {$formatted_receipt_no}: {$pdfUrl}",
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+        $pdfPath = "{$directory}/{$formatted_receipt_no}.pdf";
+        file_put_contents($pdfPath, $pdfContent);
+
+        // Use the last created receipt object to pass to WhatsApp queue
+        $accountscontroller = new AccountsController();
+        $accountscontroller->addToWhatsAppQueue($register_receipt, $formatted_receipt_no);
+
+        // Log success
+        DB::table('mylogs')->insert([
+            'message' => "Merged PDF generated and WhatsApp queued for receipts: {$commaSeparatedHashedIds}",
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    } else {
+        DB::table('mylogs')->insert([
+            'message' => "Merged PDF generation failed or empty for receipts: {$commaSeparatedHashedIds}",
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    $whatsappSent = true;
+}
 
             $hubController = new HubController();
             $hubresponse = $hubController->updateFamilyHub($register_receipt->family_id);

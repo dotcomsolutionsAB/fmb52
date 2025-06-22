@@ -107,82 +107,62 @@ class AccountsController extends Controller
             : response()->json(['message' => 'Counter record not found!'], 404);
     }
 
-   public function addToWhatsAppQueue($receipt, $pdfUrl)
-    {
-        // Define the prefix for the full file URL
-        $filePrefix = 'https://api.fmb52.com/storage/1/receipts/';
-        
-        // Generate the full URL for the PDF
-        $fullPdfUrl = $filePrefix . $pdfUrl.'.pdf';
-    
-        // Fetch the name from the t_jamiat table based on jamiat_id
-        $jamiatName = DB::table('t_jamiat')
-            ->where('id', $receipt->jamiat_id)
-            ->value('name'); // Fetch only the name
-    
-        // Prepare WhatsApp template content
-        $templateContent = [
-            'name' => 'fmb_receipt_create',
-            'language' => ['code' => 'en'],
-            'components' => [
-                [
-                    'type' => 'header',
-                    'parameters' => [
-                        [
-                            'type' => 'document',
-                            'document' => [
-                                'link' => $fullPdfUrl, // Add the full PDF URL
-                                'filename' => "{$receipt->receipt_no}.pdf", // Set the filename
-                            ],
+  public function addToWhatsAppQueue($receipt, $pdfUrl)
+{
+    // Use the full URL directly (no prefix required)
+    $fullPdfUrl = $pdfUrl;
+
+    // Fetch the name from the t_jamiat table based on jamiat_id
+    $jamiatName = DB::table('t_jamiat')
+        ->where('id', $receipt->jamiat_id)
+        ->value('name');
+
+    // Prepare WhatsApp template content
+    $templateContent = [
+        'name' => 'fmb_receipt_create',
+        'language' => ['code' => 'en'],
+        'components' => [
+            [
+                'type' => 'header',
+                'parameters' => [
+                    [
+                        'type' => 'document',
+                        'document' => [
+                            'link' => $fullPdfUrl,
+                            'filename' => "{$receipt->receipt_no}.pdf",
                         ],
                     ],
                 ],
-                [
-                    'type' => 'body',
-                    'parameters' => [
-                        ['type' => 'text', 'text' => $receipt->name], // {{1}} - Contributor's Name
-                        ['type' => 'text', 'text' => number_format($receipt->amount, 2)], // {{2}} - Contribution Amount
-                        ['type' => 'text', 'text' => $jamiatName], // {{3}} - Receipt Number
-                    ],
+            ],
+            [
+                'type' => 'body',
+                'parameters' => [
+                    ['type' => 'text', 'text' => $receipt->name],
+                    ['type' => 'text', 'text' => number_format($receipt->amount, 2)],
+                    ['type' => 'text', 'text' => $jamiatName],
                 ],
             ],
-        ];
-    
-        // Get the authenticated user
-        
-    
-        
-        // Insert into WhatsApp queue table
+        ],
+    ];
+
+    // Push to WhatsApp queue (you can refactor the duplicate below into a loop if needed)
+    foreach (['917439515253', '918961043773'] as $mobile) {
         WhatsappQueueModel::create([
             'jamiat_id' => $receipt->jamiat_id,
             'group_id' => 'receipt_' . uniqid(),
             'callback_data' => 'receipt_' . $receipt->receipt_no,
             'recipient_type' => 'individual',
-            'to' => '917439515253', // Use the mobile number of the recipient
+            'to' => $mobile,
             'template_name' => 'fmb_receipt_created',
-            'content' => json_encode($templateContent), // Encode the content as JSON
-            'file_url' => $fullPdfUrl, // Attach the full PDF URL
-            'status' => 0, // Pending
-            'log_user' => $jamiatName, // Log the name fetched from t_jamiat
-            'created_at' => now(), // Current timestamp for creation
-            'updated_at' => now(), // Current timestamp for updates
-        ]);
-
-          WhatsappQueueModel::create([
-            'jamiat_id' => $receipt->jamiat_id,
-            'group_id' => 'receipt_' . uniqid(),
-            'callback_data' => 'receipt_' . $receipt->receipt_no,
-            'recipient_type' => 'individual',
-            'to' => '918961043773', // Use the mobile number of the recipient
-            'template_name' => 'fmb_receipt_created',
-            'content' => json_encode($templateContent), // Encode the content as JSON
-            'file_url' => $fullPdfUrl, // Attach the full PDF URL
-            'status' => 0, // Pending
-            'log_user' => $jamiatName, // Log the name fetched from t_jamiat
-            'created_at' => now(), // Current timestamp for creation
-            'updated_at' => now(), // Current timestamp for updates
+            'content' => json_encode($templateContent),
+            'file_url' => $fullPdfUrl,
+            'status' => 0,
+            'log_user' => $jamiatName,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
+}
     public function fetchCurrencies(Request $request)
     {
         // Fetch all currencies, optionally filter by country_name or currency_code
