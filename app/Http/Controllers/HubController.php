@@ -9,7 +9,7 @@ use App\Models\HubModel;
 use App\Models\YearModel;
 use App\Models\SectorModel;
 use App\Models\SubSectorModel;
-
+use Illuminate\Support\Facades\Artisan;
 
 class HubController extends Controller
 {
@@ -743,4 +743,24 @@ $hub_done = $hubAmountCount + $thaliJointCount;
         ]);
     }
 }
+ public function updateHub(Request $request)
+    {
+        try {
+            // Optionally authorize or validate request here
+
+            Artisan::call('hub:update');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Hub update process started successfully.',
+                'output' => Artisan::output()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update hub.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

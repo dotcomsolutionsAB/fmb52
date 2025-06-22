@@ -29,6 +29,7 @@ use App\Http\Controllers\HubController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\FeedbacksController;
 use App\Http\Controllers\TransferController;
+use League\Csv\Query\Row;
 
 Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi']);
 Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
@@ -117,6 +118,8 @@ Route::delete('/super_admin_counter/{id}', [JamiatController::class, 'delete_sup
 
 Route::get('/currencies', [AccountsController::class, 'fetchCurrencies']);
 Route::get('receipts/advance',[ReceiptsController::class,'process_advance_receipts']);
+Route::get('/hub-update',[HubController::class,'updateHub']);
+
 
 // Middleware-protected routes
 Route::middleware(['auth:sanctum'])->group(function () {
