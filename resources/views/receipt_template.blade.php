@@ -153,7 +153,7 @@
 			</tr>
 			<tr>
 				<td class="label">Received By :</td>
-				<td class="value">{{ $receipt->collected_by }}</td>
+				<td class="value">{{ $receipt->log_user }}</td>
 				<td></td>
 				<td></td>
 			</tr>
