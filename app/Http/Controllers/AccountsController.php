@@ -107,17 +107,10 @@ class AccountsController extends Controller
             : response()->json(['message' => 'Counter record not found!'], 404);
     }
 
-  public function addToWhatsAppQueue($receipt, $pdfUrl)
+ public function addToWhatsAppQueue($receipt, $pdfUrl, $namesList, $totalAmount)
 {
-    // Use the full URL directly (no prefix required)
-    $fullPdfUrl = $pdfUrl;
+    $jamiatName = DB::table('t_jamiat')->where('id', $receipt->jamiat_id)->value('name');
 
-    // Fetch the name from the t_jamiat table based on jamiat_id
-    $jamiatName = DB::table('t_jamiat')
-        ->where('id', $receipt->jamiat_id)
-        ->value('name');
-
-    // Prepare WhatsApp template content
     $templateContent = [
         'name' => 'fmb_receipt_create',
         'language' => ['code' => 'en'],
@@ -128,7 +121,7 @@ class AccountsController extends Controller
                     [
                         'type' => 'document',
                         'document' => [
-                            'link' => $fullPdfUrl,
+                            'link' => $pdfUrl,
                             'filename' => "{$receipt->receipt_no}.pdf",
                         ],
                     ],
@@ -137,31 +130,28 @@ class AccountsController extends Controller
             [
                 'type' => 'body',
                 'parameters' => [
-                    ['type' => 'text', 'text' => $receipt->name],
-                    ['type' => 'text', 'text' => number_format($receipt->amount, 2)],
-                    ['type' => 'text', 'text' => $jamiatName],
+                    ['type' => 'text', 'text' => $namesList],               // {{1}} - Names
+                    ['type' => 'text', 'text' => number_format($totalAmount, 2)], // {{2}} - Total Amount
+                    ['type' => 'text', 'text' => $jamiatName],              // {{3}} - Jamiat Name
                 ],
             ],
         ],
     ];
 
-    // Push to WhatsApp queue (you can refactor the duplicate below into a loop if needed)
-    foreach (['917439515253', '918961043773'] as $mobile) {
-        WhatsappQueueModel::create([
-            'jamiat_id' => $receipt->jamiat_id,
-            'group_id' => 'receipt_' . uniqid(),
-            'callback_data' => 'receipt_' . $receipt->receipt_no,
-            'recipient_type' => 'individual',
-            'to' => $mobile,
-            'template_name' => 'fmb_receipt_created',
-            'content' => json_encode($templateContent),
-            'file_url' => $fullPdfUrl,
-            'status' => 0,
-            'log_user' => $jamiatName,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    }
+    WhatsappQueueModel::create([
+        'jamiat_id' => $receipt->jamiat_id,
+        'group_id' => 'receipt_' . uniqid(),
+        'callback_data' => 'receipt_' . $receipt->receipt_no,
+        'recipient_type' => 'individual',
+        'to' => '917439515253', // change as needed
+        'template_name' => 'fmb_receipt_created',
+        'content' => json_encode($templateContent),
+        'file_url' => $pdfUrl,
+        'status' => 0,
+        'log_user' => $jamiatName,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 }
     public function fetchCurrencies(Request $request)
     {
