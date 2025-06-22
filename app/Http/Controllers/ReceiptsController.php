@@ -60,9 +60,10 @@ class ReceiptsController extends Controller
 
             // Check if the unique key already exists in the database
         }
-        $receiptHashedIds = [];
-        $whatsappSent = false;
+       
          while (ReceiptsModel::where('hashed_id', $uniqueKey)->exists());
+          $receiptHashedIds = [];
+        $whatsappSent = false;
 
             // Generate receipt number using prefix, value, and postfix
             $receipt_no = $counter->prefix . $counter->value . $counter->postfix;
