@@ -83,7 +83,7 @@ class PDFController extends Controller
 public function generateReceiptPdfContent($hashed_ids)
 {
     $hashedIdArray = explode(',', $hashed_ids);
-    $pdf = new \Barryvdh\DomPDF\PDF;
+   
 
     $pdfContents = '';
 
