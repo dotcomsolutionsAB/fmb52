@@ -124,7 +124,7 @@ class ReceiptsController extends Controller
                 'payment_id' => null,
             ]);
 
-            $receipts[] = $register_receipt->toArray();
+            $receipts[] = $register_receipt;  // ✅ keep as obje$receipts[] = $register_receipt->toArray();
             $receiptHashedIds[] = $uniqueKey;
 
             // If payment mode is cheque/neft
