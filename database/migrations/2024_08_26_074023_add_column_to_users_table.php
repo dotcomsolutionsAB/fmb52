@@ -39,8 +39,7 @@ return new class extends Migration
             $table->longText('photo_id')->after('joint_with')->nullable();
             $table->unsignedBigInteger('access_role_id')->nullable()->after('photo_id');
            
-            $table->unsignedBigInteger('sector_access_id')->nullable();
-            $table->unsignedBigInteger('sub_sector_access_id')->nullable();
+           
            
         
         });
