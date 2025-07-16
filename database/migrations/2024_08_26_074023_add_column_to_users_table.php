@@ -26,8 +26,6 @@ return new class extends Migration
             $table->enum('gender', ['male', 'female'])->after('title')->nullable();
             $table->integer('age')->after('gender')->nullable();
             $table->integer('building')->after('age')->nullable();
-            $table->string('sector', 100)->after('building')->nullable();
-            $table->string('sub_sector', 100)->after('sector')->nullable();
             $table->enum('status', ['active', 'in_active'])->after('sub_sector');
             $table->enum('role', ['superadmin', 'jamiat_admin', 'mumeneen'])->after('status');
             $table->integer('otp')->after('role')->nullable();
@@ -36,6 +34,13 @@ return new class extends Migration
             $table->enum('thali_status', ['taking', 'not_taking', 'once_a_week', 'joint'])->after('username')->nullable();
             $table->longText('joint_with')->after('thali_status')->nullable();
             $table->longText('photo_id')->after('joint_with')->nullable();
+             $table->unsignedBigInteger('access_role_id')->nullable()->after('photo_id');
+            $table->unsignedBigInteger('sector_id')->nullable()->after('folio_no');
+            $table->unsignedBigInteger('sub_sector_id')->nullable()->after('sector_id');
+            $table->unsignedBigInteger('sector_access_id')->nullable()->after('sub_sector_id');
+            $table->unsignedBigInteger('sub_sector_access_id')->nullable()->after('sector_access_id');
+            $table->string('user_access_id')->nullable()->after('sub_sector_access_id');
+        
         });
     }
 
