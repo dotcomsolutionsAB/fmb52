@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('t_niyaz', function (Blueprint $table) {
             $table->bigIncrements('id'); // Auto-increment primary key
             $table->string('niyaz_id', 50); // Niyaz ID
-            $table->string('family_id', 50); // Family ID
+            $table->string('family_id', 10); // Family ID
             $table->date('date'); // Date
             $table->string('menu')->nullable(); // Menu
             $table->string('fateha')->nullable(); // Fateha
