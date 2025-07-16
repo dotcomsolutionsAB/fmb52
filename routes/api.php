@@ -35,6 +35,9 @@ Route::post('/migrate_user_csv', [CSVImportController::class, 'migrateFromApi'])
 Route::get('/import_receipts',[CSVImportController::class,'importDataFromUrl']);
 Route::post('/import_users', [CSVImportController::class, 'importUser']);
 Route::get('/import_its', [CSVImportController::class, 'importIts']); 
+Route::get('/import_sectors', [SectorImportController::class, 'importSectorData']);  
+Route::get('/import_sub_sectors', [SubSectorImportController::class, 'importSubSectorData']);  
+
 // Public Routes
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
