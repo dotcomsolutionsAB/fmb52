@@ -9,11 +9,7 @@ class UpdateUserTableForSectorSubSectorForeignKeys extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Remove existing sector and sub_sector columns if they exist
-            $table->dropColumn(['sector', 'sub_sector']);
-
-            // Add foreign key columns
-            $table->unsignedBigInteger('sector_id')->nullable();
-            $table->unsignedBigInteger('sub_sector_id')->nullable();
+            
 
             // Set up foreign keys
             $table->foreign('sector_id')->references('id')->on('t_sector')->onDelete('set null');
