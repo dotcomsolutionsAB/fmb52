@@ -15,7 +15,7 @@ return new class extends Migration
             //
             $table->string('email')->nullable()->default(null)->change();
             $table->integer('jamiat_id')->after('email');
-            $table->string('family_id', 10)->after('jamiat_id');
+           $table->string('family_id', 10)->after('jamiat_id')->index(); // ✅ Add index
             $table->string('mobile', 20)->after('family_id');
             $table->string('its', 8)->nullable()->unique()->after('mobile');
             $table->string('hof_its', 8)->after('its')->nullable();
