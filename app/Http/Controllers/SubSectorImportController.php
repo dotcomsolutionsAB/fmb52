@@ -13,7 +13,7 @@ class SubSectorImportController extends Controller
     public function importSubSectorData()
     {
         // Truncate the sub_sector table to remove existing data
-        SubSectorModel::truncate();
+       // SubSectorModel::truncate();
 
         $csvUrl = public_path('storage/sub_sector.csv'); // Path to your sub-sector CSV file
 

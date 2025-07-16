@@ -13,7 +13,7 @@ class SectorImportController extends Controller
     public function importSectorData()
     {
         // Truncate the sector table to remove existing data
-        SectorModel::truncate();
+        //SectorModel::truncate();
 
         $csvUrl = public_path('storage/sector.csv'); // Path to your CSV file in the storage directory
 
