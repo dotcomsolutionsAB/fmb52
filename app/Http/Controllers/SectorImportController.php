@@ -22,6 +22,7 @@ class SectorImportController extends Controller
 
         // Create a CSV reader instance
         $csv = Reader::createFromString($csvContent);
+        $csv->setDelimiter(';'); 
         $csv->setHeaderOffset(0); // Set header offset
 
         // Retrieve records from the CSV
