@@ -15,7 +15,7 @@ class SubSectorImportController extends Controller
         // Truncate the sub_sector table to remove existing data
        // SubSectorModel::truncate();
 
-        $csvUrl = public_path('storage/sub_sector.csv'); // Path to your sub-sector CSV file
+        $csvUrl = public_path('storage/t_sub_sector.csv'); // Path to your sub-sector CSV file
 
         // Retrieve the CSV content
         $csvContent = file_get_contents($csvUrl);
@@ -32,11 +32,11 @@ class SubSectorImportController extends Controller
             SubSectorModel::create([
                 'jamiat_id' => 1, // Hard-coded as per your requirement
                 'sector' => $record['sector'],
-                'name' => $record['sub_sector'], // Mapping 'sub_sector' to 'name'
-                'notes' => 'Incharge: ' . $record['incharge'] . ', Folio: ' . $record['folio'] . ', Mobile: ' . $record['mobile'] . ', Email: ' . $record['email'],
+                'name' => $record['name'], // Mapping 'sub_sector' to 'name'
+                'notes' => $record['notes'],
                 'log_user' => $record['log_user'],
-                'created_at' => Carbon::parse($record['log_date'])->toDateTimeString(),
-                'updated_at' => Carbon::now()->toDateTimeString(),
+                'created_at' => $record['created_at'],
+                'updated_at' => $record['updated_at'],
             ]);
         }
 

@@ -32,11 +32,11 @@ class SectorImportController extends Controller
         foreach ($sectorRecords as $sector) {
             $batchData[] = [
                 'jamiat_id' => 1, // Hard-coded as per your requirement
-                'name' => $sector['sector'],
-                'notes' => 'Secretary: ' . $sector['secretary'] . ', Mobile: ' . $sector['mobile'] . ', Email: ' . $sector['email'],
+                'name' => $sector['name. '],
+                'notes' => $sector['notes'] ,
                 'log_user' => $sector['log_user'],
-                'created_at' => Carbon::parse($sector['log_date'])->toDateTimeString(),
-                'updated_at' => Carbon::now()->toDateTimeString(),
+                'created_at' => $sector['created_at'],
+                'updated_at' => $sector['updated_at'],
             ];
 
             // Insert in batches of 100 records
