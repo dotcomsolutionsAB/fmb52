@@ -32,7 +32,7 @@ class SectorImportController extends Controller
         foreach ($sectorRecords as $sector) {
             $batchData[] = [
                 'jamiat_id' => 1, // Hard-coded as per your requirement
-                'name' => $sector['name. '],
+                'name' => $sector['name'],
                 'notes' => $sector['notes'] ,
                 'log_user' => $sector['log_user'],
                 'created_at' => $sector['created_at'],
