@@ -22,7 +22,7 @@ class SubSectorImportController extends Controller
 
         // Create a CSV reader instance
         $csv = Reader::createFromString($csvContent);
-        $csv->setDelimiter(';'); // Set the delimiter to semicolon
+       // $csv->setDelimiter(';'); // Set the delimiter to semicolon
         $csv->setHeaderOffset(0); // Set header offset
 
         // Retrieve records from the CSV
