@@ -6,40 +6,59 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use League\Csv\Reader;
 use Carbon\Carbon;
-use App\Models\SubSectorModel; // Ensure your SubSector model is set up correctly
+use App\Models\SubSectorModel;
+use App\Models\SectorModel;
 
 class SubSectorImportController extends Controller
 {
     public function importSubSectorData()
     {
-        // Truncate the sub_sector table to remove existing data
-       // SubSectorModel::truncate();
+        // Path to your sub-sector CSV file
+        $csvPath = public_path('storage/t_sub_sector.csv');
 
-        $csvUrl = public_path('storage/t_sub_sector.csv'); // Path to your sub-sector CSV file
+        if (!file_exists($csvPath)) {
+            return response()->json(['error' => 'CSV file not found at ' . $csvPath], 404);
+        }
 
         // Retrieve the CSV content
-        $csvContent = file_get_contents($csvUrl);
+        $csvContent = file_get_contents($csvPath);
 
         // Create a CSV reader instance
         $csv = Reader::createFromString($csvContent);
-       // $csv->setDelimiter(';'); // Set the delimiter to semicolon
-        $csv->setHeaderOffset(0); // Set header offset
+        $csv->setHeaderOffset(0); // Use the first row as header
 
-        // Retrieve records from the CSV
-        $subSectorRecords = $csv->getRecords();
+        $records = $csv->getRecords();
+        $createdCount = 0;
+        $errors = [];
 
-        foreach ($subSectorRecords as $record) {
+        foreach ($records as $index => $record) {
+            $sectorName = trim($record['sector']);
+
+            // Find sector ID by sector name
+            $sector = SectorModel::where('name', $sectorName)->first();
+
+            if (!$sector) {
+                $errors[] = "Row " . ($index + 1) . ": Sector '$sectorName' not found.";
+                continue;
+            }
+
+            // Insert into sub_sector table
             SubSectorModel::create([
-                'jamiat_id' => 1, // Hard-coded as per your requirement
-                'sector' => $record['sector'],
-                'name' => $record['name'], // Mapping 'sub_sector' to 'name'
-                'notes' => $record['notes'],
-                'log_user' => $record['log_user'],
-                'created_at' => $record['created_at'],
-                'updated_at' => $record['updated_at'],
+                'jamiat_id' => 1,
+                'sector_id' => $sector->id,
+                'name' => $record['name'],
+                'notes' => $record['notes'] ?? null,
+                'log_user' => $record['log_user'] ?? 'system',
+                'created_at' => $record['created_at'] ?? now(),
+                'updated_at' => $record['updated_at'] ?? now(),
             ]);
+
+            $createdCount++;
         }
 
-        return response()->json(['message' => 'Sub-sector CSV import completed successfully, and existing data was truncated.'], 200);
+        return response()->json([
+            'message' => "Sub-sector import completed. $createdCount rows inserted.",
+            'errors' => $errors
+        ]);
     }
 }
