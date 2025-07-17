@@ -38,6 +38,13 @@ Route::get('/import_its', [CSVImportController::class, 'importIts']);
 Route::get('/import_sectors', [SectorImportController::class, 'importSectorData']);  
 Route::get('/import_sub_sectors', [SubSectorImportController::class, 'importSubSectorData']);  
 
+ Route::prefix('permissions')->group(function () {
+        Route::post('/create', [PermissionRoleController::class, 'createPermission']);
+        Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
+        Route::get('/all', [PermissionRoleController::class, 'getAllPermissions']);
+        Route::get('/by_role/{id}', [PermissionRoleController::class, 'getPermissionsByRole']);
+        Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
+    });
 // Public Routes
 Route::post('/register', [MumeneenController::class, 'register_users']);
 Route::post('/get_otp', [AuthController::class, 'generate_otp']);
@@ -298,7 +305,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
         Route::get('/all', [PermissionRoleController::class, 'getAllPermissions']);
         Route::get('/by_role/{id}', [PermissionRoleController::class, 'getPermissionsByRole']);
-        
         Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
     });
 
