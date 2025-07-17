@@ -54,7 +54,7 @@ class CSVImportController extends Controller
     private function processReceiptCSV($url, $sectorMapping, $subSectorMapping)
     {
         // Clear existing data in the receipt table
-        //ReceiptsModel::truncate();
+        ReceiptsModel::truncate();
 
         // Fetch the CSV content from the URL
         $csvContent = file_get_contents($url);
@@ -146,6 +146,8 @@ if (in_array($record['year'], $paidYears)) {
 
    private function processPaymentCSV($url, $sectorMapping, $subSectorMapping)
 {
+     PaymentsModel::truncate();
+
     $csvContent = file_get_contents($url);
     if ($csvContent === false) {
         throw new \Exception("Failed to fetch CSV content: $url");
