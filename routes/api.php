@@ -299,14 +299,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/users/below-age-15', [MumeneenController::class, 'getUsersBelowAge15WithHofDetails']);
     Route::post('/users/remove-permissions', [PermissionRoleController::class, 'removePermissionsFromUser']);
 
-    // Permissions and Roles
-    Route::prefix('permissions')->group(function () {
-        Route::post('/create', [PermissionRoleController::class, 'createPermission']);
-        Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
-        Route::get('/all', [PermissionRoleController::class, 'getAllPermissions']);
-        Route::get('/by_role/{id}', [PermissionRoleController::class, 'getPermissionsByRole']);
-        Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
-    });
+    // // Permissions and Roles
+    // Route::prefix('permissions')->group(function () {
+    //     Route::post('/create', [PermissionRoleController::class, 'createPermission']);
+    //     Route::post('/create-bulk', [PermissionRoleController::class, 'createBulkPermissions']);
+    //     Route::get('/all', [PermissionRoleController::class, 'getAllPermissions']);
+    //     Route::get('/by_role/{id}', [PermissionRoleController::class, 'getPermissionsByRole']);
+    //     Route::delete('/delete', [PermissionRoleController::class, 'deletePermission']);
+    // });
 
     Route::prefix('roles')->group(function () {
         Route::post('/create', [PermissionRoleController::class, 'createRole']);
